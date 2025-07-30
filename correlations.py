@@ -4,13 +4,8 @@ import pandas as pd
 import math
 
 class Correlations:
-    """
-    Correlations:
-    
-    """
 
-    
-    def __init__(self, Tbin, Tbout, Pbin, Pbout, far, m_dot, h):
+    def __init__(self, Tbin, Tbout, Pbin, Pbout, far, m_dot, h, desnity):
         """
         self
 
@@ -27,7 +22,13 @@ class Correlations:
         self.far = far
         self.m_dot = m_dot
         self.h = h
+        self.density = desnity
 
+    def __repr__(self):
+        return "hi"
+    
+
+    
     def novelo(self):
         """
         novelo function: contains the expression for the calculation of 
@@ -270,8 +271,119 @@ class Correlations:
         einox = a2*teff*self.Pbin**(0.5)*fraction2*rhum*rstm
 
         return einox
+    
+    def becker(self, Tfl, method = "simplified"):
+        """
+        becker: Becker, in the referenced paper with Perkavec, proposed two correlation
+        equations. The first is a simpler (method = "simplified") expression, taking into 
+        consideration combustor inlet pressure and the adiabatic flame temperature. The 
+        advanced correlation (method = "advanced") makes use of more paremeters
 
-emissions = Correlations(500, 1490, 20, 19.5, 0.001, 600)
+        Inputs:
+        - Tfl: flame temperature (Simplified) or adiabatic flame temperature (Advanced) 
+        - method: 
+            - "simplified": use the simpler version of Becker's proposed correlation equation
+            - "advanced": use the complex version, as proposed in the paper 
 
-print("Lewis expression: {}".format(emissions.lewis_nox()))
+        Outputs:
+        - nox:   
+
+        Source: T. Becker et. al, 1994, The capability of different semianalytical equations for
+        estimation of NOx emissions of gas turbines, doi: https://doi.org/10.1115/94-GT-282
+ 
+        """
+
+        if method == "simplified":
+
+            # NOx expression - PPMV
+            nox = 5.73*10**(-6)*np.exp(0.00833*Tfl)*(self.Pbin)**0.5  
+
+        elif method == "advanced":
+
+            # ISO conditions. Taken from Table 2, averaged values
+            TrISO = 600 
+            m_dotISO = 70 # [kg/s]
+            PrISO = 8*101325
+            TfirISOfl = 1400
+            Tfirpl = 1200
+
+            # Other parameters
+            s2f = 0.8
+            v_dot = self.density*self.m_dot
+            m_dotFuel = self.far*self.m_dot
+            
+            # Specific NOx emission index
+            sNOx = 11000 # average value from table 3, mgNOx/kgfuel
+            
+            # Corrected specific NOx 
+            sNOxCorr = sNOx*(1-0.3571*s2f) 
+
+            # Residence time
+            ft = (m_dotISO*self.Pbin*TrISO)/(self.m_dot*PrISO*self.Tbout)
+
+            # Geometrical expression: TfirISOfl: firing temperature at ISO condition, full load, Tfl_pl: firing temperature, part load
+            fTL = (Tfl-TfirISOfl)/(Tfl-Tfirpl)
+
+            # Advanced NOx expression
+            exponential = np.exp(Tfl*(1+(self.Pbin**0.5-PrISO**0.5)/100-2208)/247.7)
+            fraction = m_dotFuel/v_dot
+
+            nox = sNOxCorr*exponential*fraction*ft*fTL
+
+        else:
+            print("No method given")
+
+        return nox
+    
+    def odgers(self, Tfl, t):
+        """
+        odgers:
+
+        Inputs:
+        - Tfl: flame temperature [K]
+        - t: residence time [s]
+
+        Ouputs:
+        - einox: emissions index of NOx [kgNOx/kgFuel]
+
+        Source: Becker et. al, 1994, The capability of different semi-analytical equations for estimation of NOx 
+        emissions of Gas Turbines, doi: https://doi.org/10.1115/94-GT-282
+        
+        """
+        
+        einox = 29*np.exp(-21.67/Tfl)*self.Pbin**0.66*(1-np.exp(-250*t))
+
+        return einox 
+    
+    def perkavec(self):
+        """
+        perkavec: 
+
+        Inputs:
+        - Pbin: combustor inlet pressure (Pa), 
+        - Tbin: combustor inlet temperature (K),
+        - fat: fuel-to-air ratio
+        - m_dot: mass flow rate through the engine (kg/s)
+
+        Outputs:
+        - nox: amount of nox produced. Not clear if it is in PPMV or kgNOx/kgFuel
+
+        Source: Becker et. al, 1994, The capability of different semi-analytical equations for estimation of NOx 
+        emissions of Gas Turbines, doi: https://doi.org/10.1115/94-GT-282
+
+        """
+
+        # Absolute humidity
+        hAbs = 0
+        hAbsS = 0
+        
+        nox = 8.28*self.Pbin**0.5*self.far**1.4*self.m_dot**(-22)*np.exp(self.Tbin/260)*np.exp(-58*(hAbs-hAbsS))
+
+        return nox
+
+
+emissions = Correlations(500, 1490, 20, 19.5, 0.001, 600, 0.5,1.293)
+
+#print(Correlations.__repr__)
+print("Becker expression: {}".format(emissions.becker(1490, method = "advanced")))
 print('Kyprianidis expression: {}'.format(emissions.kyprianidis()))
