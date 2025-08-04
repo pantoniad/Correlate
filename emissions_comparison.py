@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import functions as fn
+import correlations_functions as fn
 from matplotlib import pyplot as plt
 
 ## Extract data from csv file
