@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import correlations_class as correlations
+import correlations_class as corr
 
 class data_manipulation():
 
@@ -76,4 +76,56 @@ class data_manipulation():
 
         return data_avg 
 
-        #def 
+    def data_processing(self, dict, PRoverall):
+
+        """
+        data_processing:
+
+        Inputs:
+        - dict: dictionary that contains the values for the variables for 
+                each flight phase
+
+        Outputs:
+        - results: a 4x3 array that contains the results of using the correlations equations
+                    (size is dependent on number of correlation equations and simulation points
+                    retrieved from the input dictionary)
+        """
+        # Extract conditions from dictionary
+        Tbin = dict["Idle"][0]
+        Tbout = dict["Idle"][1]
+        Pbin = 1.05*dict["Idle"][2]
+        Pbout = dict["Idle"][2]
+        far = dict["idle"][4]
+        m_dot = dict["Idle"][3]
+        h = 0
+        density = 1.29
+
+        # Generate the class instance
+        correlations = corr(Tbin, Tbout, Pbin, Pbout, far, m_dot, h, density)
+
+        # Matrix to save results
+        results = np.zeros((len(dict.keys()), 4))
+        counter = 0
+
+        # Calculate the Emissions Indices
+        for key in dict:
+            print(f"Now processing: {key} conditions")
+            
+            # Novelo
+            results[counter, 0] = correlations.novelo()
+
+            # Lewis
+            results[counter, 1] = correlations.lewis_nox()
+
+            # Rokke
+            results[counter, 2] = correlations.rokke_nox(PRoverall = PRoverall)
+
+            # Kyprianidis
+            results[counter, 3] = correlations.kyprianidis()
+
+            counter = counter + 1
+
+        # Round results 
+        results = np.round(results, 2)
+
+        return results
