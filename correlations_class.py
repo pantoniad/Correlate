@@ -76,7 +76,7 @@ class Correlations:
 
         return ei_nox 
     
-    def rokke_nox(self,PRoverall):
+    def rokke_nox(self, PRoverall, method = "Index"):
         """
         rokke_nox: contains the correlation equation developed by Rokke et al. and
         provided by Lefebvre on its book "Gas Turbine combustion: Alternative Fuels and 
@@ -88,12 +88,12 @@ class Correlations:
         - Power outputs from 35-100%. Not suitable for idle conditions
 
         Inputs:
-        - PRoverall: pressure ratio of the compressor of the engine
-        - m_dot: air mass flow rate
+        - PRoverall: pressure ratio of the compressor of the engine 
+        - m_dot: air mass flow rate (kg/s)
         - FAR: Fuel-to-Air ratio
 
         Outputs:
-        - nox: the amount of produced NOx in part per million by volume (ppmv)
+        - nox: the amount of produced NOx in EI format (gNOx/kgFuel) or parts per million (ppmv)
 
         Source: Rokke et. al - Pollutant emissions from gas fired turbine engines in offshore practice 
                 Doi: https://doi.org/10.1115/93-GT-170
@@ -101,7 +101,10 @@ class Correlations:
         """
 
         # Base expression
-        ei_nox = 1.46*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
+        if method == "Index":
+            ei_nox = 1.46*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
+        elif method == "PPMV":
+            ei_nox = 18.1*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
 
         return ei_nox
 
@@ -157,7 +160,7 @@ class Correlations:
         correction parameters and a corrected fuel flow value.  
 
         Inputs (self):
-        - Pbin: Burner inlet pressure [bar],
+        - Pbin: Burner inlet pressure [Pa] - Conversion to [bar] included,
         - Tbin: Burner inlet temperature [K],
         - wair: mass flow through the engine core [kg/s]
 
@@ -180,16 +183,19 @@ class Correlations:
         Additional info:
         """
 
+        # Pa to bar conversion
+        Pbin = 1*10**(-5)*self.Pbin
+
         # Humidity factor
         Fh = math.exp((6.29 - math.exp(-0.0001443*(alt-12900)))/53.2)
        
         if method == "Index":
 
             # Stoichiometric flame temperature
-            Tstoic = 2281*(np.power(self.Pbin, 0.009375)+0.000178*np.power(self.Pbin, 0.055)*(self.Tbin-298))
+            Tstoic = 2281*(np.power(Pbin, 0.009375)+0.000178*np.power(Pbin, 0.055)*(self.Tbin-298))
 
             # Emissions index
-            einox = einoxSL * (math.exp(65000/Tstoic))/(math.exp(6500/Tstoic))*((self.Pbin)/PbinSL)*(m_dotSL/self.m_dot)*(TbinSL/self.Tbin)*Fh
+            einox = einoxSL * (math.exp(65000/Tstoic))/(math.exp(6500/Tstoic))*((Pbin)/PbinSL)*(m_dotSL/self.m_dot)*(TbinSL/self.Tbin)*Fh
 
         elif method == "FuelFlow":
         
@@ -219,12 +225,12 @@ class Correlations:
 
         Inputs:
         - t: residence time [s],
-        - Tstm: Inlet steam temperature [k],
+        - Tstm: Inlet steam temperature [K],
         - farStoichiometric: Stoichiometric fuel-to-air ratio (based on the fuel)  
         - w2f: water-to-fuel ratio
 
         Outputs:
-        - einox: the emissions index of NOx in kgNOx/kgFuel
+        - einox: the emissions index of NOx in gNO2/kgFuel
 
         Source: 
 
@@ -286,7 +292,8 @@ class Correlations:
             - "advanced": use the complex version, as proposed in the paper 
 
         Outputs:
-        - nox:   
+        - nox_ppmv: NOx emissions in Parts Per Million Volume (PPMV) for the simplified method
+        - nox: NOx emissions in mg/Nm3, dry air conditions for the advanced method
 
         Source: T. Becker et. al, 1994, The capability of different semianalytical equations for
         estimation of NOx emissions of gas turbines, doi: https://doi.org/10.1115/94-GT-282
@@ -296,7 +303,7 @@ class Correlations:
         if method == "simplified":
 
             # NOx expression - PPMV
-            nox = 5.73*10**(-6)*np.exp(0.00833*Tfl)*(self.Pbin)**0.5  
+            nox_ppmv = 5.73*10**(-6)*np.exp(0.00833*Tfl)*(self.Pbin)**0.5  
 
         elif method == "advanced":
 
@@ -327,13 +334,22 @@ class Correlations:
             # Advanced NOx expression
             exponential = np.exp(Tfl*(1+(self.Pbin**0.5-PrISO**0.5)/100-2208)/247.7)
             fraction = m_dotFuel/v_dot
-
+            
+            # NOx in mg/Nm3 
             nox = sNOxCorr*exponential*fraction*ft*fTL
+
+            # Assuming normal conditions at 0 degrees celcius or 273.15K
+            einox = 7.73*10**(-7)*nox
 
         else:
             print("No method given")
 
-        return nox
+        if nox_ppmv is not None:
+            return nox_ppmv
+        elif einox is not None: 
+            return einox
+        else:
+            raise ValueError("Neither nox_ppmv nor einox was set")
     
     def odgers(self, Tfl, t):
         """
@@ -362,11 +378,11 @@ class Correlations:
         Inputs:
         - Pbin: combustor inlet pressure (Pa), 
         - Tbin: combustor inlet temperature (K),
-        - fat: fuel-to-air ratio
+        - far: fuel-to-air ratio
         - m_dot: mass flow rate through the engine (kg/s)
 
         Outputs:
-        - nox: amount of nox produced. Not clear if it is in PPMV or kgNOx/kgFuel
+        - nox: NOx emissions in mg/Nm3, dry
 
         Source: Becker et. al, 1994, The capability of different semi-analytical equations for estimation of NOx 
         emissions of Gas Turbines, doi: https://doi.org/10.1115/94-GT-282
@@ -377,9 +393,13 @@ class Correlations:
         hAbs = 0
         hAbsS = 0
         
+        # NOx in mg/Nm3
         nox = 8.28*self.Pbin**0.5*self.far**1.4*self.m_dot**(-22)*np.exp(self.Tbin/260)*np.exp(-58*(hAbs-hAbsS))
 
-        return nox
+        # Assuming normal conditions at 0 degrees Celcius or 273.15K
+        einox = 7.73*10**(-7)*nox
+
+        return einox
 
 
 emissions = Correlations(500, 1490, 20, 19.5, 0.001, 600, 0.5,1.293)

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt    
+import correlations_class as correlate
 
 ####
 
@@ -60,6 +61,8 @@ def longFormatCV(dataRange, EIs, clmns):
     return df_all
 
 ####
+
+
 ## Data insertion
 data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.csv", delimiter=";")
 
@@ -67,7 +70,7 @@ clmns = ["HC EI Idle (g/kg)", "HC EI T/O (g/kg)", "HC EI C/O (g/kg)", "HC EI App
 EIs = data_og[clmns]
 cfm56_range = [[61, 169]]
 
-# CF-56 and variants during Take-off
+# CF-56 and variants
 cfm56Data = EIs.iloc[range(cfm56_range[0][0],cfm56_range[0][1])]
 cfm56Data = cfm56Data.reset_index()
 
@@ -87,7 +90,7 @@ cfm56COApp_dots = cfm56Data[clmns[3]].astype(float)
 cfm56COApp_dotsa = np.sort(cfm56COApp_dots.values)
 meanApp = np.mean(cfm56COApp_dotsa)
 
-# # # 
+# Getting data ready for plotting
 plots = []
 labels = ["HC Idle", "HC T/O", "HC C/O", "HC App"]
 
@@ -117,7 +120,7 @@ df_all = pd.DataFrame({
     "Value": np.concatenate([p[1] for p in plots])
 })
 
-# Custom colors for pollutants
+# Dot plot
 fig1 = plt.figure(figsize=(7,5))
 palette = {
     labels[0]: "royalblue",
@@ -126,6 +129,7 @@ palette = {
     labels[3]: "magenta"
 }
 
+# Create the dot plot
 ax = sns.stripplot(
     data=df_all, 
     x="Pollutant", 
@@ -135,6 +139,7 @@ ax = sns.stripplot(
     palette=palette
 )
 
+# Include the mean values
 mean_points = pd.DataFrame({
     "Names": [labels[0], labels[1], labels[2], labels[3]],
     "Values": [meanIdle, meanTO, meanCO, meanApp]
@@ -149,13 +154,14 @@ plt.plot(
     label = "Mean values"
 )
 
-plt.grid()
+plt.grid(color = "silver", linestyle = ":")
 plt.legend()
 plt.ylabel("Emissions Index Value (g/kg)")
 plt.xlabel("Pollutant and operating point")
 plt.title("HC EI over engine operation points - Dot plot - CFM56 family")
 plt.yticks([0, 2, 4, 6, 8, 10])
 
+# Swarm plot
 fig2 = plt.figure(figsize=(7,5))
 sns.swarmplot(
     data=df_all[::2],
@@ -175,12 +181,15 @@ plt.plot(
     label = "Mean values"
 )
 
-plt.grid()
+plt.grid(color = "silver", linestyle = ":")
 plt.legend()
 plt.ylabel("Emissions Index Value (g/kg)")
 plt.xlabel("Pollutant and operating point")
 plt.title("HC EI over engine operation points - Bee-swarm plot - CFM56 family")
 plt.yticks([0, 2, 4, 6, 8, 10])
 
+#plt.show()
 
-plt.show()
+# Incorporate correlation equations
+corr = correlate.Correlations(500, 1490, 20, 19.5, 0.01, 600, 0.5, 1.293)
+
