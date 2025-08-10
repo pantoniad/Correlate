@@ -66,7 +66,7 @@ def longFormatCV(dataRange, EIs, clmns):
 ## Data insertion
 data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.csv", delimiter=";")
 
-clmns = ["HC EI Idle (g/kg)", "HC EI T/O (g/kg)", "HC EI C/O (g/kg)", "HC EI App (g/kg)"]
+clmns = ["NOx EI Idle (g/kg)", "NOx EI T/O (g/kg)", "NOx EI C/O (g/kg)", "NOx EI App (g/kg)"]
 EIs = data_og[clmns]
 cfm56_range = [[61, 169]]
 
@@ -92,7 +92,7 @@ meanApp = np.mean(cfm56COApp_dotsa)
 
 # Getting data ready for plotting
 plots = []
-labels = ["HC Idle", "HC T/O", "HC C/O", "HC App"]
+labels = ["NOx Idle", "NOx T/O", "NOx C/O", "NOx App"]
 
 # Shift HC values
 co_idle = cfm56COIdle_dotsa
@@ -119,6 +119,70 @@ df_all = pd.DataFrame({
     "Pollutant": np.concatenate([[p[0]] * len(p[1]) for p in plots]),
     "Value": np.concatenate([p[1] for p in plots])
 })
+
+### Correlation equations ###
+# Dictionary definition: For every key: Tburner_inlet Tburner_outlet, Pburner, m_dot, FAR
+d = {
+    "idle": [600, 1200, 3156.71, 23.02, 0.0139],
+    "take-off": [860, 2250, 3152.59, 54.1, 0.0214],
+    "climb-out": [820, 2100, 3240.46, 52.41, 0.0306],
+    "approach": [750, 1400, 2909.36, 36.79, 0.01288]
+}
+
+dtPoints = pd.DataFrame(
+    data = d, 
+    index = ["Tbin", "Tbout", "Pbin", "m_dot", "FAR"]
+)
+
+dtCorrs = pd.DataFrame([])
+
+# Correlations instance
+for point in dtPoints.keys():
+
+    # Create class instance for opeating point
+    corr = correlate.Correlations(
+        dtPoints[point]["Tbin"], 
+        dtPoints[point]["Tbout"], 
+        dtPoints[point]["Pbin"], 
+        0.95*dtPoints[point]["Pbin"], 
+        dtPoints[point]["FAR"], 
+        dtPoints[point]["m_dot"], 
+        0, 
+        1.293
+    )
+
+    # Get values from correlation equations
+    becker = corr.becker(1600, method = "simplified")
+    rokke = corr.rokke_nox(41, method = "Index")
+    lewis = corr.lewis_nox()
+    kyprianidis = corr.kyprianidis(h = 0)
+    novelo = corr.novelo()
+    perkavec = corr.perkavec()
+
+    # Create temporary dataframe
+    d = {
+        "Becker": becker,
+        "Rokket": rokke,
+        "Lewis": lewis,
+        "Kyprianidis": kyprianidis,
+        "Novelo": novelo,
+        "Perkavec": perkavec
+    }
+
+    index = [point]
+
+    dt1 = pd.DataFrame(
+        data = d,
+        index = index
+    )
+
+    # Append temporary dataframe to external
+    dtCorrs = pd.concat([dtCorrs, dt1], axis = 0)
+
+print(dtCorrs)
+
+
+# Plotting
 
 # Dot plot
 fig1 = plt.figure(figsize=(7,5))
@@ -154,12 +218,62 @@ plt.plot(
     label = "Mean values"
 )
 
+# Include values from Correlaion equations
+#plt.plot(
+#    labels,
+#    dtCorrs.iloc[:]["Becker"],
+#    "--s",
+#    color = "orangered",
+#    label = "Becker"
+#)
+
+#plt.plot(
+#    labels,
+#    dtCorrs.iloc[:]["Rokket"],
+#    "-->",
+#    #color = "orangered",
+#    label = "Rokket"
+#)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Novelo"],
+    ":1",
+    #color = "violet",
+    label = "Novelo"
+)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Kyprianidis"],
+    ":<",
+    #color = "indigo",
+    label = "Kyprianidis"
+)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Lewis"],
+    ":+",
+    #color = "magenta",
+    label = "Lewis"
+)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Perkavec"],
+    "--o",
+    #color = "purple",
+    label = "Perkavec"
+)
+
 plt.grid(color = "silver", linestyle = ":")
 plt.legend()
 plt.ylabel("Emissions Index Value (g/kg)")
 plt.xlabel("Pollutant and operating point")
-plt.title("HC EI over engine operation points - Dot plot - CFM56 family")
-plt.yticks([0, 2, 4, 6, 8, 10])
+plt.title("NOx EI over engine operation points - Dot plot - CFM56 family")
+plt.yticks(range(0,50,10))
+
 
 # Swarm plot
 fig2 = plt.figure(figsize=(7,5))
@@ -181,15 +295,47 @@ plt.plot(
     label = "Mean values"
 )
 
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Novelo"],
+    ":1",
+    #color = "violet",
+    label = "Novelo"
+)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Kyprianidis"],
+    ":<",
+    #color = "indigo",
+    label = "Kyprianidis"
+)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Lewis"],
+    ":+",
+    #color = "magenta",
+    label = "Lewis"
+)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Perkavec"],
+    "--o",
+    #color = "purple",
+    label = "Perkavec"
+)
+
 plt.grid(color = "silver", linestyle = ":")
 plt.legend()
 plt.ylabel("Emissions Index Value (g/kg)")
 plt.xlabel("Pollutant and operating point")
-plt.title("HC EI over engine operation points - Bee-swarm plot - CFM56 family")
-plt.yticks([0, 2, 4, 6, 8, 10])
+plt.title("NOx EI over engine operation points - Bee-swarm plot - CFM56 family")
+plt.yticks(range(0,50,10))
 
-#plt.show()
 
-# Incorporate correlation equations
-corr = correlate.Correlations(500, 1490, 20, 19.5, 0.01, 600, 0.5, 1.293)
+plt.show()
+
+
 

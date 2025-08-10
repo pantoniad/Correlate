@@ -25,7 +25,7 @@ class Correlations:
         self.density = desnity
 
     def __repr__(self):
-        return "hi"
+        pass
     
 
     
@@ -301,11 +301,17 @@ class Correlations:
         """
 
         if method == "simplified":
+            
+            # EI nox assigned to none
+            einox = None
 
             # NOx expression - PPMV
             nox_ppmv = 5.73*10**(-6)*np.exp(0.00833*Tfl)*(self.Pbin)**0.5  
 
         elif method == "advanced":
+            
+            # nox_ppmv assigned to none
+            nox_ppmv = None
 
             # ISO conditions. Taken from Table 2, averaged values
             TrISO = 600 
@@ -339,18 +345,21 @@ class Correlations:
             nox = sNOxCorr*exponential*fraction*ft*fTL
 
             # Assuming normal conditions at 0 degrees celcius or 273.15K
-            einox = 7.73*10**(-7)*nox
+            einox = 7.73*10**(-4)*nox
 
         else:
             print("No method given")
 
+        return nox_ppmv or einox
+        """
         if nox_ppmv is not None:
             return nox_ppmv
         elif einox is not None: 
             return einox
         else:
             raise ValueError("Neither nox_ppmv nor einox was set")
-    
+        """
+
     def odgers(self, Tfl, t):
         """
         odgers:
@@ -394,16 +403,16 @@ class Correlations:
         hAbsS = 0
         
         # NOx in mg/Nm3
-        nox = 8.28*self.Pbin**0.5*self.far**1.4*self.m_dot**(-22)*np.exp(self.Tbin/260)*np.exp(-58*(hAbs-hAbsS))
+        nox = 8.28*self.Pbin**0.5*self.far**1.4*self.m_dot**(-.22)*np.exp(self.Tbin/260)*np.exp(-58*(hAbs-hAbsS))
 
         # Assuming normal conditions at 0 degrees Celcius or 273.15K
-        einox = 7.73*10**(-7)*nox
+        einox = 7.73*10**(-4)*nox
 
         return einox
 
 
-emissions = Correlations(500, 1490, 20, 19.5, 0.001, 600, 0.5,1.293)
+#emissions = Correlations(500, 1490, 20, 19.5, 0.001, 600, 0.5,1.293)
 
 #print(Correlations.__repr__)
-print("Becker expression: {}".format(emissions.becker(1490, method = "advanced")))
-print('Kyprianidis expression: {}'.format(emissions.kyprianidis()))
+#print("Becker expression: {}".format(emissions.becker(1490, method = "advanced")))
+#print('Kyprianidis expression: {}'.format(emissions.kyprianidis()))
