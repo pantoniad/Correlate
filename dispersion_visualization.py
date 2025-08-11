@@ -179,13 +179,24 @@ for point in dtPoints.keys():
     # Append temporary dataframe to external
     dtCorrs = pd.concat([dtCorrs, dt1], axis = 0)
 
-print(dtCorrs)
+# Experimental data insertion - Dataframe format
+exp_data = {
+    "Turgut - CFM56-7B26": [1.8, 24.4, (12.6+16.4)/2, 2.8],
+    "Becker - PG6541B": [7.73*10**(-4)*30, 7.73*10**(-4)*80, 7.73*10**(-4)*260, 7.73*10**(-4)*300]
+}
 
+
+exp = pd.DataFrame(
+    data = exp_data,
+    index = dtPoints.keys()    
+)
+
+print(exp)
 
 # Plotting
 
 # Dot plot
-fig1 = plt.figure(figsize=(7,5))
+fig1 = plt.figure(figsize=(10,7))
 palette = {
     labels[0]: "royalblue",
     labels[1]: "green",
@@ -212,10 +223,12 @@ mean_points = pd.DataFrame({
 plt.plot(
     mean_points["Names"], 
     mean_points["Values"], 
-    "--*", 
-    color = "k", 
+    "--*",
+    markersize = 10,
+    color = "black", 
     zorder = 10,
-    label = "Mean values"
+    label = "Mean values - ICAO Databank",
+    
 )
 
 # Include values from Correlaion equations
@@ -227,20 +240,21 @@ plt.plot(
 #    label = "Becker"
 #)
 
-#plt.plot(
-#    labels,
-#    dtCorrs.iloc[:]["Rokket"],
-#    "-->",
-#    #color = "orangered",
-#    label = "Rokket"
-#)
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Rokket"],
+    "-->",
+    #color = "orangered",
+    label = "Rokke"
+)
 
 plt.plot(
     labels,
     dtCorrs.iloc[:]["Novelo"],
     ":1",
     #color = "violet",
-    label = "Novelo"
+    label = "Novelo",
+    zorder = 10
 )
 
 plt.plot(
@@ -248,7 +262,8 @@ plt.plot(
     dtCorrs.iloc[:]["Kyprianidis"],
     ":<",
     #color = "indigo",
-    label = "Kyprianidis"
+    label = "Kyprianidis",
+    zorder = 10
 )
 
 plt.plot(
@@ -256,27 +271,43 @@ plt.plot(
     dtCorrs.iloc[:]["Lewis"],
     ":+",
     #color = "magenta",
-    label = "Lewis"
+    label = "Lewis",
+    zorder = 10
 )
 
+#plt.plot(
+#    labels,
+#    dtCorrs.iloc[:]["Perkavec"],
+#    ":o",
+#    #color = "purple",
+#    label = "Perkavec"
+#)
+
+# Include values from experimental measurements
 plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Perkavec"],
-    "--o",
-    #color = "purple",
-    label = "Perkavec"
+    labels, 
+    exp["Turgut - CFM56-7B26"],
+    "-8",
+    label = "Turgut, CFM56-7B26",
+    zorder = 10
 )
+
+#plt.plot(
+#    labels, 
+#    exp["Becker - PG6541B"],
+#    "-8",
+#    label = "Becker - PG6541B"
+#)
 
 plt.grid(color = "silver", linestyle = ":")
-plt.legend()
+plt.legend(loc = "upper left")
 plt.ylabel("Emissions Index Value (g/kg)")
 plt.xlabel("Pollutant and operating point")
 plt.title("NOx EI over engine operation points - Dot plot - CFM56 family")
-plt.yticks(range(0,50,10))
-
+plt.yticks(range(0,90,10))
 
 # Swarm plot
-fig2 = plt.figure(figsize=(7,5))
+fig2 = plt.figure(figsize=(9,7))
 sns.swarmplot(
     data=df_all[::2],
     x="Pollutant",
@@ -290,9 +321,18 @@ plt.plot(
     mean_points["Names"], 
     mean_points["Values"], 
     "--*", 
+    markersize = 10,
     color = "k", 
     zorder = 10,
-    label = "Mean values"
+    label = "Mean values - ICAO Databank"
+)
+
+plt.plot(
+    labels,
+    dtCorrs.iloc[:]["Rokket"],
+    "-->",
+    #color = "orangered",
+    label = "Rokke"
 )
 
 plt.plot(
@@ -300,7 +340,8 @@ plt.plot(
     dtCorrs.iloc[:]["Novelo"],
     ":1",
     #color = "violet",
-    label = "Novelo"
+    label = "Novelo",
+    zorder = 10
 )
 
 plt.plot(
@@ -308,7 +349,8 @@ plt.plot(
     dtCorrs.iloc[:]["Kyprianidis"],
     ":<",
     #color = "indigo",
-    label = "Kyprianidis"
+    label = "Kyprianidis",
+    zorder = 10
 )
 
 plt.plot(
@@ -316,9 +358,10 @@ plt.plot(
     dtCorrs.iloc[:]["Lewis"],
     ":+",
     #color = "magenta",
-    label = "Lewis"
+    label = "Lewis",
+    zorder = 10
 )
-
+"""
 plt.plot(
     labels,
     dtCorrs.iloc[:]["Perkavec"],
@@ -326,13 +369,21 @@ plt.plot(
     #color = "purple",
     label = "Perkavec"
 )
+"""
+plt.plot(
+    labels, 
+    exp["Turgut - CFM56-7B26"],
+    "-8",
+    label = "Turgut, CFM56-7B26",
+    zorder = 10
+)
 
 plt.grid(color = "silver", linestyle = ":")
 plt.legend()
 plt.ylabel("Emissions Index Value (g/kg)")
 plt.xlabel("Pollutant and operating point")
 plt.title("NOx EI over engine operation points - Bee-swarm plot - CFM56 family")
-plt.yticks(range(0,50,10))
+plt.yticks(range(0,90,10))
 
 
 plt.show()
