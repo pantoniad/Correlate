@@ -280,7 +280,112 @@ def box_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yL
 
     # Create swarm plot
     sns.boxplot(
-        data = df_all[::2], # Plots half the data for better visualization
+        data = df_all, # Plots half the data for better visualization
+        x = "Pollutant",
+        y = "Value",
+        palette = paletteDict
+    )
+
+    # Mean value plotting
+    plt.plot(
+        mean_points["Names"],
+        mean_points["Values"],
+        "--*",
+        markersize = 10,
+        color = "black",
+        zorder = 10,
+        label = "Mean values - ICAO Databank"
+    )
+
+    # Correlation equations value plotting
+    pointer = 0
+    for i in dtCorrs.keys():
+        
+        # Add the data to the plot
+        plt.plot(
+            labels, 
+            dtCorrs.iloc[:][i],
+            lineStyle[pointer], 
+            label = i 
+        )
+
+        # Increase the count of the pointer
+        pointer += pointer
+    
+    # Place the experimental data
+    plt.plot(
+        labels, 
+        exp["Turgut - CFM56-7B26"],
+        "-8",
+        label = "Turgut, CFM56-7B26",
+        zorder = 10
+    )
+
+    # Additional plot settings, Show plot
+    plt.grid(color = "silver", linestyle = ":")
+    plt.legend(loc = "best")
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+    plt.title(title)
+    plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
+    plt.show()
+
+def violin_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yLabel, colours, labels, lineStyle):
+    """
+    violin_plot:   Function that creates a violin plot for three types of data, the ICAO datapoints and their mean values, 
+                the EI values retrieved from using correlation equations and experimental data from the literature 
+                for the LTO cycle as defined by ICAO
+
+    Inputs:
+    - df_all:   data to be placed as dots in dot plot
+                Dataframe, first column are the names
+                for each data position, second column 
+                are the values
+    - mean_points:  mean values from the ICAO Datapoints,
+                    Dataframe, First column are the names 
+                    for each data position of the dot plot,
+                    Second column are the values for each
+                    data position
+    - dtCorrs:  Data retrieved from the usage of 
+                correlation equations. Dataframe,
+                X axis contains the names of the 
+                authors of the correlations, Y 
+                axis contains the EI values for 
+                the four ICAO LTO points,
+    - exp:  experimental data, Dataframe, X axis contains
+            the source of the data, Y axis contains the EI
+            values for the four LTO cycle points. For now
+            able to integrate only one point
+    - size: size of the plot. List, based on the "figsize"
+    - title: the title of the plot, Str
+    - ylimits: the limits of y axis, List: [min, max, step],
+    - xLabel: the name of the X axis of the plot,
+    - yLabel: the name of the Y axis of the plo
+    - colours:  the colours used for the swarm plot. These 
+                colours refer to the swarm points
+    - labels: Dot plot labels list,
+    - lineStyle:  marker type for the plots of the
+                    data calculated from the usage of 
+                    correlation equations, list 
+
+    Outputs:
+    - Box plot
+    
+    """
+     # Create palette dictionary
+    paletteDict = {
+        labels[0]: colours[0],
+        labels[1]: colours[1],
+        labels[2]: colours[2],
+        labels[3]: colours[3]
+    }
+
+    # Initiate the figure
+    fig = plt.figure(figsize=(size[0], size[1]))
+
+    # Create swarm plot
+    sns.violinplot(
+        data = df_all, # Plots half the data for better visualization
         x = "Pollutant",
         y = "Value",
         palette = paletteDict
@@ -519,7 +624,23 @@ box_plot(
     exp, 
     size = (9,7),
     ylimits = [0, 50, 10], # min, max, step
-    title = "NOx EI over engine operation points - Swarm plot - CFM56 family",
+    title = "NOx EI over engine operation points - Box plot - CFM56 family",
+    xLabel = "Pollutant and operation point",
+    yLabel = "Emissions index value (g/kg)",
+    colours = palette,
+    labels = labels,
+    lineStyle = lineStyle,
+)
+
+# Violin plot
+violin_plot(
+    df_all, 
+    mean_points, 
+    dtCorrs, 
+    exp, 
+    size = (9,7),
+    ylimits = [0, 50, 10], # min, max, step
+    title = "NOx EI over engine operation points - Violin plot - CFM56 family",
     xLabel = "Pollutant and operation point",
     yLabel = "Emissions index value (g/kg)",
     colours = palette,
