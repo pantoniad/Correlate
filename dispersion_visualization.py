@@ -5,63 +5,217 @@ from matplotlib import pyplot as plt
 import correlations_class as correlate
 
 ####
+def dot_plot(df_all, mean_points, dtCorrs, exp, size, title, xLabel, yLabel, colours, labels, Jitter, dotPlotXlabel, dotPlotYlabel, lineStyle):
+    """
+    dot_plot:   function that creates a dot plot comparing the values of ICAO data
+                for the four LTO points of the LTO cycle and their mean values, the
+                values of EIs calculated from correlation equations and experimental
+                data retrieved from literature
 
-def longFormatCV(dataRange, EIs, clmns):
+    Inputs:
+    - df_all:   data to be placed as dots in dot plot
+                Dataframe, first column are the names
+                for each data position, second column 
+                are the values
+    - mean_points:  mean values from the ICAO Datapoints,
+                    Dataframe, First column are the names 
+                    for each data position of the dot plot,
+                    Second column are the values for each
+                    data position
+    - dtCorrs:  Data retrieved from the usage of 
+                correlation equations. Dataframe,
+                X axis contains the names of the 
+                authors of the correlations, Y 
+                axis contains the EI values for 
+                the four ICAO LTO points,
+    - exp:  experimental data, Dataframe, X axis contains
+            the source of the data, Y axis contains the EI
+            values for the four LTO cycle points. For now
+            able to integrate only one point
+    - size: figure size. List,
+    - title: title of the plot,
+    - xLabel: name of the x axis of the (whole) plot,
+    - yLabel: name of the y axis of the (whole) plot
+    - colours: colour palette for the dot plot. List
+    - labels: Dot plot labels list,
+    - Jitter: define the jitter,
+    - dotPlotXlabel: the label for the x axis 
+                     of the dot plot,
+    - dotPlotYlabel: the label of the y axis
+                     of the dot plot
+    - lineStyle:  marker type for the plots of the
+                    data calculated from the usage of 
+                    correlation equations, list 
+
+    Outputs:
+    - Dot plot
 
     """
+
+    # Create palette dictionary
+    paletteDict = {
+        labels[0]: colours[0],
+        labels[1]: colours[1],
+        labels[2]: colours[2],
+        labels[3]: colours[3]
+    }
+
+    # Create figure
+    fig = plt.figure(figsize = (size[0], size[1]))
+
+    # Create dot plot
+    ax = sns.stripplot(
+        data = df_all,
+        x = dotPlotXlabel,
+        y = dotPlotYlabel,
+        jitter = Jitter,
+        size = 5,
+        palette = paletteDict
+    )
+
+    # Mean value plotting
+    plt.plot(
+        mean_points["Names"],
+        mean_points["Values"],
+        "--*",
+        markersize = 10,
+        color = "black",
+        zorder = 10,
+        label = "Mean values - ICAO Databank"
+    )
+
     
+    # Correlation equations value plotting
+    pointer = 0
+    for i in dtCorrs.keys():
+        
+        # Add the data to the plot
+        plt.plot(
+            labels, 
+            dtCorrs.iloc[:][i],
+            lineStyle[pointer], 
+            label = i 
+        )
+
+        # Increase the count of the pointer
+        pointer += pointer
+    
+    # Place the experimental data
+    plt.plot(
+        labels, 
+        exp["Turgut - CFM56-7B26"],
+        "-8",
+        label = "Turgut, CFM56-7B26",
+        zorder = 10
+    )
+
+    # Additional plot settings, Show plot
+    plt.grid(color = "silver", linestyle = ":")
+    plt.legend(loc = "best")
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+    plt.title(title)
+    plt.yticks(range(0,90,10))
+    plt.show()
+
+def swarm_plot(df_all, mean_points, dtCorrs, exp, size, title, xLabel, yLabel, colours, labels, lineStyle):
     """
+    swarm_plot:
 
-    # 
-    data = EIs.iloc[range(dataRange[0][0], dataRange[0][1])]
-    data = data.reset_index()
+    Inputs:
+    - df_all:   data to be placed as dots in dot plot
+                Dataframe, first column are the names
+                for each data position, second column 
+                are the values
+    - mean_points:  mean values from the ICAO Datapoints,
+                    Dataframe, First column are the names 
+                    for each data position of the dot plot,
+                    Second column are the values for each
+                    data position
+    - dtCorrs:  Data retrieved from the usage of 
+                correlation equations. Dataframe,
+                X axis contains the names of the 
+                authors of the correlations, Y 
+                axis contains the EI values for 
+                the four ICAO LTO points,
+    - exp:  experimental data, Dataframe, X axis contains
+            the source of the data, Y axis contains the EI
+            values for the four LTO cycle points. For now
+            able to integrate only one point
+    - size: size of the plot. List, based on the "figsize"
+    - colours:  the colours used for the swarm plot. These 
+                colours refer to the swarm points
+    - labels: Dot plot labels list,
+    - lineStyle:  marker type for the plots of the
+                    data calculated from the usage of 
+                    correlation equations, list 
 
-    # 
-    for i in clmns:
+    Outputs:
+    - Swarm plot
 
-        # 
-        pollutant_dots = data[i].astype(float)
-        pollutant_dotsa = np.sort(pollutant_dots.values)
+    """
+    # Create palette dictionary
+    paletteDict = {
+        labels[0]: colours[0],
+        labels[1]: colours[1],
+        labels[2]: colours[2],
+        labels[3]: colours[3]
+    }
 
-        if i == "CO EI T/O (g/kg)":
-            pollutantTO = pollutant_dotsa
-        elif i == "CO EI Idle (g/kg)":
-            pollutantIdle = pollutant_dotsa
-        elif i == "CO EI App (g/kg)":
-            pollutantApp = pollutant_dotsa
-        elif i == "CO EI C/O (g/kg)":
-            pollutantCO = pollutant_dotsa
+    # Initiate the figure
+    fig = plt.figure(figsize=(size[0], size[1]))
+
+    # Create swarm plot
+    sns.swarmplot(
+        data = df_all[::2], # Plots half the data for better visualization
+        x = "Pollutant",
+        y = "Value",
+        palette = paletteDict
+    )
+
+    # Mean value plotting
+    plt.plot(
+        mean_points["Names"],
+        mean_points["Values"],
+        "--*",
+        markersize = 10,
+        color = "black",
+        zorder = 10,
+        label = "Mean values - ICAO Databank"
+    )
+
+    # Correlation equations value plotting
+    pointer = 0
+    for i in dtCorrs.keys():
+        
+        # Add the data to the plot
+        plt.plot(
+            labels, 
+            dtCorrs.iloc[:][i],
+            lineStyle[pointer], 
+            label = i 
+        )
+
+        # Increase the count of the pointer
+        pointer += pointer
     
-    offset = 0
-    plots = []
+    # Place the experimental data
+    plt.plot(
+        labels, 
+        exp["Turgut - CFM56-7B26"],
+        "-8",
+        label = "Turgut, CFM56-7B26",
+        zorder = 10
+    )
 
-    # Shift HC values
-    Too = pollutantTO + offset
-    plots.append(("T/O", Too))
-
-    # Shift CO values
-    Idle = pollutantIdle + offset
-    plots.append(("Idle", Idle))
-    offset = Idle.max() + 2
-
-    # Shift NOx values
-    App = pollutantApp + offset
-    plots.append(("App", App))
-    offset = App.max() + 2  # +2 for a gap
-    
-    # Shift NOx values
-    Coo = pollutantCO + offset
-    plots.append(("CO", Coo))
-
-    df_all = pd.DataFrame({
-        "Pollutant": np.concatenate([[p[0]] * len(p[1]) for p in plots]),
-        "Value": np.concatenate([p[1] for p in plots])
-    })
-
-    return df_all
-
-####
-
+    # Additional plot settings, Show plot
+    plt.grid(color = "silver", linestyle = ":")
+    plt.legend(loc = "best")
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+    plt.title(title)
+    plt.yticks(range(0,90,10))
+    plt.show()
 
 ## Data insertion
 data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.csv", delimiter=";")
@@ -74,44 +228,44 @@ cfm56_range = [[61, 169]]
 cfm56Data = EIs.iloc[range(cfm56_range[0][0],cfm56_range[0][1])]
 cfm56Data = cfm56Data.reset_index()
 
-cfm56COIdle_dots = cfm56Data[clmns[0]].astype(float) 
-cfm56COIdle_dotsa = np.sort(cfm56COIdle_dots.values)
-meanIdle = np.mean(cfm56COIdle_dotsa)
+cfm56Idle_dots = cfm56Data[clmns[0]].astype(float) 
+cfm56Idle_dotsa = np.sort(cfm56Idle_dots.values)
+meanIdle = np.mean(cfm56Idle_dotsa)
 
-cfm56COTO_dots = cfm56Data[clmns[1]].astype(float) 
-cfm56COTO_dotsa = np.sort(cfm56COTO_dots.values)
-meanTO = np.mean(cfm56COTO_dotsa)
+cfm56TO_dots = cfm56Data[clmns[1]].astype(float) 
+cfm56TO_dotsa = np.sort(cfm56TO_dots.values)
+meanTO = np.mean(cfm56TO_dotsa)
 
-cfm56COCO_dots = cfm56Data[clmns[2]].astype(float) 
-cfm56COCO_dotsa = np.sort(cfm56COCO_dots.values)
-meanCO = np.mean(cfm56COCO_dotsa)
+cfm56CO_dots = cfm56Data[clmns[2]].astype(float) 
+cfm56CO_dotsa = np.sort(cfm56CO_dots.values)
+meanCO = np.mean(cfm56CO_dotsa)
 
-cfm56COApp_dots = cfm56Data[clmns[3]].astype(float) 
-cfm56COApp_dotsa = np.sort(cfm56COApp_dots.values)
-meanApp = np.mean(cfm56COApp_dotsa)
+cfm56App_dots = cfm56Data[clmns[3]].astype(float) 
+cfm56App_dotsa = np.sort(cfm56App_dots.values)
+meanApp = np.mean(cfm56App_dotsa)
 
 # Getting data ready for plotting
 plots = []
 labels = ["NOx Idle", "NOx T/O", "NOx C/O", "NOx App"]
 
 # Shift HC values
-co_idle = cfm56COIdle_dotsa
-plots.append((labels[0], co_idle))
+idle = cfm56Idle_dotsa
+plots.append((labels[0], idle))
 
 # Shift CO values
-co_to = cfm56COTO_dotsa
-plots.append((labels[1], co_to))
-offset = co_to.max() + 2
+to = cfm56TO_dotsa
+plots.append((labels[1], to))
+offset = to.max() + 2
 
 # Shift NOx values
-co_co = cfm56COCO_dotsa
-plots.append((labels[2], co_co))
-offset = co_co.max() + 2  # +2 for a gap
+co = cfm56CO_dotsa
+plots.append((labels[2], co))
+offset = co.max() + 2  # +2 for a gap
 
 # Shift NOx values
-co_app = cfm56COApp_dotsa 
-plots.append((labels[3], co_app))
-offset = co_app.max() + 2  # +2 for a gap
+app = cfm56App_dotsa 
+plots.append((labels[3], app))
+offset = app.max() + 2  # +2 for a gap
 
 
 # Combine into one DataFrame
@@ -161,12 +315,10 @@ for point in dtPoints.keys():
 
     # Create temporary dataframe
     d = {
-        "Becker": becker,
-        "Rokket": rokke,
+        "Rokke": rokke,
         "Lewis": lewis,
         "Kyprianidis": kyprianidis,
-        "Novelo": novelo,
-        "Perkavec": perkavec
+        "Novelo": novelo
     }
 
     index = [point]
@@ -193,26 +345,12 @@ exp = pd.DataFrame(
 
 print(exp)
 
-# Plotting
+# Dot plot #
+# Colour palette
+palette = ["royalblue", "green", "red", "magenta"]
 
-# Dot plot
-fig1 = plt.figure(figsize=(10,7))
-palette = {
-    labels[0]: "royalblue",
-    labels[1]: "green",
-    labels[2]: "red",
-    labels[3]: "magenta"
-}
-
-# Create the dot plot
-ax = sns.stripplot(
-    data=df_all, 
-    x="Pollutant", 
-    y="Value", 
-    jitter=0.1, 
-    size=5, 
-    palette=palette
-)
+# Marker styles
+lineStyle = ["-->", ":1", ":<", ":+", "-8"]
 
 # Include the mean values
 mean_points = pd.DataFrame({
@@ -220,173 +358,35 @@ mean_points = pd.DataFrame({
     "Values": [meanIdle, meanTO, meanCO, meanApp]
 })
 
-plt.plot(
-    mean_points["Names"], 
-    mean_points["Values"], 
-    "--*",
-    markersize = 10,
-    color = "black", 
-    zorder = 10,
-    label = "Mean values - ICAO Databank",
-    
+# Dot plot
+dot_plot(
+    df_all, 
+    mean_points, 
+    dtCorrs,
+    exp, 
+    size = [10,7], 
+    title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
+    xLabel = "Pollutant and operating point", 
+    yLabel = "Emissions index value (g/kg)", 
+    colours = palette, 
+    labels = labels, 
+    Jitter = 0.1, 
+    dotPlotXlabel = "Pollutant", 
+    dotPlotYlabel = "Value", 
+    lineStyle = lineStyle
 )
-
-# Include values from Correlaion equations
-#plt.plot(
-#    labels,
-#    dtCorrs.iloc[:]["Becker"],
-#    "--s",
-#    color = "orangered",
-#    label = "Becker"
-#)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Rokket"],
-    "-->",
-    #color = "orangered",
-    label = "Rokke"
-)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Novelo"],
-    ":1",
-    #color = "violet",
-    label = "Novelo",
-    zorder = 10
-)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Kyprianidis"],
-    ":<",
-    #color = "indigo",
-    label = "Kyprianidis",
-    zorder = 10
-)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Lewis"],
-    ":+",
-    #color = "magenta",
-    label = "Lewis",
-    zorder = 10
-)
-
-#plt.plot(
-#    labels,
-#    dtCorrs.iloc[:]["Perkavec"],
-#    ":o",
-#    #color = "purple",
-#    label = "Perkavec"
-#)
-
-# Include values from experimental measurements
-plt.plot(
-    labels, 
-    exp["Turgut - CFM56-7B26"],
-    "-8",
-    label = "Turgut, CFM56-7B26",
-    zorder = 10
-)
-
-#plt.plot(
-#    labels, 
-#    exp["Becker - PG6541B"],
-#    "-8",
-#    label = "Becker - PG6541B"
-#)
-
-plt.grid(color = "silver", linestyle = ":")
-plt.legend(loc = "upper left")
-plt.ylabel("Emissions Index Value (g/kg)")
-plt.xlabel("Pollutant and operating point")
-plt.title("NOx EI over engine operation points - Dot plot - CFM56 family")
-plt.yticks(range(0,90,10))
 
 # Swarm plot
-fig2 = plt.figure(figsize=(9,7))
-sns.swarmplot(
-    data=df_all[::2],
-    x="Pollutant",
-    y="Value",
-    size=5,
-    palette=palette
-)
-
-
-plt.plot(
-    mean_points["Names"], 
-    mean_points["Values"], 
-    "--*", 
-    markersize = 10,
-    color = "k", 
-    zorder = 10,
-    label = "Mean values - ICAO Databank"
-)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Rokket"],
-    "-->",
-    #color = "orangered",
-    label = "Rokke"
-)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Novelo"],
-    ":1",
-    #color = "violet",
-    label = "Novelo",
-    zorder = 10
-)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Kyprianidis"],
-    ":<",
-    #color = "indigo",
-    label = "Kyprianidis",
-    zorder = 10
-)
-
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Lewis"],
-    ":+",
-    #color = "magenta",
-    label = "Lewis",
-    zorder = 10
-)
-"""
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Perkavec"],
-    "--o",
-    #color = "purple",
-    label = "Perkavec"
-)
-"""
-plt.plot(
-    labels, 
-    exp["Turgut - CFM56-7B26"],
-    "-8",
-    label = "Turgut, CFM56-7B26",
-    zorder = 10
-)
-
-plt.grid(color = "silver", linestyle = ":")
-plt.legend()
-plt.ylabel("Emissions Index Value (g/kg)")
-plt.xlabel("Pollutant and operating point")
-plt.title("NOx EI over engine operation points - Bee-swarm plot - CFM56 family")
-plt.yticks(range(0,90,10))
-
-
-plt.show()
-
-
-
+swarm_plot(
+    df_all, 
+    mean_points, 
+    dtCorrs, 
+    exp, 
+    size = (9,7), 
+    title = "NOx EI over engine operation points - Swarm plot - CFM56 family",
+    xLabel = "Pollutant and operation point",
+    yLabel = "Emissions index value (g/kg)",
+    colours = palette,
+    labels = labels,
+    lineStyle = lineStyle    
+) 
