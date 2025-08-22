@@ -3,14 +3,14 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt    
 import correlations_class as correlate
+import warnings
 
 ####
-def dot_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yLabel, colours, labels, Jitter, dotPlotXlabel, dotPlotYlabel, lineStyle):
+def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, ylimits, xLabel, yLabel, colours, labels, dotPlotXlabel, dotPlotYlabel, lineStyle, Jitter = None):
     """
-    dot_plot:   function that creates a dot plot comparing the values of ICAO data
-                for the four LTO points of the LTO cycle and their mean values, the
-                values of EIs calculated from correlation equations and experimental
-                data retrieved from literature
+    distribution_plots: a function that is able to generate four kinds of plots based on the 
+                        string given in the "method" parameter of the function. 
+                        Supported DISTRIBUTION plots: Dot plots, Box plots, Violin Plots, Swarm plots
 
     Inputs:
     - df_all:   data to be placed as dots in dot plot
@@ -32,6 +32,8 @@ def dot_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yL
             the source of the data, Y axis contains the EI
             values for the four LTO cycle points. For now
             able to integrate only one point
+    - method:   used to determine the kind of distribution plot used
+                Inputs: "Boxplot", "Dotplot", "Swarmplot", "Violinplot"
     - size: figure size. List,
     - title: title of the plot,
     - ylimits:  the limits of the y axis of the dot plot,
@@ -50,9 +52,12 @@ def dot_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yL
                     correlation equations, list 
 
     Outputs:
-    - Dot plot
-
+    -   Based on the string provided for the method parameter
+        a Dot, Swarm, Violin or Box plot is generated
+    
     """
+    # Valid distribution plot methods 
+    valid_methods = ["Boxplot", "Swarmplot", "Dotplot", "Violinplot"]
 
     # Create palette dictionary
     paletteDict = {
@@ -66,121 +71,63 @@ def dot_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yL
     fig = plt.figure(figsize = (size[0], size[1]))
 
     # Create dot plot
-    ax = sns.stripplot(
-        data = df_all,
-        x = dotPlotXlabel,
-        y = dotPlotYlabel,
-        jitter = Jitter,
-        size = 5,
-        palette = paletteDict
-    )
+    if method == "Dotplot":
 
-    # Mean value plotting
-    plt.plot(
-        mean_points["Names"],
-        mean_points["Values"],
-        "--*",
-        markersize = 10,
-        color = "black",
-        zorder = 10,
-        label = "Mean values - ICAO Databank"
-    )
+        if Jitter is None:
+            
+            # Default jitter value
+            Jitter = 0.1
 
-    
-    # Correlation equations value plotting
-    pointer = 0
-    for i in dtCorrs.keys():
+            warnings.warn(
+                f"The 'Jitter' parameter must be provided. Assigning default value: {Jitter}.",
+                UserWarning
+                )
         
-        # Add the data to the plot
-        plt.plot(
-            labels, 
-            dtCorrs.iloc[:][i],
-            lineStyle[pointer], 
-            label = i 
+        ax = sns.stripplot(
+            data = df_all,
+            size = 5,
+            x = dotPlotXlabel,
+            hue = dotPlotXlabel,
+            y = dotPlotYlabel,
+            legend = False,
+            palette = paletteDict
         )
-
-        # Increase the count of the pointer
-        pointer += pointer
     
-    # Place the experimental data
-    plt.plot(
-        labels, 
-        exp["Turgut - CFM56-7B26"],
-        "-8",
-        label = "Turgut, CFM56-7B26",
-        zorder = 10
-    )
-
-    # Additional plot settings, Show plot
-    plt.grid(color = "silver", linestyle = ":")
-    plt.legend(loc = "best")
-    plt.ylabel(yLabel)
-    plt.xlabel(xLabel)
-    plt.title(title)
-    plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
-    plt.show()
-
-def swarm_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yLabel, colours, labels, lineStyle):
-    """
-    swarm_plot: creates a swarm plot based on three types of data, ICAO datapoints and their mean values,
-                the results of using correlation equations and experimental data. Contains a lot of 
-                costumization features
-
-    Inputs:
-    - df_all:   data to be placed as dots in dot plot
-                Dataframe, first column are the names
-                for each data position, second column 
-                are the values
-    - mean_points:  mean values from the ICAO Datapoints,
-                    Dataframe, First column are the names 
-                    for each data position of the dot plot,
-                    Second column are the values for each
-                    data position
-    - dtCorrs:  Data retrieved from the usage of 
-                correlation equations. Dataframe,
-                X axis contains the names of the 
-                authors of the correlations, Y 
-                axis contains the EI values for 
-                the four ICAO LTO points,
-    - exp:  experimental data, Dataframe, X axis contains
-            the source of the data, Y axis contains the EI
-            values for the four LTO cycle points. For now
-            able to integrate only one point
-    - size: size of the plot. List, based on the "figsize"
-    - title: the title of the plot, Str
-    - ylimits: the limits of y axis, List: [min, max, step],
-    - xLabel: the name of the X axis of the plot,
-    - yLabel: the name of the Y axis of the plo
-    - colours:  the colours used for the swarm plot. These 
-                colours refer to the swarm points
-    - labels: Dot plot labels list,
-    - lineStyle:  marker type for the plots of the
-                    data calculated from the usage of 
-                    correlation equations, list 
-
-    Outputs:
-    - Swarm plot
-
-    """
-    # Create palette dictionary
-    paletteDict = {
-        labels[0]: colours[0],
-        labels[1]: colours[1],
-        labels[2]: colours[2],
-        labels[3]: colours[3]
-    }
-
-    # Initiate the figure
-    fig = plt.figure(figsize=(size[0], size[1]))
-
     # Create swarm plot
-    sns.swarmplot(
-        data = df_all[::2], # Plots half the data for better visualization
-        x = "Pollutant",
-        y = "Value",
-        palette = paletteDict
-    )
+    elif method == "Swarmplot":
+        ax = sns.swarmplot(
+            data = df_all,
+            x = dotPlotXlabel,
+            y = dotPlotYlabel,
+            palette = paletteDict
+        )
 
+    # Create boxplot
+    elif method == "Boxplot":
+        ax = sns.boxplot(
+            data = df_all,
+            x = dotPlotXlabel,
+            y = dotPlotYlabel,
+            palette = paletteDict
+        )
+
+    # Create violin plot
+    elif method == "Violinplot":
+        ax = sns.violinplot(
+            data = df_all,
+            x = dotPlotXlabel,
+            y = dotPlotYlabel,
+            palette = paletteDict
+        )
+
+    else:
+        if not method:
+            raise ValueError("No method provided. Please specify one of: "
+                            + ", ".join(valid_methods))
+        else:
+            raise ValueError(f"Invalid method '{method}'. Choose from: "
+                            + ", ".join(valid_methods))
+       
     # Mean value plotting
     plt.plot(
         mean_points["Names"],
@@ -192,6 +139,7 @@ def swarm_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, 
         label = "Mean values - ICAO Databank"
     )
 
+    
     # Correlation equations value plotting
     pointer = 0
     for i in dtCorrs.keys():
@@ -224,217 +172,6 @@ def swarm_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, 
     plt.title(title)
     plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
     plt.show()
-
-def box_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yLabel, colours, labels, lineStyle):
-    """
-    box_plot:   Function that creates a box plot for three types of data, the ICAO datapoints and their mean values, 
-                the EI values retrieved from using correlation equations and experimental data from the literature 
-                for the LTO cycle as defined by ICAO
-
-    Inputs:
-    - df_all:   data to be placed as dots in dot plot
-                Dataframe, first column are the names
-                for each data position, second column 
-                are the values
-    - mean_points:  mean values from the ICAO Datapoints,
-                    Dataframe, First column are the names 
-                    for each data position of the dot plot,
-                    Second column are the values for each
-                    data position
-    - dtCorrs:  Data retrieved from the usage of 
-                correlation equations. Dataframe,
-                X axis contains the names of the 
-                authors of the correlations, Y 
-                axis contains the EI values for 
-                the four ICAO LTO points,
-    - exp:  experimental data, Dataframe, X axis contains
-            the source of the data, Y axis contains the EI
-            values for the four LTO cycle points. For now
-            able to integrate only one point
-    - size: size of the plot. List, based on the "figsize"
-    - title: the title of the plot, Str
-    - ylimits: the limits of y axis, List: [min, max, step],
-    - xLabel: the name of the X axis of the plot,
-    - yLabel: the name of the Y axis of the plo
-    - colours:  the colours used for the swarm plot. These 
-                colours refer to the swarm points
-    - labels: Dot plot labels list,
-    - lineStyle:  marker type for the plots of the
-                    data calculated from the usage of 
-                    correlation equations, list 
-
-    Outputs:
-    - Box plot
-    
-    """
-     # Create palette dictionary
-    paletteDict = {
-        labels[0]: colours[0],
-        labels[1]: colours[1],
-        labels[2]: colours[2],
-        labels[3]: colours[3]
-    }
-
-    # Initiate the figure
-    fig = plt.figure(figsize=(size[0], size[1]))
-
-    # Create swarm plot
-    sns.boxplot(
-        data = df_all, # Plots half the data for better visualization
-        x = "Pollutant",
-        y = "Value",
-        palette = paletteDict
-    )
-
-    # Mean value plotting
-    plt.plot(
-        mean_points["Names"],
-        mean_points["Values"],
-        "--*",
-        markersize = 10,
-        color = "black",
-        zorder = 10,
-        label = "Mean values - ICAO Databank"
-    )
-
-    # Correlation equations value plotting
-    pointer = 0
-    for i in dtCorrs.keys():
-        
-        # Add the data to the plot
-        plt.plot(
-            labels, 
-            dtCorrs.iloc[:][i],
-            lineStyle[pointer], 
-            label = i 
-        )
-
-        # Increase the count of the pointer
-        pointer += pointer
-    
-    # Place the experimental data
-    plt.plot(
-        labels, 
-        exp["Turgut - CFM56-7B26"],
-        "-8",
-        label = "Turgut, CFM56-7B26",
-        zorder = 10
-    )
-
-    # Additional plot settings, Show plot
-    plt.grid(color = "silver", linestyle = ":")
-    plt.legend(loc = "best")
-    plt.ylabel(yLabel)
-    plt.xlabel(xLabel)
-    plt.title(title)
-    plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
-    plt.show()
-
-def violin_plot(df_all, mean_points, dtCorrs, exp, size, title, ylimits, xLabel, yLabel, colours, labels, lineStyle):
-    """
-    violin_plot:   Function that creates a violin plot for three types of data, the ICAO datapoints and their mean values, 
-                the EI values retrieved from using correlation equations and experimental data from the literature 
-                for the LTO cycle as defined by ICAO
-
-    Inputs:
-    - df_all:   data to be placed as dots in dot plot
-                Dataframe, first column are the names
-                for each data position, second column 
-                are the values
-    - mean_points:  mean values from the ICAO Datapoints,
-                    Dataframe, First column are the names 
-                    for each data position of the dot plot,
-                    Second column are the values for each
-                    data position
-    - dtCorrs:  Data retrieved from the usage of 
-                correlation equations. Dataframe,
-                X axis contains the names of the 
-                authors of the correlations, Y 
-                axis contains the EI values for 
-                the four ICAO LTO points,
-    - exp:  experimental data, Dataframe, X axis contains
-            the source of the data, Y axis contains the EI
-            values for the four LTO cycle points. For now
-            able to integrate only one point
-    - size: size of the plot. List, based on the "figsize"
-    - title: the title of the plot, Str
-    - ylimits: the limits of y axis, List: [min, max, step],
-    - xLabel: the name of the X axis of the plot,
-    - yLabel: the name of the Y axis of the plo
-    - colours:  the colours used for the swarm plot. These 
-                colours refer to the swarm points
-    - labels: Dot plot labels list,
-    - lineStyle:  marker type for the plots of the
-                    data calculated from the usage of 
-                    correlation equations, list 
-
-    Outputs:
-    - Box plot
-    
-    """
-     # Create palette dictionary
-    paletteDict = {
-        labels[0]: colours[0],
-        labels[1]: colours[1],
-        labels[2]: colours[2],
-        labels[3]: colours[3]
-    }
-
-    # Initiate the figure
-    fig = plt.figure(figsize=(size[0], size[1]))
-
-    # Create swarm plot
-    sns.violinplot(
-        data = df_all, # Plots half the data for better visualization
-        x = "Pollutant",
-        y = "Value",
-        palette = paletteDict
-    )
-
-    # Mean value plotting
-    plt.plot(
-        mean_points["Names"],
-        mean_points["Values"],
-        "--*",
-        markersize = 10,
-        color = "black",
-        zorder = 10,
-        label = "Mean values - ICAO Databank"
-    )
-
-    # Correlation equations value plotting
-    pointer = 0
-    for i in dtCorrs.keys():
-        
-        # Add the data to the plot
-        plt.plot(
-            labels, 
-            dtCorrs.iloc[:][i],
-            lineStyle[pointer], 
-            label = i 
-        )
-
-        # Increase the count of the pointer
-        pointer += pointer
-    
-    # Place the experimental data
-    plt.plot(
-        labels, 
-        exp["Turgut - CFM56-7B26"],
-        "-8",
-        label = "Turgut, CFM56-7B26",
-        zorder = 10
-    )
-
-    # Additional plot settings, Show plot
-    plt.grid(color = "silver", linestyle = ":")
-    plt.legend(loc = "best")
-    plt.ylabel(yLabel)
-    plt.xlabel(xLabel)
-    plt.title(title)
-    plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
-    plt.show()
-
 
 
 ### Scripting ###
@@ -582,68 +319,20 @@ mean_points = pd.DataFrame({
 })
 
 # Dot plot
-dot_plot(
+distribution_plots(
     df_all, 
     mean_points, 
     dtCorrs,
-    exp, 
+    exp,
+    method = "Swarmplot",
     size = [10,7],
     ylimits = [0, 50, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
     xLabel = "Pollutant and operating point", 
     yLabel = "Emissions index value (g/kg)", 
     colours = palette, 
-    labels = labels, 
-    Jitter = 0.1, 
+    labels = labels,  
     dotPlotXlabel = "Pollutant", 
     dotPlotYlabel = "Value", 
     lineStyle = lineStyle
-)
-
-# Swarm plot
-swarm_plot(
-    df_all, 
-    mean_points, 
-    dtCorrs, 
-    exp, 
-    size = (9,7),
-    ylimits = [0, 50, 10], # min, max, step
-    title = "NOx EI over engine operation points - Swarm plot - CFM56 family",
-    xLabel = "Pollutant and operation point",
-    yLabel = "Emissions index value (g/kg)",
-    colours = palette,
-    labels = labels,
-    lineStyle = lineStyle    
-) 
-
-# Box plot
-box_plot(
-    df_all, 
-    mean_points, 
-    dtCorrs, 
-    exp, 
-    size = (9,7),
-    ylimits = [0, 50, 10], # min, max, step
-    title = "NOx EI over engine operation points - Box plot - CFM56 family",
-    xLabel = "Pollutant and operation point",
-    yLabel = "Emissions index value (g/kg)",
-    colours = palette,
-    labels = labels,
-    lineStyle = lineStyle,
-)
-
-# Violin plot
-violin_plot(
-    df_all, 
-    mean_points, 
-    dtCorrs, 
-    exp, 
-    size = (9,7),
-    ylimits = [0, 50, 10], # min, max, step
-    title = "NOx EI over engine operation points - Violin plot - CFM56 family",
-    xLabel = "Pollutant and operation point",
-    yLabel = "Emissions index value (g/kg)",
-    colours = palette,
-    labels = labels,
-    lineStyle = lineStyle,
 )
