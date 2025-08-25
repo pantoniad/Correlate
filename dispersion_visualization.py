@@ -130,8 +130,8 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, y
        
     # Mean value plotting
     plt.plot(
-        mean_points["Names"],
-        mean_points["Values"],
+        mean_points.index,
+        mean_points.values,      
         "--*",
         markersize = 10,
         color = "black",
@@ -172,6 +172,81 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, y
     plt.title(title)
     plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
     plt.show()
+
+def error(dtCorrs, mean_points, exp):
+    """
+    error:  function to calculate the mean relative error between
+            the correlation equations and experimental results
+            with the mean points of the data for all of the operating
+            points. Calculates the relative error between each
+            correlation and experimental data point with the mean 
+            for each operating point. Then regroups the data and 
+            calculates the mean value across all operating points. 
+
+            Can be used with any number of correlation equations and 
+            experimental data sets. 
+
+    Inputs:
+    - mean_points: the mean values from the ICAO data set. Dataframe,
+    - dtCorrs: the values of the correlation equations for each operating
+                point. Dataframe
+    - exp: the experimental data retrieved from literature. Dataframe
+
+    Outputs:
+    - meanRelativeEC: the mean relative error between all of the correlation
+                        equations and the mean values of each operating point, 
+                        for all operating points
+    - meanRelativeEE: same with the above, but for the experimental datasets
+    """
+    
+    # Constants and parameters
+    operPoints = len(mean_points.index)
+    corrsNum = len(dtCorrs.keys())
+    expNum = len(exp.keys())
+    relativeEC = [] # relative error for Correlation
+    relativeEE = [] # relative error for Experimental 
+    meanRelativeEC = [] # mean relative error for each correlation
+    meanRelativeEE = [] # mean relative error for Experimental
+
+    # Calculate relative error
+    for i in range(0, operPoints):
+
+        # Get parameters 
+        mean = mean_points.values[i]
+
+        # Calculate relative error - Correlation equations
+        for j in range(0, corrsNum):
+            
+            # Calculate the relative error for each correlation j
+            # at each operating point i
+            error = 100*np.abs(dtCorrs.values[i][j] - mean)/mean
+
+            # Append the value to a bigger dictionary 
+            relativeEC = np.append(relativeEC, error, axis = 0)
+
+        for j in range(0, expNum):
+        
+            # Calculate the relative error for each correlation j
+            # at each operating point i
+            error = 100*np.abs(exp.values[i][j] - mean)/mean
+
+            # Append the value to a bigger dictionary 
+            relativeEE = np.append(relativeEE, error, axis = 0)
+
+    # Regroup the relative error lists to be 2d arrays
+    chunks = [relativeEC[i:i+corrsNum] for i in range(0, len(relativeEC), corrsNum)]
+    relativeECr = list(map(list, zip(*chunks)))
+    
+    chunks = [relativeEE[i:i+corrsNum] for i in range(0, len(relativeEE), corrsNum)]
+    relativeEEr = list(map(list, zip(*chunks)))
+
+    # Get mean values
+    meanRelativeEC = [np.mean(relativeECr[:][i]) for i in range(0, corrsNum)]
+    meanRelativeEE = [np.mean(relativeEEr[:][i]) for i in range(0, expNum)]
+
+    # Standard deviation
+
+    return meanRelativeEC, meanRelativeEE
 
 
 ### Scripting ###
@@ -291,6 +366,8 @@ for point in dtPoints.keys():
     # Append temporary dataframe to external
     dtCorrs = pd.concat([dtCorrs, dt1], axis = 0)
 
+print(dtCorrs)
+
 # Experimental data insertion - Dataframe format
 exp_data = {
     "Turgut - CFM56-7B26": [1.8, 24.4, (12.6+16.4)/2, 2.8],
@@ -313,18 +390,28 @@ palette = ["royalblue", "green", "red", "magenta"]
 lineStyle = ["-->", ":1", ":<", ":+", "-8"]
 
 # Include the mean values
-mean_points = pd.DataFrame({
-    "Names": [labels[0], labels[1], labels[2], labels[3]],
-    "Values": [meanIdle, meanTO, meanCO, meanApp]
-})
+d = {
+    "NOx": [meanIdle, meanTO, meanCO, meanApp],
+}
 
-# Dot plot
+mean_points = pd.DataFrame(
+    data = d,
+    index = labels
+)
+
+print(mean_points)
+
+# Mean relative error and standard deviation 
+[meanEC, meanEE] = error(mean_points=mean_points, dtCorrs=dtCorrs, exp = exp)
+
+# Distribution plots
+"""
 distribution_plots(
     df_all, 
     mean_points, 
     dtCorrs,
     exp,
-    method = "Swarmplot",
+    method = "Dotplot",
     size = [10,7],
     ylimits = [0, 50, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
@@ -336,3 +423,4 @@ distribution_plots(
     dotPlotYlabel = "Value", 
     lineStyle = lineStyle
 )
+"""
