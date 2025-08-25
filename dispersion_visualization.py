@@ -195,8 +195,9 @@ def error(dtCorrs, mean_points, exp):
     Outputs:
     - meanRelativeEC: the mean relative error between all of the correlation
                         equations and the mean values of each operating point, 
-                        for all operating points
-    - meanRelativeEE: same with the above, but for the experimental datasets
+                        for all operating points, Dataframe 
+    - meanRelativeEE: same with the above, but for the experimental datasets, 
+                        Dataframe
     """
     
     # Constants and parameters
@@ -244,9 +245,28 @@ def error(dtCorrs, mean_points, exp):
     meanRelativeEC = [np.mean(relativeECr[:][i]) for i in range(0, corrsNum)]
     meanRelativeEE = [np.mean(relativeEEr[:][i]) for i in range(0, expNum)]
 
-    # Standard deviation
+    # Convert into data-frames
+    meanEC = pd.DataFrame(
+        data = meanRelativeEC,
+        columns = ["Mean Relative percentage error"],
+        index = dtCorrs.keys()
+    )
 
-    return meanRelativeEC, meanRelativeEE
+    meanEE = pd.DataFrame(
+        data = meanRelativeEE,
+        columns = ["Mean relative percentage error"],
+        index = exp.keys()
+    )
+    
+    # Get standard deviations
+    stdEC = [np.std(relativeECr[:][i]) for i in range(0, corrsNum)]
+    stdEE = [np.std(relativeEEr[:][i]) for i in range(0, expNum)]
+
+    # Include the standard deviation 
+    meanEE["Standard Deviation"] = stdEE
+    meanEC["Standard Deviation"] = stdEC
+    
+    return meanEC, meanEE
 
 
 ### Scripting ###
