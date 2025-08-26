@@ -1,81 +1,33 @@
-# Swarm plot
-fig2 = plt.figure(figsize=(9,7))
-sns.swarmplot(
-    data=df_all[::2],
-    x="Pollutant",
-    y="Value",
-    size=5,
-    palette=palette
-)
+import matplotlib.pyplot as plt
+import numpy as np
 
+# Fake data
+x = np.arange(1, 6)
+y1 = np.array([2, 4, 1, 5, 3])
+y2 = np.array([3, 5, 2, 6, 4])
 
-plt.plot(
-    mean_points["Names"], 
-    mean_points["Values"], 
-    "--*", 
-    markersize = 10,
-    color = "k", 
-    zorder = 10,
-    label = "Mean values - ICAO Databank"
-)
+fig, ax = plt.subplots(figsize=(8, 6))
 
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Rokket"],
-    "-->",
-    #color = "orangered",
-    label = "Rokke"
-)
+ax.plot(x, y1, 'o-', label="y1")
+ax.plot(x, y2, 's--', label="y2")
 
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Novelo"],
-    ":1",
-    #color = "violet",
-    label = "Novelo",
-    zorder = 10
-)
+ax.set_title("Experiment with Multi-Column Attached Table")
+ax.set_xlabel("Trial")
+ax.set_ylabel("Value")
+ax.legend()
 
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Kyprianidis"],
-    ":<",
-    #color = "indigo",
-    label = "Kyprianidis",
-    zorder = 10
-)
+# === Attached table (multi-column) ===
+cell_text = [[f"{a}", f"{b}"] for a, b in zip(y1, y2)]
+row_labels = [f"T{i}" for i in x]
+col_labels = ["y1", "y2"]
 
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Lewis"],
-    ":+",
-    #color = "magenta",
-    label = "Lewis",
-    zorder = 10
-)
+table = ax.table(cellText=cell_text,
+                 rowLabels=row_labels,
+                 colLabels=col_labels,
+                 loc="bottom",
+                 cellLoc="center")
 
-plt.plot(
-    labels,
-    dtCorrs.iloc[:]["Perkavec"],
-    "--o",
-    #color = "purple",
-    label = "Perkavec"
-)
-
-plt.plot(
-    labels, 
-    exp["Turgut - CFM56-7B26"],
-    "-8",
-    label = "Turgut, CFM56-7B26",
-    zorder = 10
-)
-
-plt.grid(color = "silver", linestyle = ":")
-plt.legend()
-plt.ylabel("Emissions Index Value (g/kg)")
-plt.xlabel("Pollutant and operating point")
-plt.title("NOx EI over engine operation points - Bee-swarm plot - CFM56 family")
-plt.yticks(range(0,90,10))
-
+# Make space for the table
+plt.subplots_adjust(bottom=0.25)
 
 plt.show()

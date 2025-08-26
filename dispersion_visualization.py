@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
-from matplotlib import pyplot as plt    
+from matplotlib import pyplot as plt  
+import matplotlib.gridspec as gridspec  
 import correlations_class as correlate
 import warnings
 
 ####
-def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, ylimits, xLabel, yLabel, colours, labels, dotPlotXlabel, dotPlotYlabel, lineStyle, Jitter = None):
+def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relativeEC, relativeEE, method, size, title, ylimits, xLabel, yLabel, colours, labels, dotPlotXlabel, dotPlotYlabel, lineStyle, Jitter = None):
     """
     distribution_plots: a function that is able to generate four kinds of plots based on the 
                         string given in the "method" parameter of the function. 
@@ -31,7 +32,17 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, y
     - exp:  experimental data, Dataframe, X axis contains
             the source of the data, Y axis contains the EI
             values for the four LTO cycle points. For now
-            able to integrate only one point
+            able to integrate only one point,
+    - meanEC: mean error and standard deviation values for the data 
+              retrieved from correlation equations. Dataframe,
+    - meanEE: mean error and standard deviation values from the data
+              retrieved from experimental data. Dataframe,
+    - relativeEC: relative error between the values of correlation equations
+                  and the mean values of the ICAO data-points for each 
+                  operating point, Dataframe
+    - relativeEE: relative error between the values of experimental data
+                  and the mean values of the ICAO data-points for each 
+                  operating point, Dataframe
     - method:   used to determine the kind of distribution plot used
                 Inputs: "Boxplot", "Dotplot", "Swarmplot", "Violinplot"
     - size: figure size. List,
@@ -69,6 +80,7 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, y
 
     # Create figure
     fig = plt.figure(figsize = (size[0], size[1]))
+    #gs = gridspec.GridSpec(3, 1, height_ratios=[9, 1, 1], figure=fig)
 
     # Create dot plot
     if method == "Dotplot":
@@ -83,7 +95,8 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, y
                 UserWarning
                 )
         
-        ax = sns.stripplot(
+        #ax1 = fig.add_subplot(gs[0])
+        ax1 = sns.stripplot(
             data = df_all,
             size = 5,
             x = dotPlotXlabel,
@@ -92,7 +105,10 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, y
             legend = False,
             palette = paletteDict
         )
-    
+
+        #ax.set(xticklabels = [])
+        #ax.set(xlabel = None)
+
     # Create swarm plot
     elif method == "Swarmplot":
         ax = sns.swarmplot(
@@ -171,6 +187,24 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, method, size, title, y
     plt.xlabel(xLabel)
     plt.title(title)
     plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
+
+    """
+    # Include a table
+    ax2 = fig.add_subplot(gs[1])
+    ax2.axis("off")
+    table1 = pd.plotting.table(ax2, meanEC, loc = "bottom", cellLoc = "center")
+    table1.scale(0.8, 0.9)
+
+    ax3 = fig.add_subplot(gs[2])
+    ax3.axis("off")
+    table2 = pd.plotting.table(ax3, meanEE, loc = "bottom", cellLoc = "center")
+    table2.scale(0.8, 0.9)
+    #ax3 = fig.add_subplot(gs[1])
+    #ax3.axis("off")
+    #table1 = pd.plotting.table(ax3, relativeEC.transpose(), loc = "bottom")
+    """
+
+   
     plt.show()
 
 def error(dtCorrs, mean_points, exp):
@@ -238,7 +272,7 @@ def error(dtCorrs, mean_points, exp):
     chunks = [relativeEC[i:i+corrsNum] for i in range(0, len(relativeEC), corrsNum)]
     relativeECr = list(map(list, zip(*chunks)))
     
-    chunks = [relativeEE[i:i+corrsNum] for i in range(0, len(relativeEE), corrsNum)]
+    chunks = [relativeEE[i:i+corrsNum] for i in range(0, len(relativeEE), expNum)]
     relativeEEr = list(map(list, zip(*chunks)))
 
     # Get mean values
@@ -247,26 +281,45 @@ def error(dtCorrs, mean_points, exp):
 
     # Convert into data-frames
     meanEC = pd.DataFrame(
-        data = meanRelativeEC,
+        data = np.round(meanRelativeEC,2),
         columns = ["Mean Relative percentage error"],
         index = dtCorrs.keys()
     )
 
     meanEE = pd.DataFrame(
-        data = meanRelativeEE,
+        data = np.round(meanRelativeEE,2),
         columns = ["Mean relative percentage error"],
         index = exp.keys()
     )
+
+    # Also convert the relative error lists
+    lis = np.array(relativeECr)
+    lisT = lis.T
+    listT = lisT.tolist()
+    relativeECd = pd.DataFrame(
+        data = np.round(listT,2),
+        columns = dtCorrs.keys(),
+        index = dtCorrs.index
+    )
     
+    lis = np.array(relativeEEr)
+    lisT = lis.T
+    listT = lisT.tolist()
+    relativeEEd = pd.DataFrame(
+        data = np.round(listT,2),
+        columns = exp.keys(),
+        index = exp.index
+    )
+     
     # Get standard deviations
-    stdEC = [np.std(relativeECr[:][i]) for i in range(0, corrsNum)]
-    stdEE = [np.std(relativeEEr[:][i]) for i in range(0, expNum)]
+    stdEC = np.round([np.std(relativeECr[:][i]) for i in range(0, corrsNum)],2)
+    stdEE = np.round([np.std(relativeEEr[:][i]) for i in range(0, expNum)],2)
 
     # Include the standard deviation 
     meanEE["Standard Deviation"] = stdEE
     meanEC["Standard Deviation"] = stdEC
     
-    return meanEC, meanEE
+    return meanEC, meanEE, relativeECd, relativeEEd
 
 
 ### Scripting ###
@@ -422,15 +475,23 @@ mean_points = pd.DataFrame(
 print(mean_points)
 
 # Mean relative error and standard deviation 
-[meanEC, meanEE] = error(mean_points=mean_points, dtCorrs=dtCorrs, exp = exp)
+[meanEC, meanEE, relativeEC, relativeEE] = error(mean_points=mean_points, dtCorrs=dtCorrs, exp = exp)
+
+print(meanEC)
+print(meanEE)
+print(relativeEC)
+print(relativeEE)
 
 # Distribution plots
-"""
 distribution_plots(
     df_all, 
     mean_points, 
     dtCorrs,
     exp,
+    meanEC,
+    meanEE,
+    relativeEC,
+    relativeEE,
     method = "Dotplot",
     size = [10,7],
     ylimits = [0, 50, 10], # min, max, step 
@@ -443,4 +504,3 @@ distribution_plots(
     dotPlotYlabel = "Value", 
     lineStyle = lineStyle
 )
-"""
