@@ -1,10 +1,10 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import functions as fn
+import correlations_functions as fn
 
 # Import the data to be plotted
-data_og = pd.read_csv(r"E:/Computational_results/Databank_and_correlations_comparison/Databank/ICAO_data.csv", delimiter=";")
+data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.CSV", delimiter=";")
 clmns = data_og.columns
 
 # List of columns to keep
