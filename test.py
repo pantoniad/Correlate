@@ -1,33 +1,18 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import pandas as pd
 
-# Fake data
-x = np.arange(1, 6)
-y1 = np.array([2, 4, 1, 5, 3])
-y2 = np.array([3, 5, 2, 6, 4])
+def df_to_latex_table(df: pd.DataFrame, filename: str, add_header=True):
+    with open(filename, "w", encoding="utf-8") as f:
+        if add_header:
+            header = " & ".join(df.columns) + r" \\ \hline"
+            f.write(header + "\n")
+        for _, row in df.iterrows():
+            line = " & ".join(map(str, row.values)) + r" \\"
+            f.write(line + "\n")
 
-fig, ax = plt.subplots(figsize=(8, 6))
+data = {
+    "Name": ["Alice", "Bob", "Charlie"],
+    "Score": [95, 87, 78]
+}
+df = pd.DataFrame(data)
 
-ax.plot(x, y1, 'o-', label="y1")
-ax.plot(x, y2, 's--', label="y2")
-
-ax.set_title("Experiment with Multi-Column Attached Table")
-ax.set_xlabel("Trial")
-ax.set_ylabel("Value")
-ax.legend()
-
-# === Attached table (multi-column) ===
-cell_text = [[f"{a}", f"{b}"] for a, b in zip(y1, y2)]
-row_labels = [f"T{i}" for i in x]
-col_labels = ["y1", "y2"]
-
-table = ax.table(cellText=cell_text,
-                 rowLabels=row_labels,
-                 colLabels=col_labels,
-                 loc="bottom",
-                 cellLoc="center")
-
-# Make space for the table
-plt.subplots_adjust(bottom=0.25)
-
-plt.show()
+df_to_latex_table(df, "table_data.tex")
