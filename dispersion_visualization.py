@@ -525,6 +525,9 @@ print(meanEE)
 print(relativeEC)
 print(relativeEE)
 
+data_to_latex(relativeEC, filename = "relECerror.tex", caption = "Relative error between correlation results and ICAO mean value", label = "tab:relec")
+data_to_latex(relativeEE, filename = "relEEerror.tex", caption = "Relative error between experimental data and ICAO mean value", label = "tab:relee")
+
 # Convert to latex table
 data_to_latex(meanEC, "MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
 data_to_latex(meanEE, "MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
