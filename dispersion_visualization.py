@@ -188,23 +188,6 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relati
     plt.title(title)
     plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
 
-    """
-    # Include a table
-    ax2 = fig.add_subplot(gs[1])
-    ax2.axis("off")
-    table1 = pd.plotting.table(ax2, meanEC, loc = "bottom", cellLoc = "center")
-    table1.scale(0.8, 0.9)
-
-    ax3 = fig.add_subplot(gs[2])
-    ax3.axis("off")
-    table2 = pd.plotting.table(ax3, meanEE, loc = "bottom", cellLoc = "center")
-    table2.scale(0.8, 0.9)
-    #ax3 = fig.add_subplot(gs[1])
-    #ax3.axis("off")
-    #table1 = pd.plotting.table(ax3, relativeEC.transpose(), loc = "bottom")
-    """
-
-   
     plt.show()
 
 def error(dtCorrs, mean_points, exp):
@@ -359,7 +342,7 @@ def data_to_latex(df: pd.DataFrame, filename: str, caption: str, label: str, add
 
         # Write header row (with grey background)
         if add_header:
-            header_cells = ["\\cellcolor{gray!20}\\textbf{" + (df.index.name or "Index") + "}"] \
+            header_cells = ["\\cellcolor{gray!20}\\textbf{" + (df.index.name or "Parameter") + "}"] \
                            + ["\\cellcolor{gray!20}\\textbf{" + str(c) + "}" for c in df.columns]
             f.write("    " + " & ".join(header_cells) + r" \\ [0.5ex]" + "\n")
             f.write("  \\hline\\hline\n")
@@ -437,12 +420,16 @@ df_all = pd.DataFrame({
 })
 
 ### Correlation equations ###
-# Dictionary definition: For every key: Tburner_inlet Tburner_outlet, Pburner, m_dot, FAR
+# Dictionary definition: For every key: Burner Inlet temperature (K), 
+# Burner outlet temperature (K),
+# Burner inlet pressure (Pa),
+# Core air mass flow rate (kg/s), 
+# FAR
 d = {
-    "idle": [600, 1200, 3156.71, 23.02, 0.0139],
-    "take-off": [860, 2250, 3152.59, 54.1, 0.0214],
-    "climb-out": [820, 2100, 3240.46, 52.41, 0.0306],
-    "approach": [750, 1400, 2909.36, 36.79, 0.01288]
+    "idle": [797.1, 1290, 2755850, 10.564, 0.0137],
+    "take-off": [809.95, 2250, 2929690, 46.897, 0.0446],
+    "climb-out": [805.1, 2000, 2828980, 45.44, 0.03596],
+    "approach": [787.91, 1400, 2539920, 31.89, 0.01718]
 }
 
 dtPoints = pd.DataFrame(
@@ -468,8 +455,8 @@ for point in dtPoints.keys():
     )
 
     # Get values from correlation equations
-    becker = corr.becker(1600, method = "simplified")
-    rokke = corr.rokke_nox(41, method = "Index")
+    becker = corr.becker(1800, method = "simplified")
+    rokke = corr.rokke_nox(27.1, method = "Index")
     lewis = corr.lewis_nox()
     kyprianidis = corr.kyprianidis(h = 0)
     novelo = corr.novelo()
@@ -477,9 +464,9 @@ for point in dtPoints.keys():
 
     # Create temporary dataframe
     d = {
-        #"Becker": Becker,
-        #"Perkavec": Perkavec,
-        #"Rokke": rokke,
+        #"Becker": becker,
+        #"Perkavec": perkavec,
+        "Rokke": rokke,
         "Lewis": lewis,
         "Kyprianidis": kyprianidis,
         "Novelo": novelo
@@ -541,6 +528,7 @@ print(relativeEE)
 # Convert to latex table
 data_to_latex(meanEC, "MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
 data_to_latex(meanEE, "MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
+data_to_latex(dtPoints, "ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
 
 # Distribution plots
 distribution_plots(
@@ -552,9 +540,9 @@ distribution_plots(
     meanEE,
     relativeEC,
     relativeEE,
-    method = "Dotplot",
+    method = "Swarmplot",
     size = [10,7],
-    ylimits = [0, 50, 10], # min, max, step 
+    ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
     xLabel = "Pollutant and operating point", 
     yLabel = "Emissions index value (g/kg)", 

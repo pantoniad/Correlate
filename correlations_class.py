@@ -74,10 +74,10 @@ class Correlations:
         """
     
         # Base expression
-        nox = 3.32*10**(-6)*np.exp(0.008*self.Tbout)*(self.Pbout*10**(-3))**0.5
+        nox = 3.32*10**(-6)*np.exp(0.008*self.Tbout)*(self.Pbout)**0.5
     
         # Convert to Emissions Index (EI - kg of pollutant / kg of fuel)
-        ei_nox = (nox*46.01*self.far)/(10**(6)*28.3)
+        ei_nox = 10**3*(nox*46.01*self.far)/(10**6*28.3)
 
         return ei_nox 
     
@@ -107,7 +107,7 @@ class Correlations:
 
         # Base expression
         if method == "Index":
-            ei_nox = 1e3*1.46*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
+            ei_nox = 1.46*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
         elif method == "PPMV":
             nox_ppmv = 18.1*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
             ei_nox = nox_ppmv*46.01*self.far/(10**(6)*28.3) 
@@ -152,7 +152,7 @@ class Correlations:
 
         # Correlation formulation
         eiTflame = (a+b*np.exp(c*self.Tbin))*np.exp(f*(hsl-h))*(deltaT/deltaTref)**TF
-        ei_nox = 1e3*eiTflame*(self.Pbin/Pcref)**d
+        ei_nox = eiTflame*(self.Pbin*10**(-3)/Pcref)**d
 
         return ei_nox
     
@@ -308,8 +308,8 @@ class Correlations:
         if method == "simplified":
 
             # NOx expression - Parameters can be changed based on tabel 3
-            nox_ppmv = 5.73*10**(-6)*np.exp(0.00833*Tfl)*(self.Pbin)**0.5  
-            ei_nox = nox_ppmv*46.01*self.far/(10**(6)*28.3) 
+            nox_ppmv = 5.73*10**(-6)*np.exp(0.00833*Tfl)*(self.Pbin*10**(-3))**0.5  
+            ei_nox = 10**3*nox_ppmv*46.01*self.far/(10**(6)*28.3) 
 
         elif method == "advanced":
             
