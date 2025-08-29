@@ -10,10 +10,15 @@ class Correlations:
         self
 
         Inputs:
-        -
+        - Tbin, Tbout: burner inlet and outlet temperatures (K),
+        - Pbin, Pbout: burner inlet and outlet pressures (Pa),
+        - far: Fuel-to-air ratio,
+        - m_dot: air mass flow rate (kg/s),
+        - density: density of inlet air (kg/m3)
 
         Outputs:
-        -
+        - self
+
         """
         self.Tbin = Tbin
         self.Tbout = Tbout
@@ -59,7 +64,7 @@ class Correlations:
         - FAR: Fuel-to-Air ratio
 
         Outputs:
-        - nox: amount of NOx produced in Particles Per Million (PPMV)
+        - nox: amount of NOx produced in [kgNOx/kgfuel]
 
         Issues:
         - Converted to EInox values of nox are way smaller than the ones calculated from other correlations
@@ -69,10 +74,10 @@ class Correlations:
         """
     
         # Base expression
-        nox = 3.32*10**(-6)*np.exp(0.008*self.Tbout)*(self.Pbout*10**(-2))**0.5
+        nox = 3.32*10**(-6)*np.exp(0.008*self.Tbout)*(self.Pbout*10**(-3))**0.5
     
         # Convert to Emissions Index (EI - kg of pollutant / kg of fuel)
-        ei_nox = (nox*46.01*self.far)/(29)
+        ei_nox = (nox*46.01*self.far)/(10**(6)*28.3)
 
         return ei_nox 
     
@@ -93,7 +98,7 @@ class Correlations:
         - FAR: Fuel-to-Air ratio
 
         Outputs:
-        - nox: the amount of produced NOx in EI format (gNOx/kgFuel) or parts per million (ppmv)
+        - nox: the amount of produced NOx in EI format (kgNOx/kgFuel) or parts per million (ppmv)
 
         Source: Rokke et. al - Pollutant emissions from gas fired turbine engines in offshore practice 
                 Doi: https://doi.org/10.1115/93-GT-170
@@ -102,9 +107,10 @@ class Correlations:
 
         # Base expression
         if method == "Index":
-            ei_nox = 1.46*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
+            ei_nox = 1e3*1.46*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
         elif method == "PPMV":
-            ei_nox = 18.1*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
+            nox_ppmv = 18.1*np.power(PRoverall, 1.42)*np.power(self.m_dot, 0.3)*np.power(self.far, 0.72)
+            ei_nox = nox_ppmv*46.01*self.far/(10**(6)*28.3) 
 
         return ei_nox
 
@@ -122,7 +128,7 @@ class Correlations:
         - h: Ambient humidity (kg H20/kg dry air). Default: h = 0
 
         Outputs:
-        - ei_nox: Emissions index of NOx (gNOx/kgFuel)
+        - ei_nox: Emissions index of NOx (kgNOx/kgFuel)
 
         Source: On the trade-off between aviation NOx and energy efficiency, K.G.Kyprianidis
                 DOI: https://doi.org/10.1016/j.apenergy.2015.12.055
@@ -146,7 +152,7 @@ class Correlations:
 
         # Correlation formulation
         eiTflame = (a+b*np.exp(c*self.Tbin))*np.exp(f*(hsl-h))*(deltaT/deltaTref)**TF
-        ei_nox = eiTflame*(self.Pbin/Pcref)**d
+        ei_nox = 1e3*eiTflame*(self.Pbin/Pcref)**d
 
         return ei_nox
     
@@ -175,7 +181,7 @@ class Correlations:
         - wfuel: fuel mass flow rate [kg/s]
 
         Outputs:
-        - einox: The emissions index of NOx [g/kgFuel] 
+        - einox: The emissions index of NOx [kg/kgFuel] 
 
         Source: Deidewig et. al, Methods to assess aircraft engine emissions in flight, 1996, 
         doi: https://elib.dlr.de/38317/
@@ -195,7 +201,7 @@ class Correlations:
             Tstoic = 2281*(np.power(Pbin, 0.009375)+0.000178*np.power(Pbin, 0.055)*(self.Tbin-298))
 
             # Emissions index
-            einox = einoxSL * (math.exp(65000/Tstoic))/(math.exp(6500/Tstoic))*((Pbin)/PbinSL)*(m_dotSL/self.m_dot)*(TbinSL/self.Tbin)*Fh
+            einox = 1e3*einoxSL * (math.exp(67500/Tstoic))/(math.exp(6750/Tstoic))*((Pbin)/PbinSL)*(m_dotSL/self.m_dot)*(TbinSL/self.Tbin)*Fh
 
         elif method == "FuelFlow":
         
@@ -212,7 +218,7 @@ class Correlations:
             einoxCorr = 45.83*wfuelCorr - 4.12
 
             # Emissions index
-            einox = einoxCorr*theta**3*delta**0.4*Fh 
+            einox = 1e3*einoxCorr*theta**3*delta**0.4*Fh 
 
         return einox
 
@@ -230,7 +236,7 @@ class Correlations:
         - w2f: water-to-fuel ratio
 
         Outputs:
-        - einox: the emissions index of NOx in gNO2/kgFuel
+        - einox: the emissions index of NOx in kgNO2/kgFuel
 
         Source: 
 
@@ -241,7 +247,7 @@ class Correlations:
         # Constants
         a2 = 19020              # [a2] = 1/MPa*s
         b = 0
-        c = 0.00381             
+        c = 0.00381             # [c] = 1/K
         cstm = -1.44*10**(-4)   # [cstm] = K
         ca = 0.489*10**(-4)     # [ca] = 1/K
         d = 6.407*10**5         # [d] = K
@@ -274,7 +280,7 @@ class Correlations:
 
         # EINOx expression
         fraction2 = np.exp(-c*deltaTb - (d*deltaPhi**2)/self.Tbin) 
-        einox = a2*teff*self.Pbin**(0.5)*fraction2*rhum*rstm
+        einox = 1e3*a2*teff*self.Pbin**(0.5)*fraction2*rhum*rstm
 
         return einox
     
@@ -292,8 +298,7 @@ class Correlations:
             - "advanced": use the complex version, as proposed in the paper 
 
         Outputs:
-        - nox_ppmv: NOx emissions in Parts Per Million Volume (PPMV) for the simplified method
-        - nox: NOx emissions in mg/Nm3, dry air conditions for the advanced method
+        - ei_nox: NOx emissions in kgNOx/kgfuel, dry air conditions for the advanced method
 
         Source: T. Becker et. al, 1994, The capability of different semianalytical equations for
         estimation of NOx emissions of gas turbines, doi: https://doi.org/10.1115/94-GT-282
@@ -301,19 +306,17 @@ class Correlations:
         """
 
         if method == "simplified":
-            
-            # EI nox assigned to none
-            einox = None
 
-            # NOx expression - PPMV
+            # NOx expression - Parameters can be changed based on tabel 3
             nox_ppmv = 5.73*10**(-6)*np.exp(0.00833*Tfl)*(self.Pbin)**0.5  
+            ei_nox = nox_ppmv*46.01*self.far/(10**(6)*28.3) 
 
         elif method == "advanced":
             
             # nox_ppmv assigned to none
             nox_ppmv = None
 
-            # ISO conditions. Taken from Table 2, averaged values
+            # ISO conditions. Taken from Table 1, averaged values
             TrISO = 600 
             m_dotISO = 70 # [kg/s]
             PrISO = 8*101325
@@ -344,21 +347,14 @@ class Correlations:
             # NOx in mg/Nm3 
             nox = sNOxCorr*exponential*fraction*ft*fTL
 
-            # Assuming normal conditions at 0 degrees celcius or 273.15K
-            einox = 7.73*10**(-4)*nox
+            # Nm3 to kg/kg. Assuming normal conditions at 0 degrees celcius or 273.15K
+            ei_nox = 7.73*10**(-4)*nox
 
         else:
             print("No method given")
 
-        return nox_ppmv or einox
-        """
-        if nox_ppmv is not None:
-            return nox_ppmv
-        elif einox is not None: 
-            return einox
-        else:
-            raise ValueError("Neither nox_ppmv nor einox was set")
-        """
+        return ei_nox
+       
 
     def odgers(self, Tfl, t):
         """
@@ -376,7 +372,7 @@ class Correlations:
         
         """
         
-        einox = 29*np.exp(-21.67/Tfl)*self.Pbin**0.66*(1-np.exp(-250*t))
+        einox = 29*np.exp(-2167/Tfl)*self.Pbin**0.66*(1-np.exp(-250*t))
 
         return einox 
     
@@ -410,7 +406,7 @@ class Correlations:
 
         return einox
 
-
+# Testing
 #emissions = Correlations(500, 1490, 20, 19.5, 0.001, 600, 0.5,1.293)
 
 #print(Correlations.__repr__)
