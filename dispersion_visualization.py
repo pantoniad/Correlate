@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import matplotlib.gridspec as gridspec  
 import correlations_class as correlate
 import warnings
+from latex import latex as lx
 
 ####
 def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relativeEC, relativeEE, method, size, title, ylimits, xLabel, yLabel, colours, labels, dotPlotXlabel, dotPlotYlabel, lineStyle, Jitter = None):
@@ -304,63 +305,6 @@ def error(dtCorrs, mean_points, exp):
     
     return meanEC, meanEE, relativeECd, relativeEEd
 
-import pandas as pd
-
-def data_to_latex(df: pd.DataFrame, filename: str, caption: str, label: str, add_header=True):
-    """
-    data_to_latex: function that exports a dataframe into a styled LaTex table
-
-    Inputs: 
-    - df: the dataframe to be exported,
-    - filename: the name of the generated file, str,
-    - caption: the caption given to the generated table, str,
-    - label: the label of the generated table, str, 
-    - add_headers: include headers or not, True of False value
-    
-    Outputs:
-    - Generated latex file
-
-    More details: Export a DataFrame into a styled LaTeX table fragment:
-    - Wrapped in a table float with caption + label
-    - Index column (first col) shaded light gray
-    - Bold index and header text
-    - Header row shaded light gray
-    - Column separators between all columns
-    - Double lines at table edges
-    - Table width limited to \textwidth (A4 margins) with text wrapping
-    """
-
-    with open(filename, "w", encoding="utf-8") as f:
-        # Begin table float
-        f.write("\\begin{table}[h!]\n")
-        f.write("  \\centering\n")
-
-        # Tabularx setup: first column fixed, rest are wrapping (X)
-        col_format = "||c|" + "|".join(["X"] * len(df.columns)) + "||"
-        f.write(f"  \\begin{{tabularx}}{{\\textwidth}}{{{col_format}}}\n")
-        f.write("  \\hline\n")
-
-        # Write header row (with grey background)
-        if add_header:
-            header_cells = ["\\cellcolor{gray!20}\\textbf{" + (df.index.name or "Parameter") + "}"] \
-                           + ["\\cellcolor{gray!20}\\textbf{" + str(c) + "}" for c in df.columns]
-            f.write("    " + " & ".join(header_cells) + r" \\ [0.5ex]" + "\n")
-            f.write("  \\hline\\hline\n")
-        
-        # Write body rows
-        f.write("\\centering\n")
-        for idx, row in df.iterrows():
-            row_cells = [f"\\cellcolor{{gray!20}}\\textbf{{{idx}}}"] \
-                        + [str(val) for val in row.values]
-            f.write("    " + " & ".join(row_cells) + r" \\" + "\n")
-            f.write("  \\hline\n")
-
-        f.write("  \\end{tabularx}\n")
-        f.write(f"  \\caption{{{caption}}}\n")
-        f.write(f"  \\label{{{label}}}\n")
-        f.write("\\end{table}\n")
-
-
 ### Scripting ###
 ## Data insertion
 data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.csv", delimiter=";")
@@ -490,7 +434,6 @@ exp_data = {
     "Becker - PG6541B": [7.73*10**(-4)*30, 7.73*10**(-4)*80, 7.73*10**(-4)*260, 7.73*10**(-4)*300]
 }
 
-
 exp = pd.DataFrame(
     data = exp_data,
     index = dtPoints.keys()    
@@ -525,13 +468,61 @@ print(meanEE)
 print(relativeEC)
 print(relativeEE)
 
-data_to_latex(relativeEC, filename = "relECerror.tex", caption = "Relative error between correlation results and ICAO mean value", label = "tab:relec")
-data_to_latex(relativeEE, filename = "relEEerror.tex", caption = "Relative error between experimental data and ICAO mean value", label = "tab:relee")
+# Convert dataframes to latex tables
+# Relative error - EC: correlation equations error, EE: experimental error
+relativeEC = lx(df = relativeEC, filename = "data/relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
+relativeEC.df_to_lxTable()
 
-# Convert to latex table
-data_to_latex(meanEC, "MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
-data_to_latex(meanEE, "MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
-data_to_latex(dtPoints, "ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
+relativeEE = lx(df = relativeEE, filename = "data/relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
+relativeEE.df_to_lxTable()
+
+# Mean relative error - EC: Correlation equations error, EE: experimental error
+meanEC = lx(df = meanEC, filename = "data/MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
+meanEC.df_to_lxTable()
+
+meanEE = lx(df = meanEE, filename = "data/MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
+meanEE.df_to_lxTable()
+
+# Values of thermodynamic parameters
+dtPoints = lx(df = dtPoints, filename = "data/ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
+dtPoints.df_to_lxTable()
+
+# Engine specifications
+d = {
+    "Thrust rating (kN)": [117],
+    "Fan diameter": [1.55],
+    "Hub2Tip": [0.3],
+    "Bypass ratio": [5.1],
+    "Fan PR": [1.6],
+    "Booster PR": [1.55],
+    "High pressure compressor PR": [11]
+}
+
+specs = pd.DataFrame(
+    data = d,
+    index = ["Parameter", "Value"]
+)
+
+engineSpecs = lx(df = specs, filename = "data/specs.tex", caption = "CFM56-7B26 specifications",
+                 label = "tab:specs")
+engineSpecs.df_to_lxTable()
+
+# Operating conditions for each point: Altitude, Required thrust, Flight speed, Axial fan speed
+d = {
+    "Idle": [0, 8.19, 0, 0.09],
+    "Take-off": [11, 117, 0.3, 0.4],
+    "Climb-out": [305, 99.45, 0.3, 0.4],
+    "Approach": [914, 35.1, 0.2, 0.3]
+}
+
+lto_ops = pd.DataFrame(
+    data = d,
+    index = ["Altitude (m)", "Required thrust (kN)", "Flight speed (Mach)", "Axial fan speed (Mach)"]
+)
+
+conditions = lx(df = lto_ops, filename = "data/lto_ops.tex", 
+                caption = "LTO operating conditions", label = "tab:lto")
+conditions.df_to_lxTable()
 
 # Distribution plots
 distribution_plots(
