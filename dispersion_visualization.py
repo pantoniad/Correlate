@@ -405,10 +405,6 @@ for point in dtPoints.keys():
     kyprianidis = corr.kyprianidis(h = 0)
     novelo = corr.novelo()
     perkavec = corr.perkavec()
-    lefebvre = corr.lefebvre(Vc = 0.05, Tpz = 2000, Tst = 2250)
-    gasturb = corr.gasturb(WAR = 0)
-    ge = corr.generalElectric(WAR = 0)
-    aeronox = corr.aeronox(Vc = 0.1, R = 287)
 
     # Create temporary dataframe
     d = {
@@ -417,11 +413,7 @@ for point in dtPoints.keys():
         "Rokke": rokke,
         "Lewis": lewis,
         "Kyprianidis": kyprianidis,
-        "Novelo": novelo,
-        "Lefebvre": lefebvre,
-        "GasTurb": gasturb,
-        "General Electric": ge,
-        "Aeronox": aeronox
+        "Novelo": novelo
     }
 
     index = [point]
@@ -542,7 +534,7 @@ distribution_plots(
     meanEE,
     relativeEC,
     relativeEE,
-    method = "Dotplot",
+    method = "Swarmplot",
     size = [10,7],
     ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
