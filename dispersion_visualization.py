@@ -577,7 +577,7 @@ distribution_plots(
     meanEE,
     relativeEC,
     relativeEE,
-    method = "Violinplot",
+    method = "Swarmplot",
     size = [10,7],
     ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
