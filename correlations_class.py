@@ -405,6 +405,134 @@ class Correlations:
         einox = 7.73*10**(-4)*nox
 
         return einox
+    
+    def lefebvre(self, Vc: float, Tpz: float, Tst: float):
+        """
+        lefebvre: correlation equation proposed by Lefebvre and reported on by other authors. 
+                    It takes into consideration the combustor inlet conditions and characteristics
+                    (Vc, Tpz) and also fuel related parameters (Tst). All units in SI, output
+                    in gNOx/kgFuel
+
+        Inputs:
+        - self,
+        - Vc: Combustor volume, float, m3,
+        - Tpz: Primary combustion zone temperature, float, K,
+        - Tst: stoichiometric combustion temperature, float, K
+
+        Outputs:
+        - einox: emissions index of NOx, gNOx/kgFuel
+
+        Source: Sascha Kaiser et. al, 2022, The water enhanced turbofan as enabler for climate-neutral aviation, https://doi.org/10.3390/app122312431 
+        """
+
+        # Data retrieval from self
+        Pin = self.Pbin
+        Tin = self.Tbin
+        mdotin = self.m_dot
+        
+        # Correlation equation parts
+        part1 = (Pin*10**(-3)*Vc)/(mdotin*Tin)
+        part2 = np.exp(0.01*Tst)
+        part3 = (Pin*10**(-3))**0.25
+        
+        # Correlation
+        einox = 9*10**(-8)*part1*part2*part3
+
+        return einox
+
+    def gasturb(self, WAR: float = 0):
+        """
+        gasturb: Correlation equation proposed and used by GasTurb software. Takes into
+                    consideration combustor inlet parameters and the humidity level (WAR).
+
+        Inputs:
+        - self:,
+        - WAR: Water-to-Air ratio, float, non-dimensional, values from 0-1 (0-100%), default 0
+
+        Outputs:
+        - einox: Emissions Index of NOx, gNOx/kgFuel
+
+        Source: Sascha Kaiser et. al, 2022, The water enhanced turbofan as enabler for climate-neutral aviation, https://doi.org/10.3390/app122312431 
+        """
+
+        # Data retrieval from self
+        Pin = self.Pbin
+        Tin = self.Tbin
+
+        # Correlation break-down
+        part1 = np.exp((Tin-826)/194)
+        part2 = (Pin/(2.965*10**6))**0.4
+        part3 = np.exp((6.29-10**3*WAR)/53.2)
+
+        # Correlation equation
+        einox = 32*part1*part2*part3
+
+        return einox
+    
+    def generalElectric(self, WAR: float = 0):
+        """
+        generalElectric: A correlation equation proposed by General Electric.
+                        Takes into consideration the combustor inlet conditions
+                        and the humidity level through the Water-to-Air ratio input 
+
+        Inputs:
+        - self,
+        - WAR: Water-to-Air ratio, float, non-dimensional, values from 0-1 (0-100%), default 0
+
+        Outputs:
+        - einox: Emissions Index of NOx, gNOx/kgFuel
+
+        Source: Sascha Kaiser et. al, 2022, The water enhanced turbofan as enabler for climate-neutral aviation, https://doi.org/10.3390/app122312431 
+        
+        """
+
+        # Data retrieval from self
+        Tin = self.Tbin
+        Pin = self.Pbin
+
+        # Correlation break-down
+        part1 = np.exp(Tin/194.4)
+        part2 = (Pin/101325)**0.4
+        part3 = np.exp(-10**3*WAR/53.2)
+
+        # Correlation
+        einox = 2.2+0.12425*part1*part2*part3
+
+        return einox
+    
+    def aeronox(self, Vc: float, R: float = 287):
+        """
+        aeronox: Correlation equation reported on by multiple authors (Tsalavouta, Sascha).
+                It features combustor characteristics, such as combustor volume and inlet
+                and outlet conditions. Also takes into account the gas used, through the 
+                selection of R 
+
+        Inputs:
+        - self,
+        - Vc: combustor volume, float, m3,
+        - R: specific gas constant, float, J/kg/K, default for air: 287
+
+        Outputs:    
+        - einox: Emissions Index of NOx, gNOx/kgFuel
+
+        Source: Sascha Kaiser et. al, 2022, The water enhanced turbofan as enabler for climate-neutral aviation, https://doi.org/10.3390/app122312431 
+        """
+
+        # Parameter retrieval from self
+        Pin = self.Pbin
+        Tin = self.Tbin
+        mdotin = self.m_dot
+        Tout = self.Tbout
+
+        # Correlation break-down
+        part1 = ((Vc*Pin*10**3)/(mdotin*R*Tin))**0.7
+        part2 = np.exp(-600/Tout)
+
+        # Correlation equation
+        einox = 1.5*part1*part2
+
+        return einox 
+
 
 # Testing
 #emissions = Correlations(500, 1490, 20, 19.5, 0.001, 600, 0.5,1.293)
