@@ -6,6 +6,7 @@ import matplotlib.gridspec as gridspec
 import correlations_class as correlate
 import warnings
 from latex import latex as lx
+from FuelFlow_class import FuelFlowMethods as ffms
 
 ####
 def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relativeEC, relativeEE, method, size, title, ylimits, xLabel, yLabel, colours, labels, dotPlotXlabel, dotPlotYlabel, lineStyle, Jitter = None):
@@ -434,6 +435,40 @@ for point in dtPoints.keys():
     # Append temporary dataframe to external
     dtCorrs = pd.concat([dtCorrs, dt1], axis = 0)
 
+# Fuel flow methods - DLR
+clmns2 = ["NOx EI Idle (g/kg)", "NOx EI T/O (g/kg)", "NOx EI C/O (g/kg)", "NOx EI App (g/kg)", 
+         "Fuel Flow Idle (kg/sec)", "Fuel Flow T/O (kg/sec)", "Fuel Flow C/O (kg/sec)", "Fuel Flow App (kg/sec)"]
+
+# EIs and Fuel flow data from ICAO for all engines
+eisff = data_og[clmns2]
+cfm56_7b26 = [[135, 136]]
+
+engineData = eisff.iloc[range(cfm56_7b26[0][0], cfm56_7b26[0][1])]
+
+# Operating conditions 
+speed = [0, 0.4, 0.4, 0.3]  # Mach number
+alt = [0, 11, 304, 905]     # meters
+
+d = {
+    "EINOx": engineData.iloc[0][0:4].values.astype(float),
+    "Fuel Flows": engineData.iloc[0][4:8].values.astype(float),
+    "Flight altitude": alt,
+    "Flight Speed": speed
+}
+
+datapoints = pd.DataFrame(
+    data = d,
+    index = ["Idle", "Take-off", "Climb-out", "Approach"]
+)
+datapoints = datapoints.T
+
+ff = ffms(datapoints = datapoints, fitting = "Parabolic", check_fit = False)
+ffeinox = ff.dlrFF()
+#print(einox)
+
+# Add fuel flow EIs to dtCorrs
+dtCorrs["DLR Fuel Flow"] = ffeinox.values.T
+
 print(dtCorrs)
 
 # Experimental data insertion - Dataframe format
@@ -542,7 +577,7 @@ distribution_plots(
     meanEE,
     relativeEC,
     relativeEE,
-    method = "Dotplot",
+    method = "Violinplot",
     size = [10,7],
     ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
