@@ -427,11 +427,11 @@ class Correlations:
 
         # Data retrieval from self
         Pin = self.Pbin
-        Tin = self.Tbin
+        Tout = self.Tbout
         mdotin = self.m_dot
         
         # Correlation equation parts
-        part1 = (Pin*10**(-3)*Vc)/(mdotin*Tin)
+        part1 = (Pin*10**(-3)*Vc)/(mdotin*Tout)
         part2 = np.exp(0.01*Tst)
         part3 = (Pin*10**(-3))**0.25
         
