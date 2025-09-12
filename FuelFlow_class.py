@@ -39,6 +39,25 @@ class FuelFlowMethods:
     def __repr__(self):
         pass
 
+    def ISA_conditions(alt):
+        """
+        ISA_conditions:
+
+        Inputs:
+        -
+
+        Outputs:
+        -
+
+        """
+        
+        # Ambient conditions calculations = ISA
+        Tamb = 288.15 - 6.5*alt/10**3
+        Pamb = 101325*(1-0.0065*alt/Tamb)**(5.2561)
+
+        return Tamb, Pamb
+        
+        
     def dlrFF(self):
         """
         dlrFF:
@@ -141,6 +160,8 @@ class FuelFlowMethods:
 
         return np.round(einox,3)
 
+"""
+# Usage example
 
 # Data and clmns to keep
 data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.csv", delimiter=";")
@@ -174,3 +195,4 @@ print(datapoints)
 ff = FuelFlowMethods(datapoints = datapoints, fitting = "Parabolic", check_fit = False)
 einox = ff.dlrFF()
 print(einox)
+"""

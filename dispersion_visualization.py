@@ -469,8 +469,6 @@ ffeinox = ff.dlrFF()
 # Add fuel flow EIs to dtCorrs
 dtCorrs["DLR Fuel Flow"] = ffeinox.values.T
 
-print(dtCorrs)
-
 # Experimental data insertion - Dataframe format
 exp_data = {
     "Turgut - CFM56-7B26": [1.8, 24.4, (12.6+16.4)/2, 2.8],
@@ -481,6 +479,9 @@ exp = pd.DataFrame(
     data = exp_data,
     index = dtPoints.keys()    
 )
+
+experimental = lx(df = exp, filename = "data/experimental.tex", caption = "Turgut et. al - CFM56-7B26", label = "tab:exp")
+experimental.df_to_lxTable()
 
 print(exp)
 
@@ -501,6 +502,9 @@ mean_points = pd.DataFrame(
     index = labels
 )
 
+mean_lx = lx(df = mean_points, filename = "data/means.tex", caption = "Operating points - Mean values", label = "tab:means")
+mean_lx.df_to_lxTable()
+
 print(mean_points)
 
 # Mean relative error and standard deviation 
@@ -513,10 +517,10 @@ print(relativeEE)
 
 # Convert dataframes to latex tables
 # Relative error - EC: correlation equations error, EE: experimental error
-relativeEC = lx(df = relativeEC, filename = "data/relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
+relativeEC = lx(df = relativeEC.T, filename = "data/relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
 relativeEC.df_to_lxTable()
 
-relativeEE = lx(df = relativeEE, filename = "data/relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
+relativeEE = lx(df = relativeEE.T, filename = "data/relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
 relativeEE.df_to_lxTable()
 
 # Mean relative error - EC: Correlation equations error, EE: experimental error
@@ -546,7 +550,7 @@ specs = pd.DataFrame(
     index = ["Parameter", "Value"]
 )
 
-engineSpecs = lx(df = specs, filename = "data/specs.tex", caption = "CFM56-7B26 specifications",
+engineSpecs = lx(df = specs.T, filename = "data/specs.tex", caption = "CFM56-7B26 specifications",
                  label = "tab:specs")
 engineSpecs.df_to_lxTable()
 
@@ -578,7 +582,7 @@ distribution_plots(
     relativeEC,
     relativeEE,
     method = "Swarmplot",
-    size = [10,7],
+    size = [12,9],
     ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
     xLabel = "Pollutant and operating point", 
