@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import FuelFlow_class as ffms
+import Classes.FuelFlow_class as ffms
 import sklearn 
 from sklearn.linear_model import LinearRegression
 import statsmodels.api as sm    

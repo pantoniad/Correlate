@@ -3,10 +3,10 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt  
 import matplotlib.gridspec as gridspec  
-import correlations_class as correlate
 import warnings
-from latex import latex as lx
-from FuelFlow_class import FuelFlowMethods as ffms
+from Classes import correlations_class as correlate
+from Classes.latex_class import latex as lx
+from Classes.FuelFlow_class import FuelFlowMethods as ffms
 
 ####
 def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relativeEC, relativeEE, method, size, title, ylimits, xLabel, yLabel, colours, labels, dotPlotXlabel, dotPlotYlabel, lineStyle, Jitter = None):
