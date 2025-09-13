@@ -21,10 +21,13 @@ data = df[clmns]
 engRange = [[61, 169]]
 cfm56 = data.iloc[range(engRange[0][0], engRange[0][1])]
 cfm56 = cfm56.reset_index()
+cfm56 = cfm56.drop(["index"], axis = 1)
+cfm56.to_csv("Databank/CFM56data.csv")
 
 # Operating points
 ops = ["Idle", "T/O", "C/O", "App"]
 
+## Operating point-wise feature selection
 # Iterate through the operating points
 for i in ops:
 
@@ -64,5 +67,8 @@ for i in ops:
         plt.grid(color = "silver", linestyle = ":")
 
     print()
+
+## Feature selection using all data combined
+
 
 plt.show()
