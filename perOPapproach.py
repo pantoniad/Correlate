@@ -66,16 +66,22 @@ xtrain, ytrain, xdev, ydev, xtest, ytest = modelsIdle.splitter(train_split = 0.6
                                                                dev_split = 0.2,
                                                                test_split = 0.2)
 
-## Train: Polynomial Regression
+# Train: Polynomial Regression
 parameters = {"Degrees": 2, "Include Bias": True}
 polymodel, train_poly, test_poly = modelsIdle.polReg(
     xtrain = xtrain, ytrain = ytrain, xtest = xdev, ytest = ydev,
     parameters = parameters
 )
 
+# Get metrics
 metrics = modelsIdle.performance_metrics(train = train_poly, test = test_poly)
 
 print(metrics.head())
+
+
+
+
+
 """
 # Define operating point configuration
 op_cfg = {
