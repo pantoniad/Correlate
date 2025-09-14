@@ -68,7 +68,7 @@ xtrain, ytrain, xdev, ydev, xtest, ytest = modelsIdle.splitter(train_split = 0.6
 
 # Train: Polynomial Regression
 parameters = {"Degrees": 2, "Include Bias": True}
-polymodel, train_poly, test_poly = modelsIdle.polReg(
+polymodel, polyfeatures, train_poly, test_poly = modelsIdle.polReg(
     xtrain = xtrain, ytrain = ytrain, xtest = xdev, ytest = ydev,
     parameters = parameters
 )
@@ -78,7 +78,8 @@ metrics = modelsIdle.performance_metrics(train = train_poly, test = test_poly)
 
 print(metrics.head())
 
-
+# Learning curve
+modelsIdle.Learning_curve(model = polymodel, model_features = polyfeatures, operating_point="Idle")
 
 
 

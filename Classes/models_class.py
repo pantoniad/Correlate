@@ -1,12 +1,18 @@
 import numpy as np
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, root_mean_squared_error
+from sklearn.model_selection import learning_curve, LearningCurveDisplay
+
 from typing import Optional
 from Classes.latex_class import latex as ltx
+
+import matplotlib.pyplot as plt
+
 
 class models_per_OP:
 
@@ -55,9 +61,7 @@ class models_per_OP:
 
         return xtrain, ytrain, xdev, ydev, xtest, ytest
 
-    def polReg(self,
-               xtrain: pd.DataFrame, ytrain: pd.DataFrame, 
-               xtest: pd.DataFrame, ytest: pd.DataFrame,
+    def polReg(self, xtrain: pd.DataFrame, ytrain: pd.DataFrame, xtest: pd.DataFrame, ytest: pd.DataFrame,
                parameters: dict):
 
         """
@@ -116,7 +120,7 @@ class models_per_OP:
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
 
-        return lin, train_results, test_results
+        return lin, poly, train_results, test_results
     
     def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame):
                            # to_latex: bool = False, parameters = Optional[pd.DataFrame]):
@@ -190,8 +194,67 @@ class models_per_OP:
         """
         return metrics
     
-    def Learning_curve(self,):
+    def Learning_curve(self, model: object, model_features: Optional[object] = None, operating_point: Optional[str] = None):
 
         """
-        Learning_curve:
+        Learning_curve: creates a learning curve for the given data set, 
+
+        Inputs:
+        - model: the fitted model, object
+        - model_features: Optional entry that contains the features of the model. 
+        i.e. if Polynomial regression is used, then the Polynomial Features method 
+        has to be imported to get the characteristics of the polynomial fit,
+        - operating_point: the operating point that the engine works at.
+        Used for plotting purposes, str
         """
+
+        # Extract data from self
+        data = self.data
+
+        # Break the data down into based on the operating point
+        X = data.iloc[:, range(0, len(data.keys())-1)]
+        y = data.iloc[:, -1]
+
+        # Learning curve 
+        train_sizes, train_scores, test_scores = learning_curve(model, X, y, cv = 5, scoring = "r2")
+        
+        # Mean and std values
+        mean_train = np.mean(train_scores, axis = 1)
+        mean_test = np.mean(test_scores, axis = 1)
+        std_train = np.std(train_scores, axis = 1)
+        std_test = np.std(test_scores, axis = 1)
+
+        # Extract model features
+        if model_features.degree != None:
+            model_type = f"Pol. Regresion ({model_features.degree})"
+        else:
+            pass
+
+        # Visualize No.1
+        fig1, ax1 = plt.subplots( figsize = (7, 5))
+        plt.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2")
+        plt.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2")
+        plt.plot()
+
+        ax1.fill_between(train_sizes, mean_train + std_train, mean_train - std_train,
+                         where=((mean_train + std_train) >= (mean_train - std_train)),
+                         color = "royalblue", alpha = 0.2)
+        
+        ax1.fill_between(train_sizes, mean_test + std_test, mean_test - std_test,
+                         where=((mean_test + std_test) >= (mean_test - std_test)),
+                         color = "red", alpha = 0.2)
+
+
+
+        plt.xlabel("Training set size")
+        plt.ylabel("Score - Coefficient of Determination (R2)")
+        plt.grid(color = "silver", linestyle = ":")
+        plt.ylim([min(mean_test) - 0.1, 1])
+        
+        if operating_point != None: 
+            plt.title(f"Learning curve - {operating_point} conditions - {model_type}")
+        else:
+            plt.title(f"Learning curve - {model_type}")
+        
+        plt.legend()
+        plt.show()
