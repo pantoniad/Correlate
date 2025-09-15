@@ -51,131 +51,52 @@ dApp = df.drop(columns= ["Fuel Flow Idle (kg/sec)",
                           "Fuel Flow C/O (kg/sec)",
                           "NOx EI Idle (g/kg)",
                           "NOx EI T/O (g/kg)",
-                          "NOx EI C/O (g/kg)"])
+                           "NOx EI C/O (g/kg)"])
 
-## Initialize models class for each operating point
-# Idle
-features = dIdle.drop(columns = "NOx EI Idle (g/kg)")
-response = dIdle["NOx EI Idle (g/kg)"]
-modelsIdle = models_per_OP(data = dIdle, 
-                           features = features, 
-                           response = response)
+ops = ["Idle", "T/O", "C/O", "App"]
 
-# Split data
-xtrain, ytrain, xdev, ydev, xtest, ytest = modelsIdle.splitter(train_split = 0.6,
-                                                               dev_split = 0.2,
-                                                               test_split = 0.2)
+# Iterate through the opeating points
+for i in ops:
+    
+    print(i)
+    # Keep only columns that contain the operating point 
+    df1 = df.filter(df.columns[df.columns.str.contains(i)], axis=1)
+    
+    # Get the other columns and append
+    df2 = df.filter(["Pressure Ratio", "Rated Thrust (kN)"])
+    df3 = pd.concat([df2, df1], axis = 1)
 
-# Train: Polynomial Regression
-parameters = {"Degrees": 2, "Include Bias": True}
-polymodel, polyfeatures, train_poly, test_poly = modelsIdle.polReg(
-    xtrain = xtrain, ytrain = ytrain, xtest = xdev, ytest = ydev,
-    parameters = parameters
-)
+    # Get features and response
+    features = df3.drop(columns=f"NOx EI {i} (g/kg)")
+    response = df3[f"NOx EI {i} (g/kg)"]
 
-# Get metrics
-metrics = modelsIdle.performance_metrics(train = train_poly, test = test_poly)
-
-print(metrics.head())
-
-# Learning curve
-modelsIdle.Learning_curve(model = polymodel, model_features = polyfeatures, operating_point="Idle")
-
-
-
-"""
-# Define operating point configuration
-op_cfg = {
-    "Idle": {
-        "ff_col": "Fuel Flow Idle (kg/sec)",
-        "ei_col": "NOx EI Idle (g/kg)",
-    },
-    "Approach": {
-        "ff_col": "Fuel Flow App (kg/sec)",
-        "ei_col": "NOx EI App (g/kg)",
-    },
-    "Climb-out": {
-        "ff_col": "Fuel Flow C/O (kg/sec)",
-        "ei_col": "NOx EI C/O (g/kg)",
-    },
-    "Take-off": {
-        "ff_col": "Fuel Flow T/O (kg/sec)",
-        "ei_col": "NOx EI T/O (g/kg)",
-    },
-}
-
-FEATURES_BASE = ["Pressure Ratio", "Rated Thrust (kN)"]
-DEGREE = 2
-RANDOM_STATE = 42
-
-rows = []
-split_details = []
-
-models = {}
-
-for op_name, cfg in op_cfg.items():
-    # Build features/target for this OP
-    X = df[FEATURES_BASE + [cfg["ff_col"]]].copy()
-    y = df[cfg["ei_col"]].copy()
-
-    # Split 60/20/20
-    X_train, X_temp, y_train, y_temp = train_test_split(
-        X, y, test_size=0.5, random_state=RANDOM_STATE
-    )
-    X_dev, X_test, y_dev, y_test = train_test_split(
-        X_temp, y_temp, test_size=0.5, random_state=RANDOM_STATE
+    # Initialize models_per_OP class
+    models = models_per_OP(
+        data = df3,
+        features = features,
+        response = response
     )
 
-    # Train degree-2 polynomial regression
-    pipe = Pipeline(
-        steps=[
-            ("poly", PolynomialFeatures(degree=DEGREE, include_bias=False)),
-            ("scaler", StandardScaler()),
-            ("linreg", LinearRegression()),
-        ]
+    # Split data
+    X_train, y_train, X_dev, y_dev, X_test, y_test = models.splitter(
+        train_split = 0.7,
+        test_split = 0.15,
+        dev_split = 0.15
     )
-    pipe.fit(X_train, y_train)
 
-    # Grid over (OPR, Fuel Flow) while holding Rated Thrust at dev-set median
-    opr_col = "Pressure Ratio"
-    rt_col = "Rated Thrust (kN)"
-    ff_col = cfg["ff_col"]
+    # Train on the dev set (only applicable to Polynomial regression as of now)
+    parameters = {"Degrees": 2, "Include Bias": True}
+    polymodel, polyfeatures, train_poly, test_poly = models.polReg(
+        xtrain = X_train, ytrain = y_train, xtest = X_dev, ytest = y_dev,
+        parameters = parameters
+    )
+    
+    # Get metrics
+    metrics = models.performance_metrics(train = train_poly, test = test_poly)
+    print(f"Operating point: {i} metrics")
+    print(metrics.head())
 
-    rt_fixed = float(np.median(X_dev[rt_col].values))
-    opr_min, opr_max = float(X[opr_col].min()), float(X[opr_col].max())
-    ff_min, ff_max = float(X[ff_col].min()), float(X[ff_col].max())
-
-    # Create grid
-    n_grid = 35
-    opr_grid = np.linspace(opr_min, opr_max, n_grid)
-    ff_grid = np.linspace(ff_min, ff_max, n_grid)
-    OPR, FF = np.meshgrid(opr_grid, ff_grid)
-
-    # Build grid feature matrix (OPR, Rated Thrust fixed, Fuel Flow)
-    grid_features = np.column_stack([OPR.ravel(), np.full(OPR.size, rt_fixed), FF.ravel()])
-    Z = pipe.predict(grid_features).reshape(OPR.shape)
-
-    # Prepare dev scatter coordinates
-    x_scatter = X_dev[opr_col].values
-    y_scatter = X_dev[ff_col].values
-    z_scatter = y_dev.values
-
-    # Plot (single figure per OP)
-    fig = plt.figure(figsize=(8, 6))
-    ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(OPR, FF, Z, alpha=0.6, linewidth=0, antialiased=True)
-    ax.scatter(x_scatter, y_scatter, z_scatter, s=18)
-
-    ax.set_xlabel("Pressure Ratio (OPR)")
-    ax.set_ylabel(f"{ff_col}")
-    ax.set_zlabel(f"{cfg['ei_col']}")
-    ax.set_title(f"{op_name} — dev points and model surface (Rated Thrust fixed at median ≈ {rt_fixed:.1f} kN)")
-
-    plt.show()
-
-
-#metrics_df = pd.DataFrame(rows).sort_values("Operating Point").reset_index(drop=True)
-#splits_df = pd.DataFrame(split_details).sort_values("Operating Point").reset_index(drop=True)
-#print(metrics_df)
-#print(splits_df)
-"""
+    # Learning curve
+    models.Learning_curve(model = polymodel, model_features = polyfeatures, 
+                          operating_point = i)
+    
