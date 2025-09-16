@@ -92,7 +92,6 @@ class models_per_OP:
         deg = parameters["Degrees"]
         bias = parameters["Include Bias"]
 
-        
         # Polynomial object
         poly = PolynomialFeatures(degree = deg, include_bias = bias)
         x_train_poly = poly.fit_transform(xtrain)
@@ -258,3 +257,17 @@ class models_per_OP:
         
         plt.legend()
         plt.show()
+
+    def iterate_through_ops(self,):
+
+        """
+        iterate_through_ops:
+
+        Inputs:
+
+        Outputs:
+
+        """
+
+        pass
+

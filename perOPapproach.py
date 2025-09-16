@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 
@@ -9,7 +8,9 @@ import Classes.correlations_class as correlate
 from Classes.FuelFlow_class import FuelFlowMethods as ffms
 from Classes.latex_class import latex as lx
 
-# Load data
+## Data used on the script ##
+
+# Load ICAO data
 df = pd.read_csv(r"Databank/ICAO_data.csv", delimiter = ";")
 
 clmns = ["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow Idle (kg/sec)", 
@@ -22,36 +23,60 @@ drange = [[61, 169]]
 dfCleanUp = data_process(df = df, clmns = clmns, drange = drange)
 df = dfCleanUp.csv_cleanup(reset_index = True, save_to_csv = True, path = "Databank/CFM56data.csv")
 
-# Operating point splitting
-dIdle = df.drop(columns= ["Fuel Flow T/O (kg/sec)", 
-                          "Fuel Flow C/O (kg/sec)",
-                          "Fuel Flow App (kg/sec)",
-                          "NOx EI T/O (g/kg)",
-                          "NOx EI C/O (g/kg)",
-                          "NOx EI App (g/kg)"])
-
-dTakeoff = df.drop(columns= ["Fuel Flow Idle (kg/sec)", 
-                          "Fuel Flow C/O (kg/sec)",
-                          "Fuel Flow App (kg/sec)",
-                          "NOx EI Idle (g/kg)",
-                          "NOx EI C/O (g/kg)",
-                          "NOx EI App (g/kg)"])
-
-dClimbout = df.drop(columns= ["Fuel Flow Idle (kg/sec)", 
-                          "Fuel Flow T/O (kg/sec)",
-                          "Fuel Flow App (kg/sec)",
-                          "NOx EI Idle (g/kg)",
-                          "NOx EI C/O (g/kg)",
-                          "NOx EI App (g/kg)"])
-
-dApp = df.drop(columns= ["Fuel Flow Idle (kg/sec)", 
-                          "Fuel Flow T/O (kg/sec)",
-                          "Fuel Flow C/O (kg/sec)",
-                          "NOx EI Idle (g/kg)",
-                          "NOx EI T/O (g/kg)",
-                           "NOx EI C/O (g/kg)"])
-
 ops = ["Idle", "T/O", "C/O", "App"]
+
+# Results from thermodynamic model
+# Col1: Tin, Col2: Tout, Co3: Pin (Pa), Col4: m_dot_core, Col5: m_dot_fuel (kg/s)
+d = {
+    ops[0]: [797.1, 1290, 2755850, 10.564, 0.0137, 0.144],
+    ops[1]: [809.95, 2250, 2929690, 46.897, 0.0446, 2.02],
+    ops[2]: [805.1, 2000, 2828980, 45.44, 0.03596, 1.634],
+    ops[3]: [787.91, 1400, 2539920, 31.89, 0.01718, 0.548]
+}
+
+dtPoints = pd.DataFrame(
+    data = d, 
+    index = ["Tbin", "Tbout", "Pbin", "m_dot_air", "FAR", "m_dot_fuel"]
+)
+
+# Reference engine data - CFM56-7B26
+# ICAO fuel flow and EINOx
+cfm56_7b26 = [[74, 75]]
+
+engineData = df.iloc[range(cfm56_7b26[0][0], cfm56_7b26[0][1])]
+engineData = df.drop(["Pressure Ratio", "Rated Thrust (kN)"], axis = 1)
+
+# Engine specifications
+d = {
+    "Thrust rating (kN)": [117],
+    "Fan diameter": [1.55],
+    "Hub2Tip": [0.3],
+    "Bypass ratio": [5.1],
+    "Fan PR": [1.6],
+    "Booster PR": [1.55],
+    "High pressure compressor PR": [11],
+    "Pressure ratio": [27.6]
+}
+
+specs = pd.DataFrame(
+    data = d,
+    index = ["Value"]
+)
+
+
+#engineSpecs = lx(df = specs.T, filename = "data/specs.tex", caption = "CFM56-7B26 specifications",
+#                 label = "tab:specs")
+#engineSpecs.df_to_lxTable()
+
+
+## Model execution and generation ##
+
+# Saving the model results
+models_res = {
+    "Linear Regression": {"Idle": [], "T/O": [], "C/O": [], "App": []},
+    "Gradient Boosting": {"Idle": [], "T/O": [], "C/O": [], "App": []},
+    "ANN": {"Idle": [], "T/O": [], "C/O": [], "App": []}
+} 
 
 # Iterate through the opeating points
 for i in ops:
@@ -66,6 +91,16 @@ for i in ops:
 
     # Get features and response
     features = df3.drop(columns=f"NOx EI {i} (g/kg)")
+    
+    if i == ops[0]:
+        features["Rated Thrust (kN)"] = 0.07*features["Rated Thrust (kN)"].values.astype(float)
+    elif i == ops[1]:
+        pass
+    elif i == ops[2]:
+        features["Rated Thrust (kN)"] = 0.85*features["Rated Thrust (kN)"].values.astype(float)
+    elif i == ops[3]:
+        features["Rated Thrust (kN)"] = 0.3*features["Rated Thrust (kN)"].values.astype(float)
+    
     response = df3[f"NOx EI {i} (g/kg)"]
 
     # Initialize models_per_OP class
@@ -77,9 +112,9 @@ for i in ops:
 
     # Split data
     X_train, y_train, X_dev, y_dev, X_test, y_test = models.splitter(
-        train_split = 0.5,
+        train_split = 0.7,
         test_split = 0.25,
-        dev_split = 0.25
+        dev_split = 0.05
     )
 
     # Train on the dev set (only applicable to Polynomial regression as of now)
@@ -94,9 +129,18 @@ for i in ops:
     print(f"Operating point: {i} metrics")
     print(metrics.head())
 
+    # Predict based on the thermodynamic data
+    x_new = [specs["Pressure ratio"]["Value"].astype(float), specs["Thrust rating (kN)"]["Value"].astype(float), dtPoints[i]["m_dot_fuel"]]
+    x_new_poly = polyfeatures.transform([x_new])
+    y_new = polymodel.predict(x_new_poly)
+    
+    # Save prediction results
+    models_res["Linear Regression"][i] = y_new
+
     # Learning curve
     #models.Learning_curve(model = polymodel, model_features = polyfeatures, 
     #                      operating_point = i)
+
 
 ### Distribution plots
 labels = ["NOx Idle", "NOx T/O", "NOx C/O", "NOx App"]
@@ -117,23 +161,7 @@ df_all = pd.DataFrame({
 })
 
 ### Correlation equations ###
-# Dictionary definition: For every key: Burner Inlet temperature (K), 
-# Burner outlet temperature (K),
-# Burner inlet pressure (Pa),
-# Core air mass flow rate (kg/s), 
-# FAR
-d = {
-    "idle": [797.1, 1290, 2755850, 10.564, 0.0137],
-    "take-off": [809.95, 2250, 2929690, 46.897, 0.0446],
-    "climb-out": [805.1, 2000, 2828980, 45.44, 0.03596],
-    "approach": [787.91, 1400, 2539920, 31.89, 0.01718]
-}
-
-dtPoints = pd.DataFrame(
-    data = d, 
-    index = ["Tbin", "Tbout", "Pbin", "m_dot", "FAR"]
-)
-
+# Empty correlations dataframe
 dtCorrs = pd.DataFrame([])
 
 # Correlations instance
@@ -193,9 +221,6 @@ clmns2 = ["NOx EI Idle (g/kg)", "NOx EI T/O (g/kg)", "NOx EI C/O (g/kg)", "NOx E
 
 # EIs and Fuel flow data from ICAO for all engines
 eisff = df[clmns2]
-cfm56_7b26 = [[74, 75]]
-
-engineData = eisff.iloc[range(cfm56_7b26[0][0], cfm56_7b26[0][1])]
 
 # Operating conditions 
 speed = [0, 0.4, 0.4, 0.3]  # Mach number
@@ -216,7 +241,6 @@ datapoints = datapoints.T
 
 ff = ffms(datapoints = datapoints, fitting = "Parabolic", check_fit = False)
 ffeinox = ff.dlrFF()
-#print(einox)
 
 # Add fuel flow EIs to dtCorrs
 dtCorrs["DLR Fuel Flow"] = ffeinox.values.T
@@ -234,8 +258,6 @@ exp = pd.DataFrame(
 
 experimental = lx(df = exp, filename = "data/experimental.tex", caption = "Turgut et. al - CFM56-7B26", label = "tab:exp")
 experimental.df_to_lxTable()
-
-print(exp)
 
 # Dot plot #
 # Colour palette
@@ -261,16 +283,9 @@ mean_points = pd.DataFrame(
 mean_lx = lx(df = mean_points, filename = "data/means.tex", caption = "Operating points - Mean values", label = "tab:means")
 mean_lx.df_to_lxTable()
 
-print(mean_points)
-
 # Mean relative error and standard deviation 
 errors = data_plotting(dtCorrs = dtCorrs, exp = exp, mean_points = mean_points)
 [meanEC, meanEE, relativeEC, relativeEE] = errors.error()
-
-#print(meanEC)
-print(meanEE)
-print(relativeEC)
-print(relativeEE)
 
 # Convert dataframes to latex tables
 # Relative error - EC: correlation equations error, EE: experimental error
@@ -290,26 +305,6 @@ meanEE.df_to_lxTable()
 # Values of thermodynamic parameters
 dtPoints = lx(df = dtPoints, filename = "data/ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
 dtPoints.df_to_lxTable()
-
-# Engine specifications
-d = {
-    "Thrust rating (kN)": [117],
-    "Fan diameter": [1.55],
-    "Hub2Tip": [0.3],
-    "Bypass ratio": [5.1],
-    "Fan PR": [1.6],
-    "Booster PR": [1.55],
-    "High pressure compressor PR": [11]
-}
-
-specs = pd.DataFrame(
-    data = d,
-    index = ["Parameter", "Value"]
-)
-
-engineSpecs = lx(df = specs.T, filename = "data/specs.tex", caption = "CFM56-7B26 specifications",
-                 label = "tab:specs")
-engineSpecs.df_to_lxTable()
 
 # Operating conditions for each point: Altitude, Required thrust, Flight speed, Axial fan speed
 d = {
