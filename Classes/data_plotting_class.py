@@ -7,16 +7,20 @@ import Classes.correlations_class as correlate
 import warnings
 from Classes.latex_class import latex as lx
 from Classes.FuelFlow_class import FuelFlowMethods as ffms
+from typing import Optional
 
 class data_plotting:
 
 
-    def __init__(self, mean_points: pd.DataFrame,
-                 dtCorrs: pd.DataFrame,
-                 exp: pd.DataFrame
+    def __init__(self, df_all: pd.DataFrame, 
+                 mean_points: pd.DataFrame,
+                 dtCorrs: Optional[pd.DataFrame] = None,
+                 exp: Optional[pd.DataFrame] = None,
+                 dtmodels: Optional[pd.DataFrame] = None
                 ):
         """
         Inputs:
+       - df_all: 
        - mean_points:  mean values from the ICAO Datapoints,
                         Dataframe, First column are the names 
                         for each data position of the dot plot,
@@ -32,12 +36,23 @@ class data_plotting:
                 the source of the data, Y axis contains the EI
                 values for the four LTO cycle points. For now
                 able to integrate only one point,
+        - dtmodels: 
         """
+        # Required
+        self.df_all = df_all
         self.mean_points = mean_points
-        self.dtCorrs = dtCorrs
-        self.exp = exp
         
-    def distribution_plots(self, df_all: pd.DataFrame,
+        # Optional
+        if dtCorrs.empty == False:
+            self.dtCorrs = dtCorrs
+        
+        if exp.empty == False:
+            self.exp = exp
+
+        if dtmodels.empty == False:
+            self.dtmodels = dtmodels
+        
+    def distribution_plots(self,
                            method: str, 
                            size: list, 
                            title: str, 
@@ -57,10 +72,6 @@ class data_plotting:
 
         Inputs:
         - self: -
-        - df_all:   data to be placed as dots in dot plot
-                    Dataframe, first column are the names
-                    for each data position, second column 
-                    are the values
         - method:   used to determine the kind of distribution plot used
                     Inputs: "Boxplot", "Dotplot", "Swarmplot", "Violinplot"
         - size: figure size. List,
@@ -85,11 +96,13 @@ class data_plotting:
             a Dot, Swarm, Violin or Box plot is generated
         
         """
-
+        
         # Extract data from self
+        df_all = self.df_all
         mean_points = self.mean_points
         dtCorrs = self.dtCorrs
-        exp = self.exp    
+        exp = self.exp 
+        dtmodels = self.dtmodels
         
         # Valid distribution plot methods 
         valid_methods = ["Boxplot", "Swarmplot", "Dotplot", "Violinplot"]
@@ -195,6 +208,15 @@ class data_plotting:
             # Increase the count of the pointer
             pointer += pointer
         
+        # Place the results from the models
+        plt.plot(
+            labels,
+            dtmodels["Linear Regression"],
+            "-d",
+            label = "Polynomial (2) Regression",
+            zorder = 10
+        )
+        
         # Place the experimental data
         plt.plot(
             labels, 
@@ -203,6 +225,8 @@ class data_plotting:
             label = "Turgut, CFM56-7B26",
             zorder = 10
         )
+
+        
 
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")

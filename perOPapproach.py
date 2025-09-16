@@ -141,6 +141,14 @@ for i in ops:
     #models.Learning_curve(model = polymodel, model_features = polyfeatures, 
     #                      operating_point = i)
 
+# Convert models_res to dataframe
+filtered = {
+    model: {phase: vals for phase, vals in phases.items() if vals} 
+    for model, phases in models_res.items()
+    if any(phases.values())  # keep only models with at least one non-empty entry
+}
+
+dtmodels = pd.DataFrame(filtered)
 
 ### Distribution plots
 labels = ["NOx Idle", "NOx T/O", "NOx C/O", "NOx App"]
@@ -174,7 +182,7 @@ for point in dtPoints.keys():
         dtPoints[point]["Pbin"], 
         0.95*dtPoints[point]["Pbin"], 
         dtPoints[point]["FAR"], 
-        dtPoints[point]["m_dot"], 
+        dtPoints[point]["m_dot_air"], 
         0, 
         1.293
     )
@@ -284,7 +292,7 @@ mean_lx = lx(df = mean_points, filename = "data/means.tex", caption = "Operating
 mean_lx.df_to_lxTable()
 
 # Mean relative error and standard deviation 
-errors = data_plotting(dtCorrs = dtCorrs, exp = exp, mean_points = mean_points)
+errors = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_points = mean_points, dtmodels = dtmodels)
 [meanEC, meanEE, relativeEC, relativeEE] = errors.error()
 
 # Convert dataframes to latex tables
@@ -324,9 +332,8 @@ conditions = lx(df = lto_ops, filename = "data/lto_ops.tex",
 conditions.df_to_lxTable()
 
 # Distribution plots
-distr_plots = data_plotting(dtCorrs = dtCorrs, exp = exp, mean_points = mean_points)
+distr_plots = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_points = mean_points, dtmodels = dtmodels)
 distr_plots.distribution_plots(
-    df_all = df_all,
     method = "Violinplot",
     size = [12,9],
     ylimits = [0, 70, 10], # min, max, step 
