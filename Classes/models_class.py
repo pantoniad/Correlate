@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Lasso, SGDRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, root_mean_squared_error
 from sklearn.model_selection import learning_curve, LearningCurveDisplay
@@ -92,10 +92,14 @@ class models_per_OP:
         deg = parameters["Degrees"]
         bias = parameters["Include Bias"]
 
+        x_scaler = StandardScaler()
+        xtrain_scaled = x_scaler.fit_transform(xtrain)
+        xtest_scaled  = x_scaler.transform(xtest)
+
         # Polynomial object
         poly = PolynomialFeatures(degree = deg, include_bias = bias)
-        x_train_poly = poly.fit_transform(xtrain)
-        x_test_poly = poly.transform(xtest)
+        x_train_poly = poly.fit_transform(xtrain_scaled)
+        x_test_poly = poly.transform(xtest_scaled)
         
         # Linear regression objet
         lin = LinearRegression()
@@ -214,8 +218,12 @@ class models_per_OP:
         X = data.iloc[:, range(0, len(data.keys())-1)]
         y = data.iloc[:, -1]
 
+        x_scaler = StandardScaler()
+        X_scaled = x_scaler.fit_transform(X)
+        #y_scaled  = x_scaler.transform(y)
+
         # Learning curve 
-        train_sizes, train_scores, test_scores = learning_curve(model, X, y, cv = 5, scoring = "r2")
+        train_sizes, train_scores, test_scores = learning_curve(model, X_scaled, y, train_sizes = np.arange(0.1, 1, 0.05), cv = 7, scoring = "r2")
         
         # Mean and std values
         mean_train = np.mean(train_scores, axis = 1)
@@ -248,7 +256,8 @@ class models_per_OP:
         plt.xlabel("Training set size")
         plt.ylabel("Score - Coefficient of Determination (R2)")
         plt.grid(color = "silver", linestyle = ":")
-        plt.ylim([min(mean_test) - 0.1, 1])
+        #plt.ylim([min(min(mean_test), min(mean_train)) - 0.01*min(min(mean_test), min(mean_train)),
+        #           max(max(mean_test), max(mean_train)) + 0.01*max(max(mean_test), max(mean_train))])
         
         if operating_point != None: 
             plt.title(f"Learning curve - {operating_point} conditions - {model_type}")

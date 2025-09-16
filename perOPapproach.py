@@ -112,9 +112,9 @@ for i in ops:
 
     # Split data
     X_train, y_train, X_dev, y_dev, X_test, y_test = models.splitter(
-        train_split = 0.7,
-        test_split = 0.25,
-        dev_split = 0.05
+        train_split = 0.51,
+        test_split = 0.15,
+        dev_split = 0.34
     )
 
     # Train on the dev set (only applicable to Polynomial regression as of now)
@@ -138,8 +138,8 @@ for i in ops:
     models_res["Linear Regression"][i] = y_new
 
     # Learning curve
-    #models.Learning_curve(model = polymodel, model_features = polyfeatures, 
-    #                      operating_point = i)
+    models.Learning_curve(model = polymodel, model_features = polyfeatures, 
+                          operating_point = i)
 
 # Convert models_res to dataframe
 filtered = {
