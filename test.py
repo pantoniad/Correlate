@@ -1,33 +1,28 @@
-import matplotlib.pyplot as plt
-import numpy as np
+## Initialize models class for each operating point
+# Idle
+features = dIdle.drop(columns = "NOx EI Idle (g/kg)")
+response = dIdle["NOx EI Idle (g/kg)"]
+modelsIdle = models_per_OP(data = dIdle, 
+                           features = features, 
+                           response = response)
 
-# Fake data
-x = np.arange(1, 6)
-y1 = np.array([2, 4, 1, 5, 3])
-y2 = np.array([3, 5, 2, 6, 4])
+# Split data
+xtrain, ytrain, xdev, ydev, xtest, ytest = modelsIdle.splitter(train_split = 0.6,
+                                                               dev_split = 0.2,
+                                                               test_split = 0.2)
 
-fig, ax = plt.subplots(figsize=(8, 6))
+# Train: Polynomial Regression
+parameters = {"Degrees": 2, "Include Bias": True}
+polymodel, polyfeatures, train_poly, test_poly = modelsIdle.polReg(
+    xtrain = xtrain, ytrain = ytrain, xtest = xdev, ytest = ydev,
+    parameters = parameters
+)
 
-ax.plot(x, y1, 'o-', label="y1")
-ax.plot(x, y2, 's--', label="y2")
+# Get metrics
+metrics = modelsIdle.performance_metrics(train = train_poly, test = test_poly)
 
-ax.set_title("Experiment with Multi-Column Attached Table")
-ax.set_xlabel("Trial")
-ax.set_ylabel("Value")
-ax.legend()
+print(metrics.head())
 
-# === Attached table (multi-column) ===
-cell_text = [[f"{a}", f"{b}"] for a, b in zip(y1, y2)]
-row_labels = [f"T{i}" for i in x]
-col_labels = ["y1", "y2"]
+# Learning curve
+modelsIdle.Learning_curve(model = polymodel, model_features = polyfeatures, operating_point="Idle")
 
-table = ax.table(cellText=cell_text,
-                 rowLabels=row_labels,
-                 colLabels=col_labels,
-                 loc="bottom",
-                 cellLoc="center")
-
-# Make space for the table
-plt.subplots_adjust(bottom=0.25)
-
-plt.show()

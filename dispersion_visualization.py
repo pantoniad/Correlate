@@ -3,8 +3,10 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt  
 import matplotlib.gridspec as gridspec  
-import correlations_class as correlate
 import warnings
+from Classes import correlations_class as correlate
+from Classes.latex_class import latex as lx
+from Classes.FuelFlow_class import FuelFlowMethods as ffms
 
 ####
 def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relativeEC, relativeEE, method, size, title, ylimits, xLabel, yLabel, colours, labels, dotPlotXlabel, dotPlotYlabel, lineStyle, Jitter = None):
@@ -188,23 +190,6 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relati
     plt.title(title)
     plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
 
-    """
-    # Include a table
-    ax2 = fig.add_subplot(gs[1])
-    ax2.axis("off")
-    table1 = pd.plotting.table(ax2, meanEC, loc = "bottom", cellLoc = "center")
-    table1.scale(0.8, 0.9)
-
-    ax3 = fig.add_subplot(gs[2])
-    ax3.axis("off")
-    table2 = pd.plotting.table(ax3, meanEE, loc = "bottom", cellLoc = "center")
-    table2.scale(0.8, 0.9)
-    #ax3 = fig.add_subplot(gs[1])
-    #ax3.axis("off")
-    #table1 = pd.plotting.table(ax3, relativeEC.transpose(), loc = "bottom")
-    """
-
-   
     plt.show()
 
 def error(dtCorrs, mean_points, exp):
@@ -321,7 +306,6 @@ def error(dtCorrs, mean_points, exp):
     
     return meanEC, meanEE, relativeECd, relativeEEd
 
-
 ### Scripting ###
 ## Data insertion
 data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.csv", delimiter=";")
@@ -381,12 +365,16 @@ df_all = pd.DataFrame({
 })
 
 ### Correlation equations ###
-# Dictionary definition: For every key: Tburner_inlet Tburner_outlet, Pburner, m_dot, FAR
+# Dictionary definition: For every key: Burner Inlet temperature (K), 
+# Burner outlet temperature (K),
+# Burner inlet pressure (Pa),
+# Core air mass flow rate (kg/s), 
+# FAR
 d = {
-    "idle": [600, 1200, 3156.71, 23.02, 0.0139],
-    "take-off": [860, 2250, 3152.59, 54.1, 0.0214],
-    "climb-out": [820, 2100, 3240.46, 52.41, 0.0306],
-    "approach": [750, 1400, 2909.36, 36.79, 0.01288]
+    "idle": [797.1, 1290, 2755850, 10.564, 0.0137],
+    "take-off": [809.95, 2250, 2929690, 46.897, 0.0446],
+    "climb-out": [805.1, 2000, 2828980, 45.44, 0.03596],
+    "approach": [787.91, 1400, 2539920, 31.89, 0.01718]
 }
 
 dtPoints = pd.DataFrame(
@@ -412,21 +400,29 @@ for point in dtPoints.keys():
     )
 
     # Get values from correlation equations
-    becker = corr.becker(1600, method = "simplified")
-    rokke = corr.rokke_nox(41, method = "Index")
+    becker = corr.becker(1800, method = "simplified")
+    rokke = corr.rokke_nox(27.1, method = "Index")
     lewis = corr.lewis_nox()
     kyprianidis = corr.kyprianidis(h = 0)
     novelo = corr.novelo()
     perkavec = corr.perkavec()
+    lefebvre = corr.lefebvre(Vc = 0.05, Tpz = 2000, Tst = 2250)
+    gasturb = corr.gasturb(WAR = 0)
+    ge = corr.generalElectric(WAR = 0)
+    aeronox = corr.aeronox(Vc = 0.1, R = 287)
 
     # Create temporary dataframe
     d = {
-        #"Becker": Becker,
-        #"Perkavec": Perkavec,
-        #"Rokke": rokke,
+        #"Becker": becker,
+        #"Perkavec": perkavec,
+        "Rokke": rokke,
         "Lewis": lewis,
         "Kyprianidis": kyprianidis,
-        "Novelo": novelo
+        "Novelo": novelo,
+        "Lefebvre": lefebvre,
+        "GasTurb": gasturb,
+        "General Electric": ge,
+        "Aeronox": aeronox
     }
 
     index = [point]
@@ -439,7 +435,39 @@ for point in dtPoints.keys():
     # Append temporary dataframe to external
     dtCorrs = pd.concat([dtCorrs, dt1], axis = 0)
 
-print(dtCorrs)
+# Fuel flow methods - DLR
+clmns2 = ["NOx EI Idle (g/kg)", "NOx EI T/O (g/kg)", "NOx EI C/O (g/kg)", "NOx EI App (g/kg)", 
+         "Fuel Flow Idle (kg/sec)", "Fuel Flow T/O (kg/sec)", "Fuel Flow C/O (kg/sec)", "Fuel Flow App (kg/sec)"]
+
+# EIs and Fuel flow data from ICAO for all engines
+eisff = data_og[clmns2]
+cfm56_7b26 = [[135, 136]]
+
+engineData = eisff.iloc[range(cfm56_7b26[0][0], cfm56_7b26[0][1])]
+
+# Operating conditions 
+speed = [0, 0.4, 0.4, 0.3]  # Mach number
+alt = [0, 11, 304, 905]     # meters
+
+d = {
+    "EINOx": engineData.iloc[0][0:4].values.astype(float),
+    "Fuel Flows": engineData.iloc[0][4:8].values.astype(float),
+    "Flight altitude": alt,
+    "Flight Speed": speed
+}
+
+datapoints = pd.DataFrame(
+    data = d,
+    index = ["Idle", "Take-off", "Climb-out", "Approach"]
+)
+datapoints = datapoints.T
+
+ff = ffms(datapoints = datapoints, fitting = "Parabolic", check_fit = False)
+ffeinox = ff.dlrFF()
+#print(einox)
+
+# Add fuel flow EIs to dtCorrs
+dtCorrs["DLR Fuel Flow"] = ffeinox.values.T
 
 # Experimental data insertion - Dataframe format
 exp_data = {
@@ -447,11 +475,13 @@ exp_data = {
     "Becker - PG6541B": [7.73*10**(-4)*30, 7.73*10**(-4)*80, 7.73*10**(-4)*260, 7.73*10**(-4)*300]
 }
 
-
 exp = pd.DataFrame(
     data = exp_data,
     index = dtPoints.keys()    
 )
+
+experimental = lx(df = exp, filename = "data/experimental.tex", caption = "Turgut et. al - CFM56-7B26", label = "tab:exp")
+experimental.df_to_lxTable()
 
 print(exp)
 
@@ -472,6 +502,9 @@ mean_points = pd.DataFrame(
     index = labels
 )
 
+mean_lx = lx(df = mean_points, filename = "data/means.tex", caption = "Operating points - Mean values", label = "tab:means")
+mean_lx.df_to_lxTable()
+
 print(mean_points)
 
 # Mean relative error and standard deviation 
@@ -481,6 +514,62 @@ print(meanEC)
 print(meanEE)
 print(relativeEC)
 print(relativeEE)
+
+# Convert dataframes to latex tables
+# Relative error - EC: correlation equations error, EE: experimental error
+relativeEC = lx(df = relativeEC.T, filename = "data/relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
+relativeEC.df_to_lxTable()
+
+relativeEE = lx(df = relativeEE.T, filename = "data/relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
+relativeEE.df_to_lxTable()
+
+# Mean relative error - EC: Correlation equations error, EE: experimental error
+meanEC = lx(df = meanEC, filename = "data/MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
+meanEC.df_to_lxTable()
+
+meanEE = lx(df = meanEE, filename = "data/MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
+meanEE.df_to_lxTable()
+
+# Values of thermodynamic parameters
+dtPoints = lx(df = dtPoints, filename = "data/ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
+dtPoints.df_to_lxTable()
+
+# Engine specifications
+d = {
+    "Thrust rating (kN)": [117],
+    "Fan diameter": [1.55],
+    "Hub2Tip": [0.3],
+    "Bypass ratio": [5.1],
+    "Fan PR": [1.6],
+    "Booster PR": [1.55],
+    "High pressure compressor PR": [11]
+}
+
+specs = pd.DataFrame(
+    data = d,
+    index = ["Parameter", "Value"]
+)
+
+engineSpecs = lx(df = specs.T, filename = "data/specs.tex", caption = "CFM56-7B26 specifications",
+                 label = "tab:specs")
+engineSpecs.df_to_lxTable()
+
+# Operating conditions for each point: Altitude, Required thrust, Flight speed, Axial fan speed
+d = {
+    "Idle": [0, 8.19, 0, 0.09],
+    "Take-off": [11, 117, 0.3, 0.4],
+    "Climb-out": [305, 99.45, 0.3, 0.4],
+    "Approach": [914, 35.1, 0.2, 0.3]
+}
+
+lto_ops = pd.DataFrame(
+    data = d,
+    index = ["Altitude (m)", "Required thrust (kN)", "Flight speed (Mach)", "Axial fan speed (Mach)"]
+)
+
+conditions = lx(df = lto_ops, filename = "data/lto_ops.tex", 
+                caption = "LTO operating conditions", label = "tab:lto")
+conditions.df_to_lxTable()
 
 # Distribution plots
 distribution_plots(
@@ -492,9 +581,9 @@ distribution_plots(
     meanEE,
     relativeEC,
     relativeEE,
-    method = "Dotplot",
-    size = [10,7],
-    ylimits = [0, 50, 10], # min, max, step 
+    method = "Swarmplot",
+    size = [12,9],
+    ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
     xLabel = "Pollutant and operating point", 
     yLabel = "Emissions index value (g/kg)", 
