@@ -3,9 +3,9 @@ import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt  
 import matplotlib.gridspec as gridspec  
-import correlations_class as correlate
+import Classes.correlations_class as correlate
 import warnings
-from latex_class import latex as lx
+from Classes.latex_class import latex as lx
 from Classes.FuelFlow_class import FuelFlowMethods as ffms
 
 class data_plotting:
@@ -334,7 +334,7 @@ class data_plotting:
     
         pass
 
-
+"""
 ### Scripting ###
 ## Data insertion
 data_og = pd.read_csv(r"E:/Correlate/Databank/ICAO_data.csv", delimiter=";")
@@ -617,3 +617,4 @@ distr_plots.distribution_plots(
     dotPlotYlabel = "Value", 
     lineStyle = lineStyle
 )
+"""
