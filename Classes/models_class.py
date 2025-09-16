@@ -163,6 +163,13 @@ class models_per_OP:
         train_r2 = r2_score(ytrain, y_train_pred)
         test_r2 = r2_score(ytest, y_test_pred)
 
+        # CRMSD
+        pred = y_test_pred.values.astype(float)
+        pred_median = np.median(y_test_pred.values.astype(float))
+        real = ytest.values.astype(float) 
+        real_median = np.median(ytest.values.astype(float))
+        crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+
         # Results to dataframe
         d = {
            "MSE":{
@@ -176,6 +183,10 @@ class models_per_OP:
            "R2":{
                "Train": train_r2,
                "Test": test_r2
+           },
+           "CRMSD":{
+               "Train": "-",
+               "Test": crmsd_test
            }
         } 
         

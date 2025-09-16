@@ -94,13 +94,16 @@ for i in ops:
     
     if i == ops[0]:
         features["Rated Thrust (kN)"] = 0.07*features["Rated Thrust (kN)"].values.astype(float)
+        x_new = [specs["Pressure ratio"]["Value"].astype(float), 0.07*specs["Thrust rating (kN)"]["Value"].astype(float), dtPoints[i]["m_dot_fuel"]]
     elif i == ops[1]:
         pass
     elif i == ops[2]:
         features["Rated Thrust (kN)"] = 0.85*features["Rated Thrust (kN)"].values.astype(float)
+        x_new = [specs["Pressure ratio"]["Value"].astype(float), 0.85*specs["Thrust rating (kN)"]["Value"].astype(float), dtPoints[i]["m_dot_fuel"]]
     elif i == ops[3]:
         features["Rated Thrust (kN)"] = 0.3*features["Rated Thrust (kN)"].values.astype(float)
-    
+        x_new = [specs["Pressure ratio"]["Value"].astype(float), 0.3*specs["Thrust rating (kN)"]["Value"].astype(float), dtPoints[i]["m_dot_fuel"]]
+
     response = df3[f"NOx EI {i} (g/kg)"]
 
     # Initialize models_per_OP class
@@ -118,7 +121,7 @@ for i in ops:
     )
 
     # Train on the dev set (only applicable to Polynomial regression as of now)
-    parameters = {"Degrees": 2, "Include Bias": True}
+    parameters = {"Degrees": 2, "Include Bias": False}
     polymodel, polyfeatures, train_poly, test_poly = models.polReg(
         xtrain = X_train, ytrain = y_train, xtest = X_dev, ytest = y_dev,
         parameters = parameters
@@ -130,7 +133,7 @@ for i in ops:
     print(metrics.head())
 
     # Predict based on the thermodynamic data
-    x_new = [specs["Pressure ratio"]["Value"].astype(float), specs["Thrust rating (kN)"]["Value"].astype(float), dtPoints[i]["m_dot_fuel"]]
+    #x_new = [specs["Pressure ratio"]["Value"].astype(float), 0.07*specs["Thrust rating (kN)"]["Value"].astype(float), dtPoints[i]["m_dot_fuel"]]
     x_new_poly = polyfeatures.transform([x_new])
     y_new = polymodel.predict(x_new_poly)
     
@@ -336,7 +339,7 @@ distr_plots = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_
 distr_plots.distribution_plots(
     method = "Violinplot",
     size = [12,9],
-    ylimits = [0, 70, 10], # min, max, step 
+    #ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
     xLabel = "Pollutant and operating point", 
     yLabel = "Emissions index value (g/kg)", 

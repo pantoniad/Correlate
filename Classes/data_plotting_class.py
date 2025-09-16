@@ -56,7 +56,7 @@ class data_plotting:
                            method: str, 
                            size: list, 
                            title: str, 
-                           ylimits: list, 
+                           #ylimits: list, 
                            xLabel: str, 
                            yLabel: str, 
                            colours: list, 
@@ -234,7 +234,9 @@ class data_plotting:
         plt.ylabel(yLabel)
         plt.xlabel(xLabel)
         plt.title(title)
-        plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
+        minlim = 1.05*min(df_all.min(numeric_only=True).Value, dtCorrs.min().min(), exp.min().min(), dtmodels.min().min().min())
+        maxlim = 1.05*max(df_all.max(numeric_only=True).Value, dtCorrs.max().max(), exp.max().max(), dtmodels.max().max().max())
+        plt.yticks(np.arange(minlim, maxlim,100))
 
         plt.show()
 
