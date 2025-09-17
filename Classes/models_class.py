@@ -123,7 +123,7 @@ class models_per_OP:
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
 
-        return lin, poly, train_results, test_results
+        return lin, poly, x_scaler, train_results, test_results
     
     def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame):
                            # to_latex: bool = False, parameters = Optional[pd.DataFrame]):

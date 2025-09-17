@@ -62,7 +62,7 @@ for i in ops:
         plt.plot(x, y_pred, color = "red")
         plt.ylabel("Emissions Index (g/kg)")
         plt.xlabel(features.keys()[j])
-        plt.title(f"Relationship EI NOx at {i} conditions with {features.keys()[j]}")
+        plt.title(f"EI NOx vs {features.keys()[j]} - {i} conditions")
         plt.legend()
         plt.grid(color = "silver", linestyle = ":")
 

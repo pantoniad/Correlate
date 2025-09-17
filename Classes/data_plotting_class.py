@@ -211,7 +211,7 @@ class data_plotting:
         # Place the results from the models
         plt.plot(
             labels,
-            dtmodels["Linear Regression"],
+            dtmodels["Polynomial Regression"],
             "-d",
             label = "Polynomial (2) Regression",
             zorder = 10
@@ -234,9 +234,9 @@ class data_plotting:
         plt.ylabel(yLabel)
         plt.xlabel(xLabel)
         plt.title(title)
-        minlim = 1.05*min(df_all.min(numeric_only=True).Value, dtCorrs.min().min(), exp.min().min(), dtmodels.min().min().min())
-        maxlim = 1.05*max(df_all.max(numeric_only=True).Value, dtCorrs.max().max(), exp.max().max(), dtmodels.max().max().max())
-        plt.yticks(np.arange(minlim, maxlim,100))
+        #minlim = 1.05*min(df_all.min(numeric_only=True).Value, dtCorrs.min().min(), exp.min().min(), dtmodels.min().min().min())
+        #maxlim = 1.05*max(df_all.max(numeric_only=True).Value, dtCorrs.max().max(), exp.max().max(), dtmodels.max().max().max())
+        #plt.yticks(np.arange(minlim, maxlim,100))
 
         plt.show()
 
@@ -268,13 +268,16 @@ class data_plotting:
         dtCorrs = self.dtCorrs
         mean_points = self.mean_points
         exp = self.exp
+        dtmodels = self.dtmodels
         
         # Constants and parameters
         operPoints = len(mean_points.index)
         corrsNum = len(dtCorrs.keys())
+        modelsNum = len(dtmodels.keys())
         expNum = len(exp.keys())
         relativeEC = [] # relative error for Correlation
         relativeEE = [] # relative error for Experimental 
+        relativeEM = [] # relative error for Models
         meanRelativeEC = [] # mean relative error for each correlation
         meanRelativeEE = [] # mean relative error for Experimental
 
@@ -294,6 +297,7 @@ class data_plotting:
                 # Append the value to a bigger dictionary 
                 relativeEC = np.append(relativeEC, error, axis = 0)
 
+            # Calculate relative error - Experimental data
             for j in range(0, expNum):
             
                 # Calculate the relative error for each correlation j
@@ -302,6 +306,16 @@ class data_plotting:
 
                 # Append the value to a bigger dictionary 
                 relativeEE = np.append(relativeEE, error, axis = 0)
+            
+            # Calculate relative error - Models
+            for k in range(0, modelsNum):
+
+                # Calculate the relative error for each model k used
+                # at each operating point i
+                error = 100*np.abs(dtmodels.values[i][k] - mean)/mean
+
+                # Append the value to a bigger dictionary
+                relativeEM = np.append(relativeEM, error, axis = 0)
 
         # Regroup the relative error lists to be 2d arrays
         chunks = [relativeEC[i:i+corrsNum] for i in range(0, len(relativeEC), corrsNum)]
@@ -310,9 +324,13 @@ class data_plotting:
         chunks = [relativeEE[i:i+corrsNum] for i in range(0, len(relativeEE), expNum)]
         relativeEEr = list(map(list, zip(*chunks)))
 
+        chunks = [relativeEM[i:i+modelsNum] for i in range(0, len(relativeEM), modelsNum)]
+        relativeEMr = list(map(list, zip(*chunks)))
+
         # Get mean values
         meanRelativeEC = [np.mean(relativeECr[:][i]) for i in range(0, corrsNum)]
         meanRelativeEE = [np.mean(relativeEEr[:][i]) for i in range(0, expNum)]
+        meanRelativeEM = [np.mean(relativeEMr[:][i]) for i in range(0, modelsNum)]
 
         # Convert into data-frames
         meanEC = pd.DataFrame(
@@ -327,6 +345,12 @@ class data_plotting:
             index = exp.keys()
         )
 
+        meanEM = pd.DataFrame(
+            data = np.round(meanRelativeEM,2),
+            columns=["Mean relative percentage error"],
+            index = dtmodels.keys() 
+
+        )
         # Also convert the relative error lists
         lis = np.array(relativeECr)
         lisT = lis.T
@@ -345,16 +369,27 @@ class data_plotting:
             columns = exp.keys(),
             index = exp.index
         )
-        
+
+        lis = np.array(relativeEMr)
+        lisT = lis.T
+        listT = lisT.tolist()
+        relativeEMd = pd.DataFrame(
+            data = np.round(listT,2),
+            columns = dtmodels.keys(),
+            index = dtmodels.index 
+        )
+
         # Get standard deviations
         stdEC = np.round([np.std(relativeECr[:][i]) for i in range(0, corrsNum)],2)
         stdEE = np.round([np.std(relativeEEr[:][i]) for i in range(0, expNum)],2)
+        stdEM = np.round([np.std(relativeEMr[:][i]) for i in range(0, modelsNum)],2)
 
         # Include the standard deviation 
         meanEE["Standard Deviation"] = stdEE
         meanEC["Standard Deviation"] = stdEC
-        
-        return meanEC, meanEE, relativeECd, relativeEEd
+        meanEM["Standard Deviation"] = stdEM 
+
+        return meanEC, meanEE, meanEM, relativeECd, relativeEEd, relativeEM
     
     def plot_3d(self):
     
