@@ -74,9 +74,9 @@ specs = pd.DataFrame(
 
 # Saving the model results
 models_res = {
-    "Polynomial Regression": {"Idle": [], "T/O": [], "C/O": [], "App": []},
-    "Gradient Boosting": {"Idle": [], "T/O": [], "C/O": [], "App": []},
-    "ANN": {"Idle": [], "T/O": [], "C/O": [], "App": []}
+    "Polynomial Regression": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()},
+    "Gradient Boosting": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()},
+    "ANN": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()}
 } 
 
 # Iterate through the operating points
@@ -124,11 +124,12 @@ for i in ops:
 
     # Split data
     X_train, y_train, X_dev, y_dev, X_test, y_test = models.splitter(
-        train_split = 0.51,
-        test_split = 0.15,
-        dev_split = 0.34
+        train_split = 0.30,
+        test_split = 0.30,
+        dev_split = 0.40
     )
 
+    # Polynomial model 
     # Train on the dev set (only applicable to Polynomial regression as of now)
     parameters = {"Degrees": 2, "Include Bias": False}
     polymodel, polyfeatures, x_scaler, train_poly, test_poly = models.polReg(
@@ -137,9 +138,9 @@ for i in ops:
     )
     
     # Get metrics
-    metrics = models.performance_metrics(train = train_poly, test = test_poly)
-    print(f"Operating point: {i} metrics")
-    print(metrics.head())
+    #metrics = models.performance_metrics(train = train_poly, test = test_poly)
+    #print(f"Operating point: {i} metrics")
+    #print(metrics.head())
 
     # Predict based on the thermodynamic data
     x_new_scaled = x_scaler.transform(x_new_df)
@@ -152,6 +153,32 @@ for i in ops:
     # Learning curve
     #models.Learning_curve(model = polymodel, model_features = polyfeatures, 
     #                      operating_point = i)
+    
+    # Gradient boosting
+    # Train on the dev set (only applicable to Polynomial regression as of now)
+    #parameters = {"Degrees": 2, "Include Bias": False}
+    gbr, x_scaler, train_gbr, test_gbr = models.gradientBoosting(
+        xtrain = X_train, ytrain = y_train, xtest = X_dev, ytest = y_dev
+    )
+    
+    # Get metrics
+    metrics = models.performance_metrics(train = train_gbr, test = test_gbr)
+    print(f"Operating point: {i} metrics")
+    print(metrics.head())
+
+    # Predict based on the thermodynamic data
+    x_new_scaled = x_scaler.transform(x_new_df)
+    #x_new_poly = polyfeatures.transform(x_new_scaled)
+    #y_new = polymodel.predict(x_new_poly)
+    
+    # Save prediction results
+    #models_res["Polynomial Regression"][i] = y_new
+    
+    # Learning curve
+    #models.Learning_curve(model = gbr, operating_point = i)
+    
+ 
+
 
 # Convert models_res to dataframe
 filtered = {
