@@ -2,23 +2,17 @@ import pandas as pd
 import numpy as np
 from typing import Optional
 
+from sklearn.model_selection import train_test_split
+
+import warnings
+
 class data_process:
 
-    def __init__(self, df: pd.DataFrame, drange: list, clmns: list):
+    def __init__(self):
 
-        """
-        Inputs: 
-        - df: Dataframe from which data are parsed,
-        - drange: range of rows to keep from the df,
-        - clmns: columns to be kept from the df
+        pass
         
-        """
-
-        self.df = df
-        self.drange = drange
-        self.clmns = clmns
-        
-    def csv_cleanup(self, reset_index: bool = True, save_to_csv: bool = False, path: Optional[str] = None):
+    def csv_cleanup(df: pd.DataFrame, drange: pd.DataFrame, clmns: list, reset_index: bool = True, save_to_csv: bool = False, path: Optional[str] = None):
 
         """
         csv_cleanup: Used to clean up a specific data range that originated from
@@ -39,25 +33,89 @@ class data_process:
         -
 
         """
-
-        # Extract parameters from self
-        df = self.df
-        clmns = self.clmns
-        drange = self.drange
-
         # Clean-up dataframe
-        df2 = df[clmns]
-        df2 = df2.iloc[range(drange[0][0], drange[0][1])]
+        df_inter = df[clmns]
+        df_cleaned = df_inter.iloc[range(drange[0][0], drange[0][1])]
         
         # Resent index
         if reset_index == True:
-            df2 = df2.reset_index()
-            df2 = df2.drop(["index"],  axis = 1)
+            df_cleaned = df_cleaned.reset_index()
+            df_cleaned = df_cleaned.drop(["index"],  axis = 1)
         
         # Save dataframe
         if save_to_csv == True and path == None:
             raise ValueError("'path' variable not defined")
         elif save_to_csv == True and path != None:
-            df2.to_csv(path)
+            df_cleaned.to_csv(path)
 
-        return df2
+        return df_cleaned
+
+    def splitter(data: pd.DataFrame, x: pd.DataFrame, y: pd.DataFrame, train_split: Optional[float] = 0.6, test_split: Optional[float] = 0.4, dev_split: Optional[float] = 0.2):
+
+        """
+        splitter: Splits the data into train, dev and test based on the proportions given above. 
+        If dev test is not needed, the user can define only the splits of the train and test 
+        sets. 
+
+        Inputs:
+        - self
+        - train_split: the percentage of data used for model training, float,
+        - test_split: the percentage of data used for testing, float,
+        - dev_split: the percentage of data used for the development, float
+
+        Outputs:
+        - xtrain, ytrain: data part for the training
+        - xdev, ydev: data part for the development
+        - xtest, ytest: data part for the testing
+
+        """
+        # Split data: Train and temp
+        xtrain, Xtemp, ytrain, Ytemp = train_test_split(
+            x, y, train_size=train_split, random_state=10
+        )
+
+        # Split data: Temp to Dev and Test
+        # Dev: train, Test: test, get split %
+        size = dev_split/(test_split+dev_split)
+
+        xdev, xtest, ydev, ytest = train_test_split(
+            Xtemp, Ytemp, train_size=size, random_state=10
+        )
+
+        return xtrain, ytrain, xdev, ydev, xtest, ytest
+
+    def df_former(df: pd.DataFrame, clmns: Optional[list] = None, rows: Optional[np.array] = np.empty([0]), parameter: Optional[str] = None):
+        """
+        df_former: forms the dataframe to be used based on the 
+        column names and row numbering
+
+        Inputs:
+        - df: dataframe to be choped up,
+        - clmns: the clmns to keep from the initial dataframe, list,
+        - rows: the rows to keep from the initial dataframe, two element array:
+            [start, finish],
+        - parameter: a parameter that is used to identify what columns to keep, str
+
+        Outputs:
+        - df_formed: formed dataframe based on values 
+        
+        """
+
+        if clmns == None and len(rows) == 0 and parameter == None:
+            warnings.warn("No values passed on 'clmns', 'rows' and 'parameter'. Returning initial dataframe.")
+            df_final = df
+        elif len(rows) == 0: # No rows defined
+            if parameter == None:
+                df_final = df.filter(clmns)
+            else:
+                # Keep the columns based on the parameter value
+                df_inter = df.filter(df.columns[df.columns.str.contains(parameter)], axis = 1)
+                df_final = pd.concat([df.filter(clmns), df_inter], axis = 1)
+        elif clmns == None: # No columns defined
+            if parameter == None:
+                df_final = df.iloc[range(rows[0], rows[1])]
+            else: # If parameter is defined -> clmns are also defined
+                df_inter = df.filter(df.columns[df.columns.str.contains(parameter)], axis  = 1)
+                df_final = df_inter.iloc[range(rows[0], rows[1])]
+        
+        return df_final

@@ -1,13 +1,12 @@
 import numpy as np
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import sklearn
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, root_mean_squared_error
-from sklearn.model_selection import learning_curve, LearningCurveDisplay
+from sklearn.metrics import mean_absolute_percentage_error, r2_score, root_mean_squared_error
+from sklearn.model_selection import learning_curve
 
 from typing import Optional
 from Classes.latex_class import latex as ltx
@@ -18,63 +17,27 @@ np.random.seed(42)
 
 class models_per_OP:
 
-    def __init__(self, data: pd.DataFrame, features: list, response: list):
+    def __init__(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame, y_test: pd.DataFrame):
         
-        self.data = data
-        self.features = features
-        self.response = response
-
-    def splitter(self, train_split: Optional[float] = 0.6, test_split: Optional[float] = 0.4, dev_split: Optional[float] = 0.2):
-
         """
-        splitter: Splits the data into train, dev and test based on the proportions given above. 
-        If dev test is not needed, the user can define only the splits of the train and test 
-        sets. 
-
         Inputs:
-        - self
-        - train_split: the percentage of data used for model training, float,
-        - test_split: the percentage of data used for testing, float,
-        - dev_split: the percentage of data used for the development, float
-
-        Outputs:
-        - xtrain, ytrain: data part for the training
-        - xdev, ydev: data part for the development
-        - xtest, ytest: data part for the testing
-
+        - X_train:
+        - y_train:
+        - X_test:
+        - y_test:
         """
-        # Extract data from self
-        data = self.data
-        x = self.features
-        y = self.response
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
 
-        # Split data: Train and temp
-        xtrain, Xtemp, ytrain, Ytemp = train_test_split(
-            x, y, train_size=train_split, random_state=11
-        )
-
-        # Split data: Temp to Dev and Test
-        # Dev: train, Test: test, get split %
-        size = dev_split/(test_split+dev_split)
-
-        xdev, xtest, ydev, ytest = train_test_split(
-            Xtemp, Ytemp, train_size=size, random_state=42
-        )
-
-        return xtrain, ytrain, xdev, ydev, xtest, ytest
-
-    def polReg(self, xtrain: pd.DataFrame, ytrain: pd.DataFrame, xtest: pd.DataFrame, ytest: pd.DataFrame,
-               parameters: dict):
+    def polReg(self, parameters: dict):
 
         """
         polReg: Polynomial Regression model. This function houses the code
         for generating a polynomial regression model
 
         Inputs: 
-        - xtrain, ytrain: the features and response data used for 
-        trainning, Dataframe
-        - xtest, ytest: the features and response data used for 
-        testing, Dataframe
         -parameters: the parameters needed to define the polynomial 
         regression model, Dictionary
 
@@ -88,44 +51,47 @@ class models_per_OP:
         """
         
         # Upack from self
-        data = self.data
+        X_train = self.X_train
+        X_test = self.X_test
+        y_train = self.y_train
+        y_test = self.y_test
 
         # Extract parameters
         deg = parameters["Degrees"]
         bias = parameters["Include Bias"]
 
-        x_scaler = StandardScaler()
-        xtrain_scaled = x_scaler.fit_transform(xtrain)
-        xtest_scaled  = x_scaler.transform(xtest)
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled  = scaler.transform(X_test)
 
         # Polynomial object
         poly = PolynomialFeatures(degree = deg, include_bias = bias)
-        x_train_poly = poly.fit_transform(xtrain_scaled)
-        x_test_poly = poly.transform(xtest_scaled)
+        X_train_poly = poly.fit_transform(X_train_scaled)
+        X_test_poly = poly.transform(X_test_scaled)
         
         # Linear regression objet
         lin = LinearRegression()
-        lin.fit(x_train_poly, ytrain)
+        lin.fit(X_train_poly, y_train)
 
         # Predict
-        y_train_pred = lin.predict(x_train_poly)
-        y_test_pred = lin.predict(x_test_poly)
+        y_train_pred = lin.predict(X_train_poly)
+        y_test_pred = lin.predict(X_test_poly)
         
         # Create output dataframe
         d1 = {
-           "Y train": ytrain,
+           "Y train": y_train,
            "Y train Pred": y_train_pred,
         }
         
         d2 = {
-           "Y test": ytest,
+           "Y test": y_test,
            "Y test Pred": y_test_pred,
         }
         
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
 
-        return lin, poly, x_scaler, train_results, test_results
+        return lin, poly, scaler, train_results, test_results
 
     def gradientBoosting(self, xtrain: pd.DataFrame, xtest: pd.DataFrame, ytrain: pd.DataFrame, ytest: pd.DataFrame, params: dict = None):
         """
@@ -199,31 +165,31 @@ class models_per_OP:
 
         """
         # Extract valuers from dataframe
-        ytrain = train["Y train"]
+        y_train = train["Y train"]
         y_train_pred = train["Y train Pred"]
-        ytest = test["Y test"]
+        y_test = test["Y test"]
         y_test_pred = test["Y test Pred"]
 
         # Evaluate results
-        train_mse = mean_absolute_error(ytrain, y_train_pred)
-        test_mse = mean_absolute_error(ytest, y_test_pred)
-        train_rmse = root_mean_squared_error(ytrain, y_train_pred)
-        test_rmse = root_mean_squared_error(ytest, y_test_pred)
-        train_r2 = r2_score(ytrain, y_train_pred)
-        test_r2 = r2_score(ytest, y_test_pred)
+        train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
+        test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
+        train_rmse = root_mean_squared_error(y_train, y_train_pred)
+        test_rmse = root_mean_squared_error(y_test, y_test_pred)
+        train_r2 = r2_score(y_train, y_train_pred)
+        test_r2 = r2_score(y_test, y_test_pred)
 
         # CRMSD
         pred = y_test_pred.values.astype(float)
         pred_median = np.median(y_test_pred.values.astype(float))
-        real = ytest.values.astype(float) 
-        real_median = np.median(ytest.values.astype(float))
+        real = y_test.values.astype(float) 
+        real_median = np.median(y_test.values.astype(float))
         crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
 
         # Results to dataframe
         d = {
-           "MSE":{
-               "Train": train_mse,
-               "Test": test_mse
+           "MAPE":{
+               "Train": train_mape,
+               "Test": test_mape
            },
            "RMSE":{
                "Train": train_rmse,
@@ -257,33 +223,27 @@ class models_per_OP:
         """
         return metrics
     
-    def Learning_curve(self, model: object, model_features: Optional[object] = None, operating_point: Optional[str] = None):
+    def Learning_curve(self, data: pd.DataFrame, scaler: sklearn.preprocessing.StandardScaler, model: object, model_features: Optional[sklearn.preprocessing.PolynomialFeatures] = None, operating_point: Optional[str] = None):
 
         """
         Learning_curve: creates a learning curve for the given data set, 
 
         Inputs:
         - model: the fitted model, object
-        - model_features: Optional entry that contains the features of the model. 
-        i.e. if Polynomial regression is used, then the Polynomial Features method 
-        has to be imported to get the characteristics of the polynomial fit,
+        - model_features: Only applicable to PolynomialFeatures. Optional entry 
+        that contains the features of the model.  
         - operating_point: the operating point that the engine works at.
         Used for plotting purposes, str
         """
-
-        # Extract data from self
-        data = self.data
 
         # Break the data down into based on the operating point
         X = data.iloc[:, range(0, len(data.keys())-1)]
         y = data.iloc[:, -1]
 
-        x_scaler = StandardScaler()
-        X_scaled = x_scaler.fit_transform(X)
-        #y_scaled  = x_scaler.transform(y)
+        X_scaled = scaler.fit_transform(X)
 
         # Learning curve 
-        train_sizes, train_scores, test_scores = learning_curve(model, X_scaled, y, train_sizes = np.arange(0.1, 1, 0.05), cv = 7, scoring = "r2")
+        train_sizes, train_scores, test_scores = learning_curve(model, X_scaled, y, train_sizes = np.arange(0.1, 1, 0.05), cv = 5, scoring = "r2")
         
         # Mean and std values
         mean_train = np.mean(train_scores, axis = 1)
@@ -292,10 +252,8 @@ class models_per_OP:
         std_test = np.std(test_scores, axis = 1)
 
         # Extract model features
-        if model_features.degree != None:
+        if model_features != None:
             model_type = f"Pol. Regresion ({model_features.degree})"
-        else:
-            pass
 
         # Visualize No.1
         fig1, ax1 = plt.subplots( figsize = (7, 5))
@@ -326,17 +284,3 @@ class models_per_OP:
         
         plt.legend()
         plt.show()
-
-    def iterate_through_ops(self,):
-
-        """
-        iterate_through_ops:
-
-        Inputs:
-
-        Outputs:
-
-        """
-
-        pass
-

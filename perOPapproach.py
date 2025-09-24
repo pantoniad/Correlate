@@ -21,6 +21,7 @@ clmns = ["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow Idle (kg/sec)",
 
 drange = [[61, 169]]
 
+"""
 dfCleanUp = data_process(df = df, clmns = clmns, drange = drange)
 df = dfCleanUp.csv_cleanup(reset_index = True, save_to_csv = True, path = "Databank/CFM56data.csv")
 
@@ -39,6 +40,7 @@ dtPoints = pd.DataFrame(
     data = d, 
     index = ["Tbin", "Tbout", "Pbin", "m_dot_air", "FAR", "m_dot_fuel"]
 )
+"""
 
 # Reference engine data - CFM56-7B26
 # ICAO fuel flow and EINOx
@@ -175,7 +177,7 @@ for i in ops:
     #models_res["Polynomial Regression"][i] = y_new
     
     # Learning curve
-    #models.Learning_curve(model = gbr, operating_point = i)
+    models.Learning_curve(model = gbr, operating_point = i)
     
  
 
