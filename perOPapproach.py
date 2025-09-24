@@ -7,6 +7,7 @@ from Classes.data_plotting_class import data_plotting
 import Classes.correlations_class as correlate
 from Classes.FuelFlow_class import FuelFlowMethods as ffms
 from Classes.latex_class import latex as lx
+from sklearn.preprocessing import StandardScaler
 
 ## Data used on the script ##
 
@@ -29,9 +30,9 @@ ops = ["Idle", "T/O", "C/O", "App"]
 # Col1: Tin, Col2: Tout, Co3: Pin (Pa), Col4: m_dot_core, Col5: m_dot_fuel (kg/s)
 d = {
     ops[0]: [797.1, 1290, 2755850, 10.564, 0.0137, 0.144],
-    ops[1]: [809.95, 2250, 2929690, 46.897, 0.0446, 2.02],
-    ops[2]: [805.1, 2000, 2828980, 45.44, 0.03596, 1.634],
-    ops[3]: [787.91, 1400, 2539920, 31.89, 0.01718, 0.548]
+    ops[1]: [809.95, 2250, 2929690, 46.897, 0.0446, 1.2],
+    ops[2]: [805.1, 2000, 2828980, 45.44, 0.03596, 1],
+    ops[3]: [787.91, 1400, 2539920, 31.89, 0.01718, 0.348]
 }
 
 dtPoints = pd.DataFrame(
@@ -73,12 +74,12 @@ specs = pd.DataFrame(
 
 # Saving the model results
 models_res = {
-    "Linear Regression": {"Idle": [], "T/O": [], "C/O": [], "App": []},
-    "Gradient Boosting": {"Idle": [], "T/O": [], "C/O": [], "App": []},
-    "ANN": {"Idle": [], "T/O": [], "C/O": [], "App": []}
+    "Polynomial Regression": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()},
+    "Gradient Boosting": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()},
+    "ANN": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()}
 } 
 
-# Iterate through the opeating points
+# Iterate through the operating points
 for i in ops:
     
     print(i)
@@ -89,21 +90,32 @@ for i in ops:
     df2 = df.filter(["Pressure Ratio", "Rated Thrust (kN)"])
     df3 = pd.concat([df2, df1], axis = 1)
 
+    # Dataframe for the new datapoint
+    xnew_dict = {
+        "Pressure Ratio": float(specs["Pressure ratio"]["Value"]),
+        "Rated Thrust (kN)": float(specs["Thrust rating (kN)"]["Value"]),
+        # Make sure this key matches the exact column name used in `features`
+        f"Fuel Flow {i} (kg/sec)": float(dtPoints[i]["m_dot_fuel"])
+    }
+
+    # Apply thrust scaling per operating point *to the DataFrame*, same as you did on features
+    if i == ops[0]:
+        df3["Rated Thrust (kN)"] = 0.07*df3["Rated Thrust (kN)"].astype(float)
+        xnew_dict["Rated Thrust (kN)"] *= 0.07
+    elif i == ops[2]:
+        df3["Rated Thrust (kN)"] = 0.85*df3["Rated Thrust (kN)"].astype(float)
+        xnew_dict["Rated Thrust (kN)"] *= 0.85
+    elif i == ops[3]:
+        df3["Rated Thrust (kN)"] = 0.3*df3["Rated Thrust (kN)"].astype(float)
+        xnew_dict["Rated Thrust (kN)"] *= 0.30
+
+    x_new_df = pd.DataFrame([xnew_dict], index = (["0"]))
+
     # Get features and response
     features = df3.drop(columns=f"NOx EI {i} (g/kg)")
-    
-    if i == ops[0]:
-        features["Rated Thrust (kN)"] = 0.07*features["Rated Thrust (kN)"].values.astype(float)
-    elif i == ops[1]:
-        pass
-    elif i == ops[2]:
-        features["Rated Thrust (kN)"] = 0.85*features["Rated Thrust (kN)"].values.astype(float)
-    elif i == ops[3]:
-        features["Rated Thrust (kN)"] = 0.3*features["Rated Thrust (kN)"].values.astype(float)
-    
     response = df3[f"NOx EI {i} (g/kg)"]
 
-    # Initialize models_per_OP class
+    # Initialize `models_per_OP class
     models = models_per_OP(
         data = df3,
         features = features,
@@ -112,34 +124,61 @@ for i in ops:
 
     # Split data
     X_train, y_train, X_dev, y_dev, X_test, y_test = models.splitter(
-        train_split = 0.51,
-        test_split = 0.15,
-        dev_split = 0.34
+        train_split = 0.30,
+        test_split = 0.30,
+        dev_split = 0.40
     )
 
+    # Polynomial model 
     # Train on the dev set (only applicable to Polynomial regression as of now)
-    parameters = {"Degrees": 2, "Include Bias": True}
-    polymodel, polyfeatures, train_poly, test_poly = models.polReg(
+    parameters = {"Degrees": 2, "Include Bias": False}
+    polymodel, polyfeatures, x_scaler, train_poly, test_poly = models.polReg(
         xtrain = X_train, ytrain = y_train, xtest = X_dev, ytest = y_dev,
         parameters = parameters
     )
     
     # Get metrics
-    metrics = models.performance_metrics(train = train_poly, test = test_poly)
+    #metrics = models.performance_metrics(train = train_poly, test = test_poly)
+    #print(f"Operating point: {i} metrics")
+    #print(metrics.head())
+
+    # Predict based on the thermodynamic data
+    x_new_scaled = x_scaler.transform(x_new_df)
+    x_new_poly = polyfeatures.transform(x_new_scaled)
+    y_new = polymodel.predict(x_new_poly)
+    
+    # Save prediction results
+    models_res["Polynomial Regression"][i] = y_new
+    
+    # Learning curve
+    #models.Learning_curve(model = polymodel, model_features = polyfeatures, 
+    #                      operating_point = i)
+    
+    # Gradient boosting
+    # Train on the dev set (only applicable to Polynomial regression as of now)
+    #parameters = {"Degrees": 2, "Include Bias": False}
+    gbr, x_scaler, train_gbr, test_gbr = models.gradientBoosting(
+        xtrain = X_train, ytrain = y_train, xtest = X_dev, ytest = y_dev
+    )
+    
+    # Get metrics
+    metrics = models.performance_metrics(train = train_gbr, test = test_gbr)
     print(f"Operating point: {i} metrics")
     print(metrics.head())
 
     # Predict based on the thermodynamic data
-    x_new = [specs["Pressure ratio"]["Value"].astype(float), specs["Thrust rating (kN)"]["Value"].astype(float), dtPoints[i]["m_dot_fuel"]]
-    x_new_poly = polyfeatures.transform([x_new])
-    y_new = polymodel.predict(x_new_poly)
+    x_new_scaled = x_scaler.transform(x_new_df)
+    #x_new_poly = polyfeatures.transform(x_new_scaled)
+    #y_new = polymodel.predict(x_new_poly)
     
     # Save prediction results
-    models_res["Linear Regression"][i] = y_new
-
+    #models_res["Polynomial Regression"][i] = y_new
+    
     # Learning curve
-    models.Learning_curve(model = polymodel, model_features = polyfeatures, 
-                          operating_point = i)
+    #models.Learning_curve(model = gbr, operating_point = i)
+    
+ 
+
 
 # Convert models_res to dataframe
 filtered = {
@@ -279,6 +318,7 @@ meanIdle = np.mean(df["NOx EI Idle (g/kg)"].values.astype(float))
 meanTO = np.mean(df["NOx EI T/O (g/kg)"].values.astype(float))
 meanCO = np.mean(df["NOx EI C/O (g/kg)"].values.astype(float))
 meanApp = np.mean(df["NOx EI App (g/kg)"].values.astype(float))
+
 d = {
     "NOx": [meanIdle, meanTO, meanCO, meanApp],
 }
@@ -293,7 +333,7 @@ mean_lx.df_to_lxTable()
 
 # Mean relative error and standard deviation 
 errors = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_points = mean_points, dtmodels = dtmodels)
-[meanEC, meanEE, relativeEC, relativeEE] = errors.error()
+[meanEC, meanEE, meanEM, relativeEC, relativeEE, relativeEM] = errors.error()
 
 # Convert dataframes to latex tables
 # Relative error - EC: correlation equations error, EE: experimental error
@@ -309,6 +349,10 @@ meanEC.df_to_lxTable()
 
 meanEE = lx(df = meanEE, filename = "data/MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
 meanEE.df_to_lxTable()
+
+# Mean relative error: Models
+meanEM = lx(df = meanEM, filename = "data/MEANEM.tex", caption = "Mean relative error - Models", label = "meanEM")
+meanEM.df_to_lxTable() 
 
 # Values of thermodynamic parameters
 dtPoints = lx(df = dtPoints, filename = "data/ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
@@ -336,7 +380,7 @@ distr_plots = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_
 distr_plots.distribution_plots(
     method = "Violinplot",
     size = [12,9],
-    ylimits = [0, 70, 10], # min, max, step 
+    #ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 
     xLabel = "Pollutant and operating point", 
     yLabel = "Emissions index value (g/kg)", 

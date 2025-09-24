@@ -3,7 +3,8 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
-from sklearn.linear_model import LinearRegression, Lasso, SGDRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, root_mean_squared_error
 from sklearn.model_selection import learning_curve, LearningCurveDisplay
@@ -13,6 +14,7 @@ from Classes.latex_class import latex as ltx
 
 import matplotlib.pyplot as plt
 
+np.random.seed(42)
 
 class models_per_OP:
 
@@ -48,7 +50,7 @@ class models_per_OP:
 
         # Split data: Train and temp
         xtrain, Xtemp, ytrain, Ytemp = train_test_split(
-            x, y, train_size=train_split, random_state=42
+            x, y, train_size=train_split, random_state=11
         )
 
         # Split data: Temp to Dev and Test
@@ -123,8 +125,55 @@ class models_per_OP:
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
 
-        return lin, poly, train_results, test_results
-    
+        return lin, poly, x_scaler, train_results, test_results
+
+    def gradientBoosting(self, xtrain: pd.DataFrame, xtest: pd.DataFrame, ytrain: pd.DataFrame, ytest: pd.DataFrame, params: dict = None):
+        """
+        gbr: GradientBoostingRegressor wrapper
+
+        Inputs:
+        -
+
+        Outputs:
+        -
+        
+        """
+        # Extract parameters from self
+        features = self.features
+        response = self.response
+        
+        # Scale data
+        x_scaler = StandardScaler()
+        xtrain_scaled = x_scaler.fit_transform(xtrain)
+        xtest_scaled  = x_scaler.transform(xtest) 
+
+        # Initialiaze regressor
+        gbr = GradientBoostingRegressor()
+
+        # Train Regressor 
+        gbr.fit(xtrain_scaled, ytrain)
+
+        # Predict based on test
+        y_train_pred = gbr.predict(xtrain_scaled)
+        y_test_pred = gbr.predict(xtest_scaled)
+
+        # Create output dataframes
+        d1 = {
+           "Y train": ytrain,
+           "Y train Pred": y_train_pred,
+        }
+        
+        d2 = {
+           "Y test": ytest,
+           "Y test Pred": y_test_pred,
+        }
+        
+        train_results = pd.DataFrame(data = d1)
+        test_results = pd.DataFrame(data = d2)
+
+        return gbr, x_scaler, train_results, test_results
+
+
     def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame):
                            # to_latex: bool = False, parameters = Optional[pd.DataFrame]):
         """
@@ -163,6 +212,13 @@ class models_per_OP:
         train_r2 = r2_score(ytrain, y_train_pred)
         test_r2 = r2_score(ytest, y_test_pred)
 
+        # CRMSD
+        pred = y_test_pred.values.astype(float)
+        pred_median = np.median(y_test_pred.values.astype(float))
+        real = ytest.values.astype(float) 
+        real_median = np.median(ytest.values.astype(float))
+        crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+
         # Results to dataframe
         d = {
            "MSE":{
@@ -176,6 +232,10 @@ class models_per_OP:
            "R2":{
                "Train": train_r2,
                "Test": test_r2
+           },
+           "CRMSD":{
+               "Train": "-",
+               "Test": crmsd_test
            }
         } 
         
