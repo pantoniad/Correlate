@@ -88,12 +88,17 @@ class models_per_OP:
            "Y test Pred": y_test_pred,
         }
         
+        # Get returns ready
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
+        model_features = {
+            "Model type": "Polynomial Regression",
+            "Model features": poly
+        }
 
-        return lin, poly, scaler, train_results, test_results
+        return lin, model_features, scaler, train_results, test_results
 
-    def gradientBoosting(self, xtrain: pd.DataFrame, xtest: pd.DataFrame, ytrain: pd.DataFrame, ytest: pd.DataFrame, params: dict = None):
+    def gradientBoosting(self, parameters: dict = None):
         """
         gbr: GradientBoostingRegressor wrapper
 
@@ -105,39 +110,45 @@ class models_per_OP:
         
         """
         # Extract parameters from self
-        features = self.features
-        response = self.response
+        X_train = self.X_train
+        X_test = self.X_test
+        y_train = self.y_train
+        y_test = self.y_test
         
         # Scale data
-        x_scaler = StandardScaler()
-        xtrain_scaled = x_scaler.fit_transform(xtrain)
-        xtest_scaled  = x_scaler.transform(xtest) 
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled  = scaler.transform(X_test) 
 
         # Initialiaze regressor
         gbr = GradientBoostingRegressor()
 
         # Train Regressor 
-        gbr.fit(xtrain_scaled, ytrain)
+        gbr.fit(X_train_scaled, y_train)
 
         # Predict based on test
-        y_train_pred = gbr.predict(xtrain_scaled)
-        y_test_pred = gbr.predict(xtest_scaled)
+        y_train_pred = gbr.predict(X_train_scaled)
+        y_test_pred = gbr.predict(X_test_scaled)
 
         # Create output dataframes
         d1 = {
-           "Y train": ytrain,
+           "Y train": y_train,
            "Y train Pred": y_train_pred,
         }
         
         d2 = {
-           "Y test": ytest,
+           "Y test": y_test,
            "Y test Pred": y_test_pred,
         }
         
+        # Get returns ready
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
+        model_features = {
+            "Model type": "Gradient Boosting"
+        }
 
-        return gbr, x_scaler, train_results, test_results
+        return gbr, model_features, scaler, train_results, test_results
 
 
     def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame):
@@ -223,7 +234,7 @@ class models_per_OP:
         """
         return metrics
     
-    def Learning_curve(self, data: pd.DataFrame, scaler: sklearn.preprocessing.StandardScaler, model: object, model_features: Optional[sklearn.preprocessing.PolynomialFeatures] = None, operating_point: Optional[str] = None):
+    def Learning_curve(self, data: pd.DataFrame, scaler: sklearn.preprocessing.StandardScaler, model: object, model_features: Optional[object] = None, operating_point: Optional[str] = None):
 
         """
         Learning_curve: creates a learning curve for the given data set, 
@@ -243,7 +254,7 @@ class models_per_OP:
         X_scaled = scaler.fit_transform(X)
 
         # Learning curve 
-        train_sizes, train_scores, test_scores = learning_curve(model, X_scaled, y, train_sizes = np.arange(0.1, 1, 0.05), cv = 5, scoring = "r2")
+        train_sizes, train_scores, test_scores = learning_curve(model, X_scaled, y, train_sizes = np.arange(0.1, 1, 0.05), cv = 7, scoring = "r2")
         
         # Mean and std values
         mean_train = np.mean(train_scores, axis = 1)
@@ -252,8 +263,12 @@ class models_per_OP:
         std_test = np.std(test_scores, axis = 1)
 
         # Extract model features
-        if model_features != None:
-            model_type = f"Pol. Regresion ({model_features.degree})"
+        if model_features["Model type"] == "Polynomial Regression":
+            model_type = f"{model_features["Model type"]}: ({model_features["Model features"].degree})"
+        elif model_features["Model type"] == "Gradient Boosting":
+            model_type = f"{model_features["Model type"]}"
+        elif model_features["Model type"] == "Artificial Neural Networks":
+            model_type = f"{model_features["Model type"]}"
 
         # Visualize No.1
         fig1, ax1 = plt.subplots( figsize = (7, 5))
@@ -274,8 +289,6 @@ class models_per_OP:
         plt.xlabel("Training set size")
         plt.ylabel("Score - Coefficient of Determination (R2)")
         plt.grid(color = "silver", linestyle = ":")
-        #plt.ylim([min(min(mean_test), min(mean_train)) - 0.01*min(min(mean_test), min(mean_train)),
-        #           max(max(mean_test), max(mean_train)) + 0.01*max(max(mean_test), max(mean_train))])
         
         if operating_point != None: 
             plt.title(f"Learning curve - {operating_point} conditions - {model_type}")
