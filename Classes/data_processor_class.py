@@ -50,18 +50,18 @@ class data_process:
 
         return df_cleaned
 
-    def splitter(data: pd.DataFrame, x: pd.DataFrame, y: pd.DataFrame, train_split: Optional[float] = 0.6, test_split: Optional[float] = 0.4, dev_split: Optional[float] = 0.2):
+    def splitter(x: pd.DataFrame, y: pd.DataFrame, train_split: Optional[float] = 0.6, include_dev: bool = False):
 
         """
-        splitter: Splits the data into train, dev and test based on the proportions given above. 
-        If dev test is not needed, the user can define only the splits of the train and test 
-        sets. 
+        splitter: Splits the data into train, dev and test. Only the train_split size is required
+        The dev and test set sizes are similar in size and equal to 1 - trainsize*0.5.
 
         Inputs:
         - self
+        - x: the features to be splitted, dataframe,
+        - y: the response to be splitted, dataframe
         - train_split: the percentage of data used for model training, float,
-        - test_split: the percentage of data used for testing, float,
-        - dev_split: the percentage of data used for the development, float
+        - include_dev: whether to include a development set or not, boolean
 
         Outputs:
         - xtrain, ytrain: data part for the training
@@ -69,20 +69,27 @@ class data_process:
         - xtest, ytest: data part for the testing
 
         """
-        # Split data: Train and temp
-        xtrain, Xtemp, ytrain, Ytemp = train_test_split(
-            x, y, train_size=train_split, random_state=10
-        )
 
-        # Split data: Temp to Dev and Test
-        # Dev: train, Test: test, get split %
-        size = dev_split/(test_split+dev_split)
+        if include_dev == True:
+           
+            xtrain, Xtemp, ytrain, Ytemp = train_test_split(
+                x, y, train_size=train_split, random_state=10
+            ) 
 
-        xdev, xtest, ydev, ytest = train_test_split(
-            Xtemp, Ytemp, train_size=size, random_state=10
-        )
+            xdev, xtest, ydev, ytest = train_test_split(
+                Xtemp, Ytemp, train_size=0.5, random_state=10
+            )
+            
+            return xtrain, ytrain, xdev, ydev, xtest, ytest
+        
+        else:
 
-        return xtrain, ytrain, xdev, ydev, xtest, ytest
+            xtrain, xtest, ytrain, ytest = train_test_split(
+                x, y, train_size=train_split, random_state=10
+            )
+
+            return xtrain, ytrain, xtest, ytest
+
 
     def df_former(df: pd.DataFrame, clmns: Optional[list] = None, rows: Optional[np.array] = np.empty([0]), parameter: Optional[str] = None):
         """

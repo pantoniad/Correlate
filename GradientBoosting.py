@@ -41,13 +41,11 @@ features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Fl
 response = df_final_idle["NOx EI Idle (g/kg)"]
 
 # Split the data
-X_train, y_train, X_dev, y_dev, X_test, y_test = data_process.splitter(
-    data = df_final_idle, 
+X_train, y_train, X_test, y_test = data_process.splitter(
     x = features,
     y = response,
     train_split = 0.5, 
-    dev_split = 0.25,
-    test_split = 0.25
+    include_dev = False
 )
 
 # Train models class and Polynomial Regressor. Scaler included in the model
@@ -83,13 +81,11 @@ features = df_final_to.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow
 response = df_final_to["NOx EI T/O (g/kg)"]
 
 # Split the data
-X_train, y_train, X_dev, y_dev, X_test, y_test = data_process.splitter(
-    data = df_final_to, 
+X_train, y_train, X_test, y_test = data_process.splitter(
     x = features,
     y = response,
     train_split = 0.5, 
-    dev_split = 0.15,
-    test_split = 0.15
+    include_dev = False
 )
 
 # Train models class and Polynomial Regressor. Scaler included in the model
@@ -126,13 +122,11 @@ features = df_final_co.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow
 response = df_final_co["NOx EI C/O (g/kg)"]
 
 # Split the data
-X_train, y_train, X_dev, y_dev, X_test, y_test = data_process.splitter(
-    data = df_final_co, 
+X_train, y_train, X_test, y_test = data_process.splitter(
     x = features,
     y = response,
     train_split = 0.50, 
-    dev_split = 0.25,
-    test_split = 0.25
+    include_dev = False
 )
 
 # Train models class and Polynomial Regressor. Scaler included in the model
@@ -169,13 +163,11 @@ features = df_final_app.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flo
 response = df_final_app["NOx EI App (g/kg)"]
 
 # Split the data
-X_train, y_train, X_dev, y_dev, X_test, y_test = data_process.splitter(
-    data = df_final_app, 
+X_train, y_train, X_test, y_test = data_process.splitter(
     x = features,
     y = response,
     train_split = 0.5, 
-    dev_split = 0.25,
-    test_split = 0.25
+    include_dev = False
 )
 
 # Train models class and Polynomial Regressor. Scaler included in the model
