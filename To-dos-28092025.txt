@@ -1,0 +1,22 @@
+1. Incorporate ann class into models_class and test -> Done
+2. Run ann for all operating points 
+3. Introduce more metrics from the class and Learning curves
+4. Attach validation on the error plot
+5. ~~Try to use CUDA for gpu acceralation~~
+6. Research on the importance of metrics and epochs and other parameters of the NN
+7. Look into Deep Learning book 
+
+Questions:
+- What is the right sequence for the ANN set-up?
+
+Results:
+- Problem with the use of the data-dataloader interface. While all of the examples
+I have seen use the dataloader inside a for-loop waiting for 2 outputs from the method,
+my implementation does not reach that result. It might be a problem of data preparation,
+meaning that I might need to include a custom dataset function
+- The end goal here is to get the train-test error vs epoch plot. Currently I get 
+the training error but the results might very well be wrong because of the above problem,
+will have to implement it and then be sure,
+- The above also raise concerns over the workings of the pipeline. Might need to 
+create a new class that houses all of the ANN related stuff and a corresponding 
+outputs (Save) and input file

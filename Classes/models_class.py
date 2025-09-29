@@ -13,6 +13,10 @@ from Classes.latex_class import latex as ltx
 
 import matplotlib.pyplot as plt
 
+import torch
+import torch.nn.functional as F
+import torch.nn as nn
+
 np.random.seed(42)
 
 class models_per_OP:
@@ -247,7 +251,7 @@ class models_per_OP:
         Used for plotting purposes, str
         """
 
-        # Break the data down into based on the operating point
+        # Break the data down
         X = data.iloc[:, range(0, len(data.keys())-1)]
         y = data.iloc[:, -1]
 
@@ -297,3 +301,35 @@ class models_per_OP:
         
         plt.legend()
         plt.show()
+
+    #def Learning_curve_ann(self, ):
+
+
+
+    class Model(nn.Module):
+        """
+        
+        """
+
+        def __init__(self, in_features: int = 3, h1: int = 5, h2: int = 15, h3: int = 10, h4: int = 5, out_features: int = 1):
+
+            super().__init__() # Intiantiate the nn module
+
+            # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
+            self.fc1 = nn.Linear(in_features, h1)
+            self.fc2 = nn.Linear(h1, h2)
+            self.fc3 = nn.Linear(h2,h3)
+            self.fc4 = nn.Linear(h3, h4)
+            self.out = nn.Linear(h4, out_features)
+            self.float()
+            
+        def forward(self, x):
+
+            x = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
+            x = F.relu(self.fc2(x))
+            x = F.relu(self.fc3(x))
+            x = F.relu(self.fc4(x))
+            x = self.out(x)
+
+            return x
+    
