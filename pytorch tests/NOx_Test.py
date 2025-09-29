@@ -5,35 +5,13 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from Classes.data_processor_class import data_process
-#from ignite 
 
-class Model(nn.Module):
-    """
-    
-    """
+from Classes.models_class import models_per_OP
 
-    def __init__(self, in_features: int = 3, h1: int = 20, h2: int = 100, h3: int = 10, out_features: int = 1):
+from sklearn.preprocessing import StandardScaler
 
-        super().__init__() # Intiantiate the nn module
-
-        # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
-        self.fc1 = nn.Linear(in_features, h1)
-        self.fc2 = nn.Linear(h1, h2)
-        self.fc3 = nn.Linear(h2,h3)
-        self.out = nn.Linear(h3, out_features)
-        
-    def forward(self, x):
-
-        x = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
-        x = self.out(x)
-
-        return x
-    
 torch.manual_seed(41)
-
-model = Model()
+model = models_per_OP.Model()
 
 df_og = pd.read_csv(r"Databank/ICAO_data.csv", delimiter = ";")
 
@@ -47,7 +25,7 @@ drange = [[61, 169]]
 # Clea-up dataframe
 df_cleaned = data_process.csv_cleanup(df = df_og, clmns = clmns, drange = drange, reset_index = True, save_to_csv = True, path = "Databank/CFM56data.csv")
 
- ## Train Polynomial Regressor per operating point ##
+## Train Polynomial Regressor per operating point ##
 
 ## Idle
 
@@ -61,13 +39,11 @@ features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Fl
 response = df_final_idle["NOx EI Idle (g/kg)"]
 
 # Split the data
-X_train, y_train, X_dev, y_dev, X_test, y_test = data_process.splitter(
-    data = df_final_idle, 
+X_train, y_train, X_test, y_test = data_process.splitter(
     x = features,
     y = response,
     train_split = 0.5, 
-    dev_split = 0.25,
-    test_split = 0.25
+    include_dev = False
 )
 
 X_train_t = torch.FloatTensor(X_train.values.astype(float))
@@ -79,7 +55,7 @@ y_test_t = torch.FloatTensor(y_test.values.astype(float))
 criterion = nn.MSELoss()
 optimizer = torch.optim.Adam(model.parameters(), lr = 1e-3)
 
-epochs = 600
+epochs = 1000
 losses = []
 for i in range(epochs):
     
@@ -93,7 +69,7 @@ for i in range(epochs):
     losses.append(loss.detach().numpy())
 
     # Print results every 10 epochs
-    if i % 10 == 0:
+    if i % 50 == 0:
         print(f"Epoch: {i}, Loss: {loss}")
 
     # Backward propagation: Feed the results back to the network to 
