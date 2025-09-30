@@ -20,3 +20,13 @@ will have to implement it and then be sure,
 - The above also raise concerns over the workings of the pipeline. Might need to 
 create a new class that houses all of the ANN related stuff and a corresponding 
 outputs (Save) and input file
+
+29-09-2025
+Todos:
+- Integrate the dataset function (done)
+- Introduce the dataloader (done)
+- Plot Validation and Training error together (done)
+- Create separate funtions and classes for anything ANN related (done)
+- Introduce more metrics to the mix
+- Integrate model/parameter saving and test input file
+- Extend the code for all operating points

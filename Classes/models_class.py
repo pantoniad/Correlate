@@ -304,32 +304,126 @@ class models_per_OP:
 
     #def Learning_curve_ann(self, ):
 
+    class ann():
 
-
-    class Model(nn.Module):
-        """
-        
-        """
-
-        def __init__(self, in_features: int = 3, h1: int = 5, h2: int = 15, h3: int = 10, h4: int = 5, out_features: int = 1):
-
-            super().__init__() # Intiantiate the nn module
-
-            # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
-            self.fc1 = nn.Linear(in_features, h1)
-            self.fc2 = nn.Linear(h1, h2)
-            self.fc3 = nn.Linear(h2,h3)
-            self.fc4 = nn.Linear(h3, h4)
-            self.out = nn.Linear(h4, out_features)
-            self.float()
+        class Model(nn.Module):
+            """
             
-        def forward(self, x):
+            """
 
-            x = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
-            x = F.relu(self.fc2(x))
-            x = F.relu(self.fc3(x))
-            x = F.relu(self.fc4(x))
-            x = self.out(x)
+            def __init__(self, in_features: int = 3, h1: int = 5, h2: int = 15, h3: int = 10, h4: int = 5, out_features: int = 1):
 
-            return x
-    
+                super().__init__() # Intiantiate the nn module
+
+                # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
+                self.fc1 = nn.Linear(in_features, h1)
+                self.fc2 = nn.Linear(h1, h2)
+                self.fc3 = nn.Linear(h2,h3)
+                self.fc4 = nn.Linear(h3, h4)
+                self.out = nn.Linear(h4, out_features)
+                self.float()
+                
+            def forward(self, x):
+
+                x = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
+                x = F.relu(self.fc2(x))
+                x = F.relu(self.fc3(x))
+                x = F.relu(self.fc4(x))
+                x = self.out(x)
+
+                return x
+
+        class CustomDataset(torch.utils.data.Dataset):
+
+            def __init__(self, data: pd.DataFrame):
+
+                """
+                __init__
+
+                Inputs: 
+                - data: pd.Dataframe 
+                """
+                feature1 = data["Pressure Ratio"]
+                feature2 = data["Rated Thrust (kN)"]
+                feature3 = data.loc[:, data.columns.str.contains("Fuel Flow")]
+                self.features = pd.concat([feature1, feature2, feature3], axis = 1)
+
+                response = data.loc[:, data.columns.str.contains("NOx EI")]
+                self.response = response
+
+            def __len__(self):
+                return len(self.features)
+
+            def __getitem__(self, index):
+                features_sample = self.features.iloc[index,:].values
+                response_sample = self.response.iloc[index, :].values
+                return torch.tensor(features_sample.astype(np.float32())), torch.tensor(response_sample.astype(np.float32()))
+
+        @staticmethod
+        def train_one_epoch(model: torch.nn.Module, optimizer: torch.optim, criterion: torch.nn, train_loader: torch.utils.data.DataLoader, device: str):
+             
+            """
+            train_one_epoch:
+
+            Inputs:
+            - model: the model instance, torch.nn.Module,
+            - optimizer: the optimizer instance, torch.nn.optim, 
+            - criterion: the criterion instance, torch.nn,
+            - train_loader: the traininng data in the form of a dataloader, torch.utils.data.DataLoader,
+            - device: the device which will be used for training, str
+
+            Outputs:
+            - losses_train: list with all 
+            
+            """
+
+            running_loss = 0
+
+            for j, (features_sample, response_sample) in enumerate(train_loader):
+
+                # Move tensors to device
+                features_sample = features_sample.to(device)
+                response_sample = response_sample.to(device)
+
+                # Train model
+                optimizer.zero_grad()
+                y_pred = model.forward(features_sample)
+                
+                # Get result from loss function
+                loss = torch.sqrt(criterion(y_pred, response_sample))
+                running_loss += loss
+
+                # Update weights and optimizer
+                loss.backward()
+                optimizer.step()
+            
+            avg_loss = running_loss/(j+1)
+            return avg_loss
+
+        @staticmethod
+        def validate_one_epoch(model: torch.nn.Module, optimizer: torch.optim, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
+            """
+            validate_one_epoch:
+
+            Inputs:
+
+            Outputs:
+
+            """
+
+            running_loss = 0
+            with torch.no_grad():
+                for j, (features_sample, response_sample) in enumerate(test_loader):
+                    
+                    # Trasfer tensors to device
+                    features_sample = features_sample.to(device)
+                    response_sample = response_sample.to(device)
+
+                    # Predict based on the trained model
+                    y_pred_v = model(features_sample)
+                    loss_v = torch.sqrt(criterion(y_pred_v, response_sample))
+                    running_loss += loss_v
+                
+                avg_loss_v = running_loss /(j+1)
+
+            return avg_loss_v 
