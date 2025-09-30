@@ -57,38 +57,59 @@ model = models_per_OP.ann.Model()
 model = model.to(device)
 
 # Define NN parameters
-epochs = 1000
+epochs = 200
 learning_rate = 1e-3
 criterion = nn.MSELoss() # Loss criterion
 optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
-losses_train = []
-losses_valid = []
+rmse_train = []
+rmse_valid = []
+mape_train = []
+mape_valid = []
 
 # Iterate through epochs to train
 for i in range(epochs):
     
     ## Model training ##
     model.train()
-    avg_loss = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
-    losses_train.append(avg_loss.cpu().detach().numpy())
+    avg_rmse, avg_mape = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
+    rmse_train.append(avg_rmse)
+    mape_train.append(avg_mape)
 
     ## Model validation ##
     model.eval()
-    avg_loss_v = models_per_OP.ann.validate_one_epoch(model = model, optimizer=optimizer, criterion=criterion, test_loader=test_loader, device=device)
-    losses_valid.append(avg_loss_v.cpu().detach().numpy())
-
+    avg_rmse_v, avg_mape_v = models_per_OP.ann.validate_one_epoch(model = model, optimizer=optimizer, criterion=criterion, test_loader=test_loader, device=device)
+    rmse_valid.append(avg_rmse_v)
+    mape_valid.append(avg_mape_v)
+    
     # Print results    
     if i % 200 == 0:
         print()
-        print(f"Epoch \t Avg Training loss \t Avg Validation loss")
-        print(f"{i} \t {avg_loss} \t {avg_loss_v}")
-            
+        print(f"Epoch \t Avg Training RMSE \t Avg Validation RMSE \t Avg Training MAPE \t Avg Validation MAPE")
+        print(f"{i} \t {avg_rmse} \t {avg_rmse_v} \t {avg_mape} \t {avg_mape_v}")
+
+
 # Plot the losses
-plt.plot(range(epochs), losses_train, label = "Train loss", color = "royalblue")
-plt.plot(range(epochs), losses_valid, label = "Validation loss", color = "darkorange")
-plt.xlabel("Epochs")
-plt.ylabel("Root Mean Squared Error value (gNOx/kgFuel)")
-plt.grid(color = "silver", linestyle = ":")
-plt.title("Train and Validation error - ANN")
-plt.legend()
+fig = plt.figure(figsize=(9,7))
+ax1 = fig.add_subplot(111)
+ax2 = fig.add_subplot(222, sharex = ax1)
+
+lns1 = ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "royalblue")
+lns2 = ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "darkorange")
+ax1.set_xlabel("Number of Epochs")
+ax1.set_ylabel("RMSE (gNOx/kgFuel)")
+ax1.grid(color = "gray", linestyle = ":")
+#ax1.legend()
+
+lns3 = ax2.plot(range(epochs), mape_train, label = "Train MAPE", color = "mediumblue")
+lns4 = ax2.plot(range(epochs), mape_valid, label = "Validation MAPE", color = "darkgoldenrod")
+ax2.set_ylabel("RMSE (%)")
+ax2.set_xlabel("Number of Epochs")
+ax2.grid(color = "gray", linestyle = ":")
+#ax2.legend()
+
+lns = lns1+lns2+lns3+lns4
+labs = [l.get_label() for l in lns]
+ax1.legend(lns, labs, loc='best', bbox_to_anchor=(0.5, -0.1, 0.5, 0.5))
+
+fig.suptitle("Train and Validation error - ANN")
 plt.show()

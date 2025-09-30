@@ -27,6 +27,8 @@ Todos:
 - Introduce the dataloader (done)
 - Plot Validation and Training error together (done)
 - Create separate funtions and classes for anything ANN related (done)
-- Introduce more metrics to the mix
+- Introduce more metrics to the mix (done)
+- Adjust plots (Optional: and create a separate function for plotting) (done, not the optional)
+- Add comments on the classes and methods (done)
 - Integrate model/parameter saving and test input file
 - Extend the code for all operating points

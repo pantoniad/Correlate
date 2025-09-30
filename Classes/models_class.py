@@ -306,13 +306,35 @@ class models_per_OP:
 
     class ann():
 
+        """
+        ann: A class that contains all the required functions and sub-classes
+        to train the ANN
+
+        Inputs: None
+        Outputs: None
+
+        All information for subclasses and methods are given below
+        """
+
         class Model(nn.Module):
             """
-            
+            Model: a nn.Module initialized class used to create the structure of
+            the required ANN.             
             """
 
             def __init__(self, in_features: int = 3, h1: int = 5, h2: int = 15, h3: int = 10, h4: int = 5, out_features: int = 1):
+                
+                """
+                __init__
 
+                Inputs:
+                - self
+                - in_features: number of input features, int,
+                - h1...hn: the number of nodes per layer, int
+                - out_features: the number of output features, int
+
+                Outputs: None
+                """
                 super().__init__() # Intiantiate the nn module
 
                 # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
@@ -323,15 +345,27 @@ class models_per_OP:
                 self.out = nn.Linear(h4, out_features)
                 self.float()
                 
-            def forward(self, x):
+            def forward(self, x: torch.tensor):
 
-                x = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
-                x = F.relu(self.fc2(x))
-                x = F.relu(self.fc3(x))
-                x = F.relu(self.fc4(x))
-                x = self.out(x)
+                """
+                forward: the method used for training the ANN. 
 
-                return x
+                Inputs: 
+                - self
+                - x: the training data, tensor, retrived from a DataLoader
+
+                Outputs:
+                - y: the predicted values based on the inputs, tensor
+
+                """
+
+                y = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
+                y = F.relu(self.fc2(y))
+                y = F.relu(self.fc3(y))
+                y = F.relu(self.fc4(y))
+                y = self.out(y)
+
+                return y
 
         class CustomDataset(torch.utils.data.Dataset):
 
@@ -341,7 +375,12 @@ class models_per_OP:
                 __init__
 
                 Inputs: 
-                - data: pd.Dataframe 
+                - data: data used to create the custom dataset. Contains
+                both features and responses in their corresponding collumns,
+                pd.Dataframe 
+
+                Outputs: None
+
                 """
                 feature1 = data["Pressure Ratio"]
                 feature2 = data["Rated Thrust (kN)"]
@@ -352,9 +391,20 @@ class models_per_OP:
                 self.response = response
 
             def __len__(self):
+                """
+                __len__: returns the length of the features
+                """
                 return len(self.features)
 
-            def __getitem__(self, index):
+            def __getitem__(self, index: int):
+                """
+                __getitem__: iterable object used to retrieve data from the features
+                and response tensors. 
+
+                Inputs:
+                - self
+                - index: used for indexing the tensors, int
+                """
                 features_sample = self.features.iloc[index,:].values
                 response_sample = self.response.iloc[index, :].values
                 return torch.tensor(features_sample.astype(np.float32())), torch.tensor(response_sample.astype(np.float32()))
@@ -363,7 +413,9 @@ class models_per_OP:
         def train_one_epoch(model: torch.nn.Module, optimizer: torch.optim, criterion: torch.nn, train_loader: torch.utils.data.DataLoader, device: str):
              
             """
-            train_one_epoch:
+            train_one_epoch: used for breaking the data apart into batches and then
+            training the ANN based on the model parameters and batches as specified 
+            by the dataloader
 
             Inputs:
             - model: the model instance, torch.nn.Module,
@@ -373,12 +425,14 @@ class models_per_OP:
             - device: the device which will be used for training, str
 
             Outputs:
-            - losses_train: list with all 
-            
+            - avg_rmse: average value of train RMSE for the number of batches given 
+            - avg_mape: average value of train MAPE for the number of batches given
             """
+            # Define running losses
+            running_rmse = 0
+            running_mape = 0
 
-            running_loss = 0
-
+            # Iterate through batches
             for j, (features_sample, response_sample) in enumerate(train_loader):
 
                 # Move tensors to device
@@ -390,28 +444,45 @@ class models_per_OP:
                 y_pred = model.forward(features_sample)
                 
                 # Get result from loss function
-                loss = torch.sqrt(criterion(y_pred, response_sample))
-                running_loss += loss
-
+                rmse = torch.sqrt(criterion(y_pred, response_sample))
+                running_rmse += rmse
+                running_mape = mean_absolute_percentage_error(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
+                
                 # Update weights and optimizer
-                loss.backward()
+                rmse.backward()
                 optimizer.step()
-            
-            avg_loss = running_loss/(j+1)
-            return avg_loss
+
+            # Get RMSE in array type            
+            avg_rmse = running_rmse/(j+1)
+            avg_rmse = avg_rmse.cpu().detach().numpy()
+
+            # Get MAPE in array type
+            avg_mape = running_mape/(j+1)
+            return avg_rmse, avg_mape
 
         @staticmethod
-        def validate_one_epoch(model: torch.nn.Module, optimizer: torch.optim, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
+        def validate_one_epoch(model: torch.nn.Module, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
             """
-            validate_one_epoch:
+            validate_one_epoch: used for validating the trained model against unknown data broken apart into batches, 
+            as defined by the dataloader object
 
             Inputs:
+            - model: the ANN model, torch.nn.Module,
+            - criterion: the loss criterion used for optimizing the model, torch.nn,
+            - test_loader: the test data used for validating the model, 
+            torch.utils.data.DataLoader
+            - device: the device used for running the model, str
 
             Outputs:
+            - avg_rmse_v: average value of validation RMSE for the number of batches given
+            - avg_mape_v: average value of validation MAPE for the number of batches given
 
             """
+            # Define running losses
+            running_rmse = 0
+            running_mape = 0
 
-            running_loss = 0
+            # Validate for each batch
             with torch.no_grad():
                 for j, (features_sample, response_sample) in enumerate(test_loader):
                     
@@ -421,9 +492,15 @@ class models_per_OP:
 
                     # Predict based on the trained model
                     y_pred_v = model(features_sample)
-                    loss_v = torch.sqrt(criterion(y_pred_v, response_sample))
-                    running_loss += loss_v
-                
-                avg_loss_v = running_loss /(j+1)
+                    rmse_v = torch.sqrt(criterion(y_pred_v, response_sample))
+                    running_rmse += rmse_v
+                    mape_v = mean_absolute_percentage_error(response_sample.cpu().detach(), y_pred_v.cpu().detach())
+                    running_mape += mape_v
 
-            return avg_loss_v 
+                # Get average RMSE in array type for the batches
+                avg_rmse_v = running_rmse/(j+1)
+                avg_rmse_v = avg_rmse_v.cpu().detach().numpy()
+
+                # Get average MAPE in array type for the batches
+                avg_mape_v = running_mape/(j+1)
+            return avg_rmse_v, avg_mape_v
