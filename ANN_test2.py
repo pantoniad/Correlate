@@ -8,10 +8,11 @@ import numpy as np
 
 from Classes.data_processor_class import data_process
 from Classes.models_class import models_per_OP
+from Classes.data_plotting_class import data_plotting
 
 # Set device to gpu
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-#device = "cpu"
+
 # Manual seed for iterable results
 torch.manual_seed(41)
 
@@ -77,39 +78,21 @@ for i in range(epochs):
 
     ## Model validation ##
     model.eval()
-    avg_rmse_v, avg_mape_v = models_per_OP.ann.validate_one_epoch(model = model, optimizer=optimizer, criterion=criterion, test_loader=test_loader, device=device)
+    avg_rmse_v, avg_mape_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
     rmse_valid.append(avg_rmse_v)
     mape_valid.append(avg_mape_v)
     
     # Print results    
-    if i % 200 == 0:
+    if i % (epochs // 5) == 0:
         print()
         print(f"Epoch \t Avg Training RMSE \t Avg Validation RMSE \t Avg Training MAPE \t Avg Validation MAPE")
         print(f"{i} \t {avg_rmse} \t {avg_rmse_v} \t {avg_mape} \t {avg_mape_v}")
 
+include_plots = True
+if include_plots == True:
+    # Plot errors
+    data_plotting.ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, epochs)
+else:
+    pass
 
-# Plot the losses
-fig = plt.figure(figsize=(9,7))
-ax1 = fig.add_subplot(111)
-ax2 = fig.add_subplot(222, sharex = ax1)
 
-lns1 = ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "royalblue")
-lns2 = ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "darkorange")
-ax1.set_xlabel("Number of Epochs")
-ax1.set_ylabel("RMSE (gNOx/kgFuel)")
-ax1.grid(color = "gray", linestyle = ":")
-#ax1.legend()
-
-lns3 = ax2.plot(range(epochs), mape_train, label = "Train MAPE", color = "mediumblue")
-lns4 = ax2.plot(range(epochs), mape_valid, label = "Validation MAPE", color = "darkgoldenrod")
-ax2.set_ylabel("RMSE (%)")
-ax2.set_xlabel("Number of Epochs")
-ax2.grid(color = "gray", linestyle = ":")
-#ax2.legend()
-
-lns = lns1+lns2+lns3+lns4
-labs = [l.get_label() for l in lns]
-ax1.legend(lns, labs, loc='best', bbox_to_anchor=(0.5, -0.1, 0.5, 0.5))
-
-fig.suptitle("Train and Validation error - ANN")
-plt.show()

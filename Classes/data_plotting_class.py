@@ -391,6 +391,34 @@ class data_plotting:
 
         return meanEC, meanEE, meanEM, relativeECd, relativeEEd, relativeEM
     
-    def plot_3d(self):
-    
-        pass
+    @staticmethod
+    def ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, epochs, ):
+        """
+        ann_loss_plot:
+
+        Input:
+
+        Output:
+        """
+     
+        # Plot the losses
+        fig = plt.figure(figsize=(9,7))
+        ax1 = fig.add_subplot(211)
+        ax2 = fig.add_subplot(212, sharex = ax1)
+
+        ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "royalblue")
+        ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "darkorange")
+        #ax1.set_xlabel("Number of Epochs")
+        ax1.set_ylabel("RMSE (gNOx/kgFuel)")
+        ax1.grid(color = "gray", linestyle = ":")
+        ax1.legend()
+
+        ax2.plot(range(epochs), mape_train, label = "Train MAPE", color = "royalblue")
+        ax2.plot(range(epochs), mape_valid, label = "Validation MAPE", color = "darkorange")
+        ax2.set_ylabel("RMSE (%)")
+        ax2.set_xlabel("Number of Epochs")
+        ax2.grid(color = "gray", linestyle = ":")
+        ax2.legend()
+
+        fig.suptitle("Train and Validation error - Neural Network")
+        plt.show()

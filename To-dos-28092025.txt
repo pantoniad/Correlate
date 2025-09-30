@@ -28,7 +28,15 @@ Todos:
 - Plot Validation and Training error together (done)
 - Create separate funtions and classes for anything ANN related (done)
 - Introduce more metrics to the mix (done)
-- Adjust plots (Optional: and create a separate function for plotting) (done, not the optional)
+- Adjust plots (Optional: and create a separate function for plotting) (done)
 - Add comments on the classes and methods (done)
 - Integrate model/parameter saving and test input file
 - Extend the code for all operating points
+- make printing the results dependent on the number of epochs chosen (i.e. return results every epochs/5) (done)
+
+Model specific and Research To-Dos:
+- model inputs should be added by the user, not by default,
+- structure of ann should be examined (why FC and not other types of layers?),
+- examine what early stoping is and why is it useful
+- model selection? what is this? do we select based on epoch? 
+- how to extract generated function 
