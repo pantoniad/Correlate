@@ -392,7 +392,7 @@ class data_plotting:
         return meanEC, meanEE, meanEM, relativeECd, relativeEEd, relativeEM
     
     @staticmethod
-    def ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, epochs, ):
+    def ann_loss_plot(rmse_train: list, rmse_valid: list, mape_train: list, mape_valid: list, epochs: int, operating_point: str):
         """
         ann_loss_plot:
 
@@ -403,8 +403,8 @@ class data_plotting:
      
         # Plot the losses
         fig = plt.figure(figsize=(9,7))
-        ax1 = fig.add_subplot(211)
-        ax2 = fig.add_subplot(212, sharex = ax1)
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122, sharex = ax1)
 
         ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "royalblue")
         ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "darkorange")
@@ -413,12 +413,12 @@ class data_plotting:
         ax1.grid(color = "gray", linestyle = ":")
         ax1.legend()
 
-        ax2.plot(range(epochs), mape_train, label = "Train MAPE", color = "royalblue")
-        ax2.plot(range(epochs), mape_valid, label = "Validation MAPE", color = "darkorange")
-        ax2.set_ylabel("RMSE (%)")
+        ax2.plot(range(epochs), [100*x for x in mape_train], label = "Train MAPE", color = "royalblue")
+        ax2.plot(range(epochs), [100*x for x in mape_valid], label = "Validation MAPE", color = "darkorange")
+        ax2.set_ylabel("MAPE (%)")
         ax2.set_xlabel("Number of Epochs")
         ax2.grid(color = "gray", linestyle = ":")
         ax2.legend()
-
-        fig.suptitle("Train and Validation error - Neural Network")
+        fig.suptitle(f"Train and Validation error of ANN - CFM56 family - Operating Point: {operating_point}", size = "x-large")
+        fig.tight_layout()
         plt.show()

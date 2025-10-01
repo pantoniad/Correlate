@@ -30,13 +30,55 @@ Todos:
 - Introduce more metrics to the mix (done)
 - Adjust plots (Optional: and create a separate function for plotting) (done)
 - Add comments on the classes and methods (done)
-- Integrate model/parameter saving and test input file
-- Extend the code for all operating points
+- Integrate model/parameter saving (not yet) and test input file (done)
+- Extend the code for all operating points (done)
 - make printing the results dependent on the number of epochs chosen (i.e. return results every epochs/5) (done)
 
 Model specific and Research To-Dos:
-- model inputs should be added by the user, not by default,
+- model inputs should be added by the user, not by default, (done)
 - structure of ann should be examined (why FC and not other types of layers?),
 - examine what early stoping is and why is it useful
 - model selection? what is this? do we select based on epoch? 
 - how to extract generated function 
+
+Problem (1/10/2025): (solved)
+- Έχω δημιουργήσει την συνάρτηση που κάνει την εκπαίδευση και το validation του μοντέλου μαζί με
+την δημιουργία διαγραμμάτων. Θέλω να δημιουργήσω ένα αρχείο το οποίο θα λειτουργεί σαν executable
+και σε εκείνο θα τοποθετείται οτιδήποτε σχετικό με το μοντέλο. Τελικά, θα πρέπει να χρησιμοποιώ μόνο
+αυτό το αρχείο για να τρέχω τις αναλύσεις. 
+Requirements:
+1. Προσομοίωση για πολλαπλά σημεία λειτουργίας,
+2. Μόνο ένα αρχείο σαν executable,
+3. Δημιουργία plots,
+4. Εξαγωγή δεδομένων με την μορφή dataframe
+
+Προτεινόμενη πορεία δράσης:
+1. Προσαρμογή της συνάρτησης στο model_class για call από το main script για την εκπαίδευση.
+2. Το main script θα καλεί ότι χρειάζεται για όλα τα σημεία λειτουργίας. Επιπλέον δυνατότητα 
+προσαρμογής νευρωνικού σα κάθε σημείο λειτορυγίας. Σίγουρα πρέπει να γίνει έλεγχος για να είμαστε
+σίγουροι ότι δεν είναι one-fits-all φάση. 
+
+To-dos: 
+- Saving parameters and results into external data file (look into naming convention)
+- Include operating point at plots to distinguish them (done)
+- Include some info about the model strucure to the plots to distinguish them
+
+To talk about saving the results of each model we frist have to define the requirements.
+Most importantly, we have to decide whether we want this tool (maybe a function) be used 
+for all the models we use (Polynomial Regression, Gradient boosting, ANNs).
+
+If this is the case then, the saving proceduce should not get into data processing as 
+each model has its own unique way of handling data. On the other hand, it should be 
+"agnostic" in a sense, meaning that it should not care about where the data being 
+handled comes from, as long as it has a particular structure.
+
+- What needs to be saved? 
+Requirements:
+- Input parameters
+    - NN structure for sure (number of layers, type of layers, number of nodes per layers)
+    - The number of epochs and the learning related
+    - Activation function and optimizer
+- Output parameters:
+    - Function expression, 
+    - Model error values 
+Start with those and we will see about other things that need to be added

@@ -9,13 +9,15 @@ from sklearn.metrics import mean_absolute_percentage_error, r2_score, root_mean_
 from sklearn.model_selection import learning_curve
 
 from typing import Optional
-from Classes.latex_class import latex as ltx
+import warnings
 
 import matplotlib.pyplot as plt
 
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+
+from Classes.data_plotting_class import data_plotting
 
 np.random.seed(42)
 
@@ -322,7 +324,10 @@ class models_per_OP:
             the required ANN.             
             """
 
-            def __init__(self, in_features: int = 3, h1: int = 5, h2: int = 15, h3: int = 10, h4: int = 5, out_features: int = 1):
+            def __init__(self, num_fc_layers: int, num_nodes_per_layer: list, 
+                        activation_function: torch.nn.functional):
+                         
+                        #in_features: int = 3, h1: int = 5, h2: int = 15, h3: int = 10, h4: int = 5, out_features: int = 1):
                 
                 """
                 __init__
@@ -337,13 +342,32 @@ class models_per_OP:
                 """
                 super().__init__() # Intiantiate the nn module
 
-                # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
-                self.fc1 = nn.Linear(in_features, h1)
-                self.fc2 = nn.Linear(h1, h2)
-                self.fc3 = nn.Linear(h2,h3)
-                self.fc4 = nn.Linear(h3, h4)
-                self.out = nn.Linear(h4, out_features)
+                # Check if len of array of nodes is equal to the number of FC layers
+                num_nodes_per_layer_dropped = num_nodes_per_layer[1:-1]
+                if num_fc_layers != len(num_nodes_per_layer_dropped):
+                    raise Exception("Number of FC layers does not match length of nodes list")
+
+                # Place variables into self
+                if activation_function == "relu":
+                    self.activation_function = F.relu
+                else:
+                    warnings.warn("No activation function chosen. Using default: F.relu")
+                    self.activation_function = F.relu
+                self.layers = nn.ModuleList()
+
+                # Create ann structure
+                for i in range(len(num_nodes_per_layer) - 1):
+                    self.layers.append(nn.Linear(num_nodes_per_layer[i],
+                                                 num_nodes_per_layer[i+1]))
                 self.float()
+
+                # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
+                #self.fc1 = nn.Linear(in_features, h1)
+                #self.fc2 = nn.Linear(h1, h2)
+                #self.fc3 = nn.Linear(h2,h3)
+                #self.fc4 = nn.Linear(h3, h4)
+                #self.out = nn.Linear(h4, out_features)
+                #self.float()
                 
             def forward(self, x: torch.tensor):
 
@@ -358,14 +382,17 @@ class models_per_OP:
                 - y: the predicted values based on the inputs, tensor
 
                 """
+                for layer in self.layers[:-1]:
+                    x = self.activation_function(layer(x))
+                x = self.layers[-1](x)
 
-                y = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
-                y = F.relu(self.fc2(y))
-                y = F.relu(self.fc3(y))
-                y = F.relu(self.fc4(y))
-                y = self.out(y)
+                #y = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
+                #y = F.relu(self.fc2(y))
+                #y = F.relu(self.fc3(y))
+                #y = F.relu(self.fc4(y))
+                #y = self.out(y)
 
-                return y
+                return x
 
         class CustomDataset(torch.utils.data.Dataset):
 
@@ -504,3 +531,114 @@ class models_per_OP:
                 # Get average MAPE in array type for the batches
                 avg_mape_v = running_mape/(j+1)
             return avg_rmse_v, avg_mape_v
+
+
+        def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
+                        learning_rate: int, num_fc_layers: int, num_nodes_per_layer: list, 
+                        optimizer_sel: torch.optim, activation_f: nn.functional = "relu", 
+                        device: Optional[str] = "cpu", include_plots: Optional[bool] = False, 
+                        save_results: Optional[bool] = True):
+            """
+            ann_creation:
+
+            Inputs:
+            - train_data: dataframe that contains the training data. Should contain
+            three (3) feature collumns, with keys "Pressure Ratio", "Rated Thrust (kN)" and
+            "Fuel Flow <> (kg/s)" where <> denotes the operating point, AND one (1) response
+            collumn with the key "NOx EI <> (g/kg)", with <> denoting the operating point. 
+            Data based on the ICAO Emissions Databank
+            - test_data: similar to train_data, for testing, data based on the ICAO 
+            Emissions Databank
+            - epochs: the number of epochs required to run the ANN
+            - device: the device to be used for training. Default value is CPU, str
+            - include_plots: if yes, the loss plots are printed, boolean, 
+            default is False
+            - save_results: if yes, the outputs of the process are saved based on 
+            separate folder "Results" to a file named "ANN_results" followed by 
+            the date-time of the excecution of the file, boolean, default is True
+
+            Outputs: 
+            - 
+
+            """
+            
+            # Set device to gpu
+            if device == None:
+                warnings.warn(f"No device given. Checking Cuda")
+                if torch.cuda.is_available():
+                    device = torch.device("cuda")
+                    warnings.warn("No cuda device found. Switching to CPU")
+                else:
+                    device = torch.device("cpu")
+                    warnings.warn("Using CPU")
+            elif device == "GPU":
+                print(f"Using specified device: {device}")
+                device = torch.device("cuda")
+
+            #    device = "cpu"
+            # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+            # Manual seed for iterable results
+            torch.manual_seed(41)
+
+            # Convert data to pytorch dataset
+            train_dataset = models_per_OP.ann.CustomDataset(data = train_data)
+            test_dataset = models_per_OP.ann.CustomDataset(data = test_data)
+
+            # Pass data to dataloader
+            train_loader = torch.utils.data.DataLoader(dataset = train_dataset, batch_size = 30, shuffle = True, pin_memory = True)
+            test_loader = torch.utils.data.DataLoader(dataset = test_dataset, batch_size = 30, shuffle = True, pin_memory = True)
+
+            ## ANN ##
+            # Instantiate ANN model
+            model = models_per_OP.ann.Model(num_fc_layers = num_fc_layers, 
+                                            num_nodes_per_layer = num_nodes_per_layer,
+                                            activation_function = activation_f)
+            model = model.to(device)
+
+            # Define NN parameters
+            criterion = nn.MSELoss() # Loss criterion
+            
+            # Select optimizer
+            if optimizer_sel == "Adam":
+                optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+            elif optimizer_sel == "ASDG":
+                optimizer = torch.optim.ASGD(model.parameters(), lr = learning_rate) 
+            else: 
+                warnings.warn("No optimizer selected. Using default: Adam")
+                optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+
+            rmse_train = []
+            rmse_valid = []
+            mape_train = []
+            mape_valid = []
+
+            # Iterate through epochs to train
+            epochs = epochs + 1
+            for i in range(epochs):
+                
+                ## Model training ##
+                model.train()
+                avg_rmse, avg_mape = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
+                rmse_train.append(avg_rmse)
+                mape_train.append(avg_mape)
+
+                ## Model validation ##
+                model.eval()
+                avg_rmse_v, avg_mape_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
+                rmse_valid.append(avg_rmse_v)
+                mape_valid.append(avg_mape_v)
+                
+                # Print results    
+                if i % (epochs // 5) == 0:
+                    print()
+                    print(f"Epoch \t Avg Training RMSE \t Avg Validation RMSE \t Avg Training MAPE \t Avg Validation MAPE")
+                    print(f"{i} \t {avg_rmse} \t {avg_rmse_v} \t {avg_mape} \t {avg_mape_v}")
+
+            if include_plots == True:
+                # Plot errors
+                data_plotting.ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, epochs, operating_point = operating_point)
+            else:
+                pass
+
+
