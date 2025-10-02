@@ -5,7 +5,7 @@ from ANN_main import ann_main
 
 ## Main inputs ##
 # Secondary inputs
-device = "GPU"
+device = "CPU"
 include_plots = True
 save_results = True
 
@@ -13,7 +13,7 @@ save_results = True
 model_str = {
     "Idle": {
         "Learning rate": 1e-3,
-        "Epochs": 500,
+        "Epochs": 1500,
         "Number of FC layers": 3,
         "Number of nodes per layer": [3, 2, 2, 1, 1],
         "Activation Function": "relu",

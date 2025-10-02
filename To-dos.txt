@@ -82,3 +82,11 @@ Requirements:
     - Function expression, 
     - Model error values 
 Start with those and we will see about other things that need to be added
+
+To-dos 2.10.2025:
+- Saving system 
+    - Inputs and outputs, (done)
+    - Filing system and naming convention, (done)
+    - Multi-model integration problem: How do we deal with mutliple models,
+- Intergation and testing of the system on all of the models
+- Research restarts

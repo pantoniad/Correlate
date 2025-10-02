@@ -8,6 +8,7 @@ import warnings
 from Classes.latex_class import latex as lx
 from Classes.FuelFlow_class import FuelFlowMethods as ffms
 from typing import Optional
+import os
 
 class data_plotting:
 
@@ -392,7 +393,8 @@ class data_plotting:
         return meanEC, meanEE, meanEM, relativeECd, relativeEEd, relativeEM
     
     @staticmethod
-    def ann_loss_plot(rmse_train: list, rmse_valid: list, mape_train: list, mape_valid: list, epochs: int, operating_point: str):
+    def ann_loss_plot(rmse_train: list, rmse_valid: list, mape_train: list, mape_valid: list, 
+                      epochs: int, operating_point: str, plots_save_path: str = None):
         """
         ann_loss_plot:
 
@@ -421,4 +423,17 @@ class data_plotting:
         ax2.legend()
         fig.suptitle(f"Train and Validation error of ANN - CFM56 family - Operating Point: {operating_point}", size = "x-large")
         fig.tight_layout()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+
         plt.show()

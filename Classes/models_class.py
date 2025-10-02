@@ -10,6 +10,7 @@ from sklearn.model_selection import learning_curve
 
 from typing import Optional
 import warnings
+import os
 
 import matplotlib.pyplot as plt
 
@@ -536,12 +537,13 @@ class models_per_OP:
         def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
                         learning_rate: int, num_fc_layers: int, num_nodes_per_layer: list, 
                         optimizer_sel: torch.optim, activation_f: nn.functional = "relu", 
-                        device: Optional[str] = "cpu", include_plots: Optional[bool] = False, 
-                        save_results: Optional[bool] = True):
+                        device: Optional[str] = "cpu", include_plots: Optional[bool] = False,
+                        error_save_path: str = None, plots_save_path: str = None):
             """
             ann_creation:
 
             Inputs:
+            - operating_point: The current operating point. Used for plotting, str,
             - train_data: dataframe that contains the training data. Should contain
             three (3) feature collumns, with keys "Pressure Ratio", "Rated Thrust (kN)" and
             "Fuel Flow <> (kg/s)" where <> denotes the operating point, AND one (1) response
@@ -550,13 +552,17 @@ class models_per_OP:
             - test_data: similar to train_data, for testing, data based on the ICAO 
             Emissions Databank
             - epochs: the number of epochs required to run the ANN
+            - learning_rate: the learning rate for the model, int,
+            - num_fc_layes: number of fully connected layers for the model, int,
+            - num_nodes_per_layer: the number of node per fully connected layer,
+            list of integers, first indicates number of features, second number of 
+            outputs,
+            - optimizer: the optimizer of choice, torch.optim,
+            - activation_function: the activation function of choice, torch.nn.functional,
             - device: the device to be used for training. Default value is CPU, str
             - include_plots: if yes, the loss plots are printed, boolean, 
             default is False
-            - save_results: if yes, the outputs of the process are saved based on 
-            separate folder "Results" to a file named "ANN_results" followed by 
-            the date-time of the excecution of the file, boolean, default is True
-
+            
             Outputs: 
             - 
 
@@ -635,10 +641,36 @@ class models_per_OP:
                     print(f"Epoch \t Avg Training RMSE \t Avg Validation RMSE \t Avg Training MAPE \t Avg Validation MAPE")
                     print(f"{i} \t {avg_rmse} \t {avg_rmse_v} \t {avg_mape} \t {avg_mape_v}")
 
+            # Create and save plots
             if include_plots == True:
                 # Plot errors
-                data_plotting.ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, epochs, operating_point = operating_point)
-            else:
+                data_plotting.ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, 
+                                            epochs, operating_point, plots_save_path)
+
+            # Save loss function/metrics results
+            if error_save_path == None:
                 pass
+            elif error_save_path != None:
+                
+                data = {
+                    "Train RMSE": rmse_train,
+                    "Validation RMSE": rmse_valid,
+                    "Train MAPE": mape_train,
+                    "Validation MAPE": mape_valid
+                }
+
+                error_saved = pd.DataFrame(
+                    data = data
+                )
+
+                if operating_point == "T/O":
+                    operating_point = "Take-off"
+                    error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+                elif operating_point == "C/O":
+                    operating_point = "Climb-out"
+                    error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+                else:
+                    error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+
 
 

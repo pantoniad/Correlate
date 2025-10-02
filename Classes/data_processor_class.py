@@ -5,6 +5,9 @@ from typing import Optional
 from sklearn.model_selection import train_test_split
 
 import warnings
+import textwrap
+import os 
+import datetime
 
 class data_process:
 
@@ -126,3 +129,117 @@ class data_process:
                 df_final = df_inter.iloc[range(rows[0], rows[1])]
         
         return df_final
+    
+    @staticmethod
+    def data_saver(input_params: pd.DataFrame, secondary_inputs: pd.DataFrame, model: str, 
+                   current_dictory: str = r"E:\Correlate\model_outputs"):
+        """
+        data_saver:
+
+        Inputs:
+        - input_params: dictionary that contains all the values necessary for the definition
+        of the model (i.e. number of layers on a nn, degree of polynomial)
+        - model_parames: model parameters,
+        - current_directory: directory to be used for saving the data
+
+        Outputs:
+        - saved_params: a file created that incorporates the values of the input parameters,
+        the function expression and other information about the model and the execution
+        - Plots: plots are saved in the folder "Plots" under the current directory in the 
+        corresponding date, time and model 
+        - model_errors: a file created in the current directory in the folder "Errors" that
+        contains the train and test errors and any other information regarding the outputs 
+        of the model
+
+        """
+        ## Create destination directories ##
+        # Get current date-time
+        current_dt = datetime.datetime.now().strftime("%Y-%m-%d")
+        folder_name = f"Run_{current_dt}"
+        
+        # Check if there is a file with the same name - First path layer
+        path_test = os.path.join(current_dictory, folder_name)
+        if os.path.exists(path_test):
+            warnings.warn("Date stamped path already exist. Using already existing directory.")
+            path_first = path_test
+        else:
+            warnings.warn(f"Creating fodler with name: {folder_name}")
+            path_first = path_test
+            os.makedirs(path_first)
+
+        # Creat fodler based on the model currently in use
+        model_path = f"{model}"
+        path_test_2 = os.path.join(path_first, model_path)
+        if os.path.exists(path_test_2):
+            warnings.warn("Model folder already exists. Using existing.")
+            path_second = path_test_2
+        else:
+            warnings.warn(f"Model folder does not exist. Creating one named: {model}")
+            path_second = path_test_2
+            os.makedirs(path_second)
+        
+        # Check if there is a timestamped folder 
+        current_t = datetime.datetime.now().strftime("%H-%M-%S")
+        time = f"ExecutionTime_{current_t}"
+        path_test_3 = os.path.join(path_second, time)
+        if os.path.exists(path_test_3):
+            warnings.warn("Timestamped folder alredy exists. Using existing path.")
+            path_third = path_test_3
+        else:
+            warnings.warn(f"Creating new time-stamped path with name: {time}")
+            path_third = path_test_3
+            os.makedirs(path_third)
+
+        # Create subfolders for each time-stamped folder
+        folder_1 = "Generated plots"
+        plots_save_path = os.path.join(path_third, folder_1)
+        os.makedirs(plots_save_path)
+
+        folder_2 = f"{model} results"
+        error_save_path = os.path.join(path_third, folder_2)
+        os.makedirs(error_save_path)
+
+        ## Create report ##
+        report_path = os.path.join(path_third, f"model_execution_summary.txt")
+
+        # Build the report text
+        full_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        lines = []
+        lines.append(f"RESULTS REPORT - {model}")
+        lines.append("="*70)
+        lines.append(f"Generated (EET, UTC+2): {full_time}")
+        lines.append("Author: Antoniadis Panagiotis")
+        lines.append("-"*70)
+        lines.append("")
+        lines.append("Model input parameters")
+        lines.append(input_params.to_string())
+        lines.append("")
+        lines.append("Model secondary inputs")
+        lines.append(secondary_inputs.to_string())
+        lines.append("")
+        lines.append("Notes:")
+        notes = textwrap.fill(
+            "This report contains the inputs parameters for the ANN trained on"
+            "on the ICAO data for the CFM56 engine family. "
+            "Four operating points are considered along with three features "
+            "(Fuel Flow, Thrust rating and Pressure ratio) and one response (EI NOx). "
+            "Along with this report, the loss plots and the averaged value (per batch) "
+            "of RMSE and MAPE, for the each epoch, are saved.", width=80
+        )
+        lines.append(notes)
+        lines.append("")
+        lines.append("="*70)
+        lines.append("End of report.")
+        lines.append("")
+
+        # Write data
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines))
+        
+        return error_save_path, plots_save_path 
+        
+        
+
+        
+        
+        

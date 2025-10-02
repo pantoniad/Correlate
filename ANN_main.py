@@ -72,13 +72,32 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     fclayers = model_structure["Idle"]["Number of FC layers"]
     num_nodes = model_structure["Idle"]["Number of nodes per layer"]
 
+    # Save input parameters 
+    input_params = pd.DataFrame(
+        data = model_structure
+    )
+    secondary_inputs = pd.DataFrame(
+        data = {
+          "Execution device": device, 
+          "Include plots": include_plots,
+          "Save results": save_results  
+        },
+        index = ["Value"]
+    )
+
+    if save_results == True:
+        error_save_path, plots_save_path  = data_process.data_saver(input_params, secondary_inputs, model = "ANN")
+    else:
+        error_save_path = None
+        plots_save_path = None
 
     # Initialize model
     models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
                                 epochs = epochs, learning_rate = learning_rate, 
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
-                                device = device, include_plots = include_plots, save_results = save_results)
+                                device = device, include_plots = include_plots, 
+                                error_save_path = error_save_path, plots_save_path = plots_save_path)
 
     ## T/O ##
     # Ready data
@@ -114,13 +133,13 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     fclayers = model_structure["T/O"]["Number of FC layers"]
     num_nodes = model_structure["T/O"]["Number of nodes per layer"]
 
-
     # Initialize model
     models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
                                 epochs = epochs, learning_rate = learning_rate, 
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
-                                device = device, include_plots = include_plots, save_results = save_results)
+                                device = device, include_plots = include_plots,
+                                error_save_path = error_save_path, plots_save_path = plots_save_path)
 
     ## C/O ##
     # Ready data
@@ -162,7 +181,8 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
                                 epochs = epochs, learning_rate = learning_rate, 
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
-                                device = device, include_plots = include_plots, save_results = save_results)
+                                device = device, include_plots = include_plots,
+                                error_save_path = error_save_path, plots_save_path = plots_save_path)
 
     ## App ##
     # Ready data
@@ -204,5 +224,5 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
                                 epochs = epochs, learning_rate = learning_rate, 
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
-                                device = device, include_plots = include_plots, save_results = save_results)
-
+                                device = device, include_plots = include_plots,
+                                error_save_path = error_save_path, plots_save_path = plots_save_path)

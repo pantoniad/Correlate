@@ -1,0 +1,50 @@
+RESULTS REPORT
+======================================================================
+Generated (UTC): 2025-10-02T09-40-09Z
+
+1) DATASET SUMMARY
+----------------------------------------------------------------------
+Shape: 10 rows x 2 columns
+Columns: Key 1, Key 2
+
+Preview (first 5 rows):
+   Key 1    Key 2
+0.773956 0.438878
+0.858598 0.697368
+0.094177 0.975622
+0.761140 0.786064
+0.128114 0.450386
+
+Descriptive statistics:
+           Key 1      Key 2
+count  10.000000  10.000000
+mean    0.545628   0.602057
+std     0.279866   0.301356
+min     0.094177   0.063817
+25%     0.388952   0.441755
+50%     0.599225   0.664516
+75%     0.770752   0.813587
+max     0.858598   0.975622
+
+2) POLYNOMIAL MODEL
+----------------------------------------------------------------------
+Form: f(x1, x2) = a*x1^3 + b*x1^2*x2 + c*x1*x2 + d*x1*x2^2 + e*x2^3
+
+Coefficients (a..e):
+   a    b   c    d    e
+0.75 -0.2 1.1 0.03 -0.5
+
+Display (Unicode):
+f(x₁, x₂) = 0.75·x₁³ - 0.2·x₁²·x₂ + 1.1·x₁·x₂ + 0.03·x₁·x₂² - 0.5·x₂³
+
+Display (LaTeX):
+f(x_1,x_2) = 0.75\,x_1^3 - 0.2\,x_1^2 x_2 + 1.1\,x_1 x_2 + 0.03\,x_1 x_2^2 - 0.5\,x_2^3
+
+Notes:
+This plain-text report is designed for quick human inspection. Values are shown
+with default pandas formatting. The Unicode display uses superscripts and middle
+dots for readability in plain text. The LaTeX display can be copied into your
+thesis to render a typeset equation.
+
+======================================================================
+End of report.
