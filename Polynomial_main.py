@@ -124,7 +124,6 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     include_development = model_structure[op]["Include development split"] 
     parameters = {"Degrees": model_structure[op]["Degree of polynomial"], 
                   "Include Bias": include_bias}
-    include_learning_curve = include_plots
 
     # Get data
     df_final_to = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
@@ -171,7 +170,6 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     include_development = model_structure[op]["Include development split"] 
     parameters = {"Degrees": model_structure[op]["Degree of polynomial"], 
                   "Include Bias": include_bias}
-    include_learning_curve = include_plots
 
     # Get data
     df_final_co = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
@@ -217,7 +215,6 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     include_development = model_structure[op]["Include development split"] 
     parameters = {"Degrees": model_structure[op]["Degree of polynomial"], 
                   "Include Bias": include_bias}
-    include_learning_curve = include_plots
 
     # Get data
     df_final_app = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
