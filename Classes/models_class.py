@@ -158,7 +158,7 @@ class models_per_OP:
         return gbr, model_features, scaler, train_results, test_results
 
 
-    def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame):
+    def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame, operating_point: str, error_save_path: str = None):
                            # to_latex: bool = False, parameters = Optional[pd.DataFrame]):
         """
         performance_metrics: This function returns the values of a series of performance metrics
@@ -225,6 +225,21 @@ class models_per_OP:
         
         metrics = pd.DataFrame(data = d)
 
+        # Save loss function/metrics results
+        if error_save_path == None:
+            pass
+        elif error_save_path != None:
+            
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                metrics.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                metrics.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+            else:
+                metrics.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+
+
         """
         # Save to latex table
         path = parameters["Path"]
@@ -241,7 +256,9 @@ class models_per_OP:
         """
         return metrics
     
-    def Learning_curve(self, data: pd.DataFrame, scaler: sklearn.preprocessing.StandardScaler, model: object, model_features: Optional[object] = None, operating_point: Optional[str] = None):
+    def Learning_curve(self, data: pd.DataFrame, scaler: sklearn.preprocessing.StandardScaler, 
+                       model: object, model_features: Optional[object] = None, operating_point: Optional[str] = None,
+                       plots_save_path: str = None):
 
         """
         Learning_curve: creates a learning curve for the given data set, 
@@ -279,9 +296,9 @@ class models_per_OP:
 
         # Visualize No.1
         fig1, ax1 = plt.subplots( figsize = (7, 5))
-        plt.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2")
-        plt.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2")
-        plt.plot()
+        ax1.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2")
+        ax1.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2")
+        ax1.plot()
 
         ax1.fill_between(train_sizes, mean_train + std_train, mean_train - std_train,
                          where=((mean_train + std_train) >= (mean_train - std_train)),
@@ -291,18 +308,29 @@ class models_per_OP:
                          where=((mean_test + std_test) >= (mean_test - std_test)),
                          color = "red", alpha = 0.2)
 
-
-
-        plt.xlabel("Training set size")
-        plt.ylabel("Score - Coefficient of Determination (R2)")
-        plt.grid(color = "silver", linestyle = ":")
+        ax1.set_xlabel("Training set size")
+        ax1.set_ylabel("Score - Coefficient of Determination (R2)")
+        ax1.grid(color = "silver", linestyle = ":")
         
         if operating_point != None: 
-            plt.title(f"Learning curve - {operating_point} conditions - {model_type}")
+            fig1.suptitle(f"Learning curve - {operating_point} conditions - {model_type}")
         else:
-            plt.title(f"Learning curve - {model_type}")
+            fig1.suptitle(f"Learning curve - {model_type}")
         
-        plt.legend()
+        ax1.legend()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{model}_{operating_point}.png"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{model}_{operating_point}.png"))
+            else:
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{model}_{operating_point}.png"))
+
         plt.show()
 
     #def Learning_curve_ann(self, ):

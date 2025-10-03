@@ -1,18 +1,7 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
-
 from Classes.data_processor_class import data_process
 from Classes.models_class import models_per_OP
-from Classes.data_plotting_class import data_plotting
-
 from typing import Optional
-
-import warnings
 
 def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] = False, save_results: Optional[bool] = True):
     """
@@ -85,6 +74,7 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
         index = ["Value"]
     )
 
+    # Create report, save directory and return paths
     if save_results == True:
         error_save_path, plots_save_path  = data_process.data_saver(input_params, secondary_inputs, model = "ANN")
     else:

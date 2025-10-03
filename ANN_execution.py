@@ -1,6 +1,3 @@
-import pandas as pd
-import numpy as np
-from Classes.data_processor_class import data_process
 from ANN_main import ann_main
 
 ## Main inputs ##

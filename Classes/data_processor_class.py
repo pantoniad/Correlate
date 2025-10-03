@@ -137,8 +137,8 @@ class data_process:
         data_saver:
 
         Inputs:
-        - input_params: dictionary that contains all the values necessary for the definition
-        of the model (i.e. number of layers on a nn, degree of polynomial)
+        - input_params: dataframe that contains all the values necessary for the definition
+        of the model (i.e. number of layers on a nn, degree of polynomial), pd.DataFrame
         - model_parames: model parameters,
         - current_directory: directory to be used for saving the data
 
@@ -219,7 +219,7 @@ class data_process:
         lines.append("")
         lines.append("Notes:")
         notes = textwrap.fill(
-            "This report contains the inputs parameters for the ANN trained on"
+            "This report contains the inputs parameters for the corresponding model trained "
             "on the ICAO data for the CFM56 engine family. "
             "Four operating points are considered along with three features "
             "(Fuel Flow, Thrust rating and Pressure ratio) and one response (EI NOx). "

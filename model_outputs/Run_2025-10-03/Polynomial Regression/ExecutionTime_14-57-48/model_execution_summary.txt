@@ -1,0 +1,25 @@
+RESULTS REPORT - Polynomial Regression
+======================================================================
+Generated (EET, UTC+2): 2025-10-03 14:57:48
+Author: Antoniadis Panagiotis
+----------------------------------------------------------------------
+
+Model input parameters
+                            Idle    T/O    C/O    App
+Train split                  0.6    0.6    0.6    0.6
+Include development split  False  False  False  False
+Degree of polynomial           2      2      2      2
+
+Model secondary inputs
+       Include Bias  Include Plots  Save results
+Value         False           True          True
+
+Notes:
+This report contains the inputs parameters for the corresponding model trained
+on the ICAO data for the CFM56 engine family. Four operating points are
+considered along with three features (Fuel Flow, Thrust rating and Pressure
+ratio) and one response (EI NOx). Along with this report, the loss plots and the
+averaged value (per batch) of RMSE and MAPE, for the each epoch, are saved.
+
+======================================================================
+End of report.
