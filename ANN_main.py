@@ -30,6 +30,17 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     ## Idle ##
     # Ready data
     op = "Idle"
+
+    # Unpack data from model_structure dictionary
+    training_split = model_structure[op]["Training split"]
+    include_development = model_structure[op]["Include development split"]
+    epochs = model_structure[op]["Epochs"]
+    optimizer = model_structure[op]["Optimizer"]
+    learning_rate = model_structure[op]["Learning rate"]
+    activation = model_structure[op]["Activation Function"]
+    fclayers = model_structure[op]["Number of FC layers"]
+    num_nodes = model_structure[op]["Number of nodes per layer"]
+
     print()
     print(f"Now executing: {op}")
 
@@ -44,22 +55,14 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     X_train, y_train, X_test, y_test = data_process.splitter(
         x = features,
         y = response,
-        train_split = 0.5, 
-        include_dev = False
+        train_split = training_split, 
+        include_dev = include_development
     )
 
     # Data from dataframes to custom datasets
     train_data = pd.concat([X_train, y_train], axis = 1)
 
     test_data = pd.concat([X_test, y_test], axis = 1)
-
-    # Unpack data from model_structure dictionary
-    epochs = model_structure["Idle"]["Epochs"]
-    optimizer = model_structure["Idle"]["Optimizer"]
-    learning_rate = model_structure["Idle"]["Learning rate"]
-    activation = model_structure["Idle"]["Activation Function"]
-    fclayers = model_structure["Idle"]["Number of FC layers"]
-    num_nodes = model_structure["Idle"]["Number of nodes per layer"]
 
     # Save input parameters 
     input_params = pd.DataFrame(
@@ -92,21 +95,32 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     ## T/O ##
     # Ready data
     op = "T/O"
+
+    # Unpack data from model_structure dictionary
+    training_split = model_structure[op]["Training split"]
+    include_development = model_structure[op]["Include development split"]
+    epochs = model_structure[op]["Epochs"]
+    optimizer = model_structure[op]["Optimizer"]
+    learning_rate = model_structure[op]["Learning rate"]
+    activation = model_structure[op]["Activation Function"]
+    fclayers = model_structure[op]["Number of FC layers"]
+    num_nodes = model_structure[op]["Number of nodes per layer"]
+
     print()
     print(f"Now executing: {op}")
 
-    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = "T/O")
+    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
     df_final_idle["Rated Thrust (kN)"] = df_final_idle["Rated Thrust (kN)"].values.astype(float)*0.07
 
     # Features and response
-    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow T/O (kg/sec)"])
-    response = df_final_idle["NOx EI T/O (g/kg)"]
+    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
+    response = df_final_idle[f"NOx EI {op} (g/kg)"]
 
     # Split the data
     X_train, y_train, X_test, y_test = data_process.splitter(
         x = features,
         y = response,
-        train_split = 0.5, 
+        train_split = training_split, 
         include_dev = False
     )
 
@@ -115,15 +129,7 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
 
     test_data = pd.concat([X_test, y_test], axis = 1)
 
-    # Unpack data from model_structure dictionary
-    epochs = model_structure["T/O"]["Epochs"]
-    optimizer = model_structure["T/O"]["Optimizer"]
-    learning_rate = model_structure["T/O"]["Learning rate"]
-    activation = model_structure["T/O"]["Activation Function"]
-    fclayers = model_structure["T/O"]["Number of FC layers"]
-    num_nodes = model_structure["T/O"]["Number of nodes per layer"]
-
-    # Initialize model
+   # Initialize model
     models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
                                 epochs = epochs, learning_rate = learning_rate, 
                                 optimizer_sel = optimizer, activation_f = activation,
@@ -134,37 +140,39 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     ## C/O ##
     # Ready data
     op = "C/O"
+
+    # Unpack data from model_structure dictionary
+    training_split = model_structure[op]["Training split"]
+    include_development = model_structure[op]["Include development split"]
+    epochs = model_structure[op]["Epochs"]
+    optimizer = model_structure[op]["Optimizer"]
+    learning_rate = model_structure[op]["Learning rate"]
+    activation = model_structure[op]["Activation Function"]
+    fclayers = model_structure[op]["Number of FC layers"]
+    num_nodes = model_structure[op]["Number of nodes per layer"]
+
     print()
     print(f"Now executing: {op}")
 
-    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = "C/O")
+    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
     df_final_idle["Rated Thrust (kN)"] = df_final_idle["Rated Thrust (kN)"].values.astype(float)*0.07
 
     # Features and response
-    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow C/O (kg/sec)"])
-    response = df_final_idle["NOx EI C/O (g/kg)"]
+    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
+    response = df_final_idle[f"NOx EI {op} (g/kg)"]
 
     # Split the data
     X_train, y_train, X_test, y_test = data_process.splitter(
         x = features,
         y = response,
-        train_split = 0.5, 
-        include_dev = False
+        train_split = training_split, 
+        include_dev = include_development
     )
 
     # Data from dataframes to custom datasets
     train_data = pd.concat([X_train, y_train], axis = 1)
 
     test_data = pd.concat([X_test, y_test], axis = 1)
-
-    # Unpack data from model_structure dictionary
-    epochs = model_structure["C/O"]["Epochs"]
-    optimizer = model_structure["C/O"]["Optimizer"]
-    learning_rate = model_structure["C/O"]["Learning rate"]
-    activation = model_structure["C/O"]["Activation Function"]
-    fclayers = model_structure["C/O"]["Number of FC layers"]
-    num_nodes = model_structure["C/O"]["Number of nodes per layer"]
-
 
     # Initialize model
     models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
@@ -177,37 +185,40 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     ## App ##
     # Ready data
     op = "App"
+
+    # Unpack data from model_structure dictionary
+    training_split = model_structure[op]["Training split"]
+    include_development = model_structure[op]["Include development split"]
+    epochs = model_structure[op]["Epochs"]
+    optimizer = model_structure[op]["Optimizer"]
+    learning_rate = model_structure[op]["Learning rate"]
+    activation = model_structure[op]["Activation Function"]
+    fclayers = model_structure[op]["Number of FC layers"]
+    num_nodes = model_structure[op]["Number of nodes per layer"]
+
+
     print()
     print(f"Now executing: {op}")
 
-    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = "App")
+    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
     df_final_idle["Rated Thrust (kN)"] = df_final_idle["Rated Thrust (kN)"].values.astype(float)*0.07
 
     # Features and response
-    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow App (kg/sec)"])
-    response = df_final_idle["NOx EI App (g/kg)"]
+    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
+    response = df_final_idle[f"NOx EI {op} (g/kg)"]
 
     # Split the data
     X_train, y_train, X_test, y_test = data_process.splitter(
         x = features,
         y = response,
-        train_split = 0.5, 
-        include_dev = False
+        train_split = training_split, 
+        include_dev = include_development
     )
 
     # Data from dataframes to custom datasets
     train_data = pd.concat([X_train, y_train], axis = 1)
 
     test_data = pd.concat([X_test, y_test], axis = 1)
-
-    # Unpack data from model_structure dictionary
-    epochs = model_structure["App"]["Epochs"]
-    optimizer = model_structure["App"]["Optimizer"]
-    learning_rate = model_structure["App"]["Learning rate"]
-    activation = model_structure["App"]["Activation Function"]
-    fclayers = model_structure["App"]["Number of FC layers"]
-    num_nodes = model_structure["App"]["Number of nodes per layer"]
-
 
     # Initialize model
     models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 

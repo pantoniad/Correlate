@@ -200,7 +200,7 @@ class data_process:
         os.makedirs(error_save_path)
 
         ## Create report ##
-        report_path = os.path.join(path_third, f"model_execution_summary.txt")
+        report_path = os.path.join(path_third, f"model_input_summary.txt")
 
         # Build the report text
         full_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

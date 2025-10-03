@@ -605,9 +605,12 @@ class models_per_OP:
                 else:
                     device = torch.device("cpu")
                     warnings.warn("Using CPU")
-            elif device == "GPU":
+            elif device == "GPU" or device == "gpu":
                 print(f"Using specified device: {device}")
                 device = torch.device("cuda")
+            elif device == "CPU" or device == "cpu":
+                print(f"Using specified device: {device}")
+                device = "cpu"
 
             #    device = "cpu"
             # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

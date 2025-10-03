@@ -1,14 +1,16 @@
 from ANN_main import ann_main
 
-## Main inputs ##
+## Model parameters ##
 # Secondary inputs
-device = "CPU"
+device = "gpu"
 include_plots = True
 save_results = True
 
 # Main inputs - Structure of ANNs per operating point 
 model_str = {
     "Idle": {
+        "Training split": 0.6,
+        "Include development split": False, 
         "Learning rate": 1e-3,
         "Epochs": 1500,
         "Number of FC layers": 3,
@@ -17,6 +19,8 @@ model_str = {
         "Optimizer": "ASDG"
     },
     "T/O":{
+        "Training split": 0.6,
+        "Include development split": False, 
         "Learning rate": 1e-3,
         "Epochs": 500,
         "Number of FC layers": 3,
@@ -25,6 +29,8 @@ model_str = {
         "Optimizer": "Adam"
     },
     "C/O":{
+        "Training split": 0.6,
+        "Include development split": False,
         "Learning rate": 1e-3,
         "Epochs": 500,
         "Number of FC layers": 3,
@@ -33,6 +39,8 @@ model_str = {
         "Optimizer": "Adam"
     },
     "App":{
+        "Training split": 0.6,
+        "Include development split": False, 
         "Learning rate": 1e-3,
         "Epochs": 500,
         "Number of FC layers": 3,
