@@ -30,6 +30,7 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     ## Idle ##
     # Ready data
     op = "Idle"
+    print(f"Now executing: {op}")
 
     # Unpack data from model_structure dictionary
     training_split = model_structure[op]["Training split"]

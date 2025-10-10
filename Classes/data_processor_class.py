@@ -76,11 +76,11 @@ class data_process:
         if include_dev == True:
            
             xtrain, Xtemp, ytrain, Ytemp = train_test_split(
-                x, y, train_size=train_split, random_state=10
+                x, y, train_size=train_split, random_state=39
             ) 
 
             xdev, xtest, ydev, ytest = train_test_split(
-                Xtemp, Ytemp, train_size=0.5, random_state=10
+                Xtemp, Ytemp, train_size=0.5, random_state=39
             )
             
             return xtrain, ytrain, xdev, ydev, xtest, ytest
@@ -88,7 +88,7 @@ class data_process:
         else:
 
             xtrain, xtest, ytrain, ytest = train_test_split(
-                x, y, train_size=train_split, random_state=10
+                x, y, train_size=train_split, random_state=34
             )
 
             return xtrain, ytrain, xtest, ytest

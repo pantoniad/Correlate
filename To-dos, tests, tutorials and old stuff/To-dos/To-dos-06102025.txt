@@ -1,0 +1,8 @@
+To-dos (06-10-2025):
+- Insert parameters in the Gradient Descent algorithm (done),
+- Deal with negative values of metrics and validation error being smaller than 
+training error (done),
+- Look into early stopping 
+- Grid search to find the best values for the inserted parametes in the model
+- Deal with learning curves being all over the place
+- Research

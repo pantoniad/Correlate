@@ -94,13 +94,15 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
         error_save_path, plots_save_path = None, None
 
     # Initialize model
-    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting()
+    parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
+    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
 
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
                                       error_save_path = error_save_path, operating_point = op)
     print(f"Gradient Boosting, Operating point: {op} metrics")
     print(metrics.head())
+    print()
 
     # Learning curve
     if include_learning_curve == True:
@@ -135,14 +137,17 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     # Train models class and Polynomial Regressor. Scaler included in the model
     gbr = models_per_OP(X_train = X_train, X_test = X_test,
                                 y_train = y_train, y_test = y_test)
-
-    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting()
+    
+    # Initialize model
+    parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
+    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
 
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results, 
                                       operating_point = op, error_save_path = error_save_path)
     print(f"Gradient Boosting, Operating point: {op} metrics")
     print(metrics.head())
+    print()
 
     # Learning curve
     if include_learning_curve == True:
@@ -179,13 +184,16 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     gbr = models_per_OP(X_train = X_train, X_test = X_test,
                                 y_train = y_train, y_test = y_test)
 
-    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting()
+    # Initialize the model
+    parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
+    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
 
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
                                       operating_point = op, error_save_path = error_save_path)
     print(f"Gradient Boosting, Operating point: {op} metrics")
     print(metrics.head())
+    print()
 
     # Learning curve
     if include_learning_curve == True:
@@ -221,8 +229,10 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     # Train models class and Polynomial Regressor. Scaler included in the model
     gbr = models_per_OP(X_train = X_train, X_test = X_test,
                                 y_train = y_train, y_test = y_test)
-
-    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting()
+    
+    # Initialize the model
+    parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
+    model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
 
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,

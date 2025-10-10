@@ -20,7 +20,7 @@ import torch.nn as nn
 
 from Classes.data_plotting_class import data_plotting
 
-np.random.seed(42)
+np.random.seed(34)
 
 class models_per_OP:
 
@@ -127,15 +127,22 @@ class models_per_OP:
         X_train_scaled = scaler.fit_transform(X_train)
         X_test_scaled  = scaler.transform(X_test) 
 
+        # Extract parameters from "parameters"
+        n_estiamators = parameters["Number of estimators"]
+        learning_rate = parameters["Learning rate"]
+        criterion = parameters["Criterion"]
+        max_depth = parameters["Maximum Tree depth"]
+
         # Initialiaze regressor
-        gbr = GradientBoostingRegressor()
+        gbr = GradientBoostingRegressor(n_estimators=n_estiamators, learning_rate= learning_rate,
+                                        criterion=criterion, max_depth=max_depth)
 
         # Train Regressor 
-        gbr.fit(X_train_scaled, y_train)
+        fitted_gbr = gbr.fit(X_train_scaled, y_train)
 
         # Predict based on test
-        y_train_pred = gbr.predict(X_train_scaled)
-        y_test_pred = gbr.predict(X_test_scaled)
+        y_train_pred = fitted_gbr.predict(X_train_scaled)
+        y_test_pred = fitted_gbr.predict(X_test_scaled)
 
         # Create output dataframes
         d1 = {
@@ -324,12 +331,12 @@ class models_per_OP:
         else:
             if operating_point == "T/O":
                 operating_point = "Take-off"
-                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{model}_{operating_point}.png"))
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{type(model).__name__}_{operating_point}.png"))
             elif operating_point == "C/O":
                 operating_point = "Climb-out"
-                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{model}_{operating_point}.png"))
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{type(model).__name__}_{operating_point}.png"))
             else:
-                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{model}_{operating_point}.png"))
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{type(model).__name__}_{operating_point}.png"))
 
         plt.show()
 

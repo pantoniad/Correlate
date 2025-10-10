@@ -7,24 +7,36 @@ save_results = True
 ## Primary inputs
 primary_inputs = {
     "Idle": {
-        "Train split": 0.6,
+        "Train split": 0.7,
         "Include development split": False,
-        "Degree of polynomial": 2    
+        "Number of estimators": 200,
+        "Learning rate": 1e-3,
+        "Criterion":  "friedman_mse",
+        "Maximum Tree depth": 10
     },
     "T/O":{
-        "Train split": 0.6,
+        "Train split": 0.7,
         "Include development split": False,
-        "Degree of polynomial": 2    
+        "Number of estimators": 200,
+        "Learning rate": 1e-3,
+        "Criterion":  "friedman_mse",
+        "Maximum Tree depth": 10
     },
     "C/O": {
-        "Train split": 0.6,
+        "Train split": 0.7,
         "Include development split": False,
-        "Degree of polynomial": 2    
+        "Number of estimators": 200,
+        "Learning rate": 1e-3,
+        "Criterion":  "friedman_mse",
+        "Maximum Tree depth": 10
     },
     "App": {
-        "Train split": 0.6,
+        "Train split": 0.7,
         "Include development split": False,
-        "Degree of polynomial": 2    
+        "Number of estimators": 200,
+        "Learning rate": 1e-3,
+        "Criterion":  "friedman_mse",
+        "Maximum Tree depth": 10
     }
 }
 
