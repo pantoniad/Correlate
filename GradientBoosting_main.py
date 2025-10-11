@@ -39,15 +39,6 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     # Clea-up dataframe
     df_cleaned = data_process.csv_cleanup(df = df_og, clmns = clmns, drange = drange, reset_index = True, save_to_csv = True, path = "Databank/CFM56data.csv")
 
-    # Saving the model results
-    models_res = {
-        "Polynomial Regression": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()},
-        "Gradient Boosting": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()},
-        "ANN": {"Idle": float(), "T/O": float(), "C/O": float(), "App": float()}
-    }
-
-    ## Train Polynomial Regressor per operating point ##
-
     ## Idle
     op = "Idle" 
 
@@ -100,6 +91,7 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
                                       error_save_path = error_save_path, operating_point = op)
+    print()
     print(f"Gradient Boosting, Operating point: {op} metrics")
     print(metrics.head())
     print()

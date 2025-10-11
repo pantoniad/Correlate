@@ -128,14 +128,15 @@ class models_per_OP:
         X_test_scaled  = scaler.transform(X_test) 
 
         # Extract parameters from "parameters"
-        n_estiamators = parameters["Number of estimators"]
+        n_estimators = parameters["Number of estimators"]
         learning_rate = parameters["Learning rate"]
         criterion = parameters["Criterion"]
         max_depth = parameters["Maximum Tree depth"]
+        subsample_size = parameters["Subsample size"]
 
         # Initialiaze regressor
-        gbr = GradientBoostingRegressor(n_estimators=n_estiamators, learning_rate= learning_rate,
-                                        criterion=criterion, max_depth=max_depth)
+        gbr = GradientBoostingRegressor(n_estimators=n_estimators, learning_rate= learning_rate,
+                                        criterion=criterion, max_depth=max_depth, subsample = subsample_size)
 
         # Train Regressor 
         fitted_gbr = gbr.fit(X_train_scaled, y_train)
@@ -203,7 +204,14 @@ class models_per_OP:
         train_r2 = r2_score(y_train, y_train_pred)
         test_r2 = r2_score(y_test, y_test_pred)
 
-        # CRMSD
+        # CRMSD - Train
+        #pred = y_train_pred.values.astype(float)
+        #pred_median = np.median(y_test_pred.values.astype(float))
+        #real = y_test.values.astype(float) 
+        #real_median = np.median(y_test.values.astype(float))
+        #crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+
+        # CRMSD - Test
         pred = y_test_pred.values.astype(float)
         pred_median = np.median(y_test_pred.values.astype(float))
         real = y_test.values.astype(float) 

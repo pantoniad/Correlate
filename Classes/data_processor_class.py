@@ -73,26 +73,37 @@ class data_process:
 
         """
 
-        if include_dev == True:
-           
-            xtrain, Xtemp, ytrain, Ytemp = train_test_split(
-                x, y, train_size=train_split, random_state=39
-            ) 
-
-            xdev, xtest, ydev, ytest = train_test_split(
-                Xtemp, Ytemp, train_size=0.5, random_state=39
-            )
+        if train_split != 1:
             
-            return xtrain, ytrain, xdev, ydev, xtest, ytest
-        
+            if include_dev == True:
+            
+                xtrain, Xtemp, ytrain, Ytemp = train_test_split(
+                    x, y, train_size=train_split, random_state=39
+                ) 
+
+                xdev, xtest, ydev, ytest = train_test_split(
+                    Xtemp, Ytemp, train_size=0.5, random_state=39
+                )
+                
+                return xtrain, ytrain, xdev, ydev, xtest, ytest
+
+
+            else:
+
+                xtrain, xtest, ytrain, ytest = train_test_split(
+                    x, y, train_size=train_split, random_state=34
+                )
+
+                return xtrain, ytrain, xtest, ytest
+
         else:
 
-            xtrain, xtest, ytrain, ytest = train_test_split(
-                x, y, train_size=train_split, random_state=34
-            )
+            xtrain = x
+            ytrain = y
+            xtest = []
+            ytest = []
 
             return xtrain, ytrain, xtest, ytest
-
 
     def df_former(df: pd.DataFrame, clmns: Optional[list] = None, rows: Optional[np.array] = np.empty([0]), parameter: Optional[str] = None):
         """
@@ -132,7 +143,8 @@ class data_process:
     
     @staticmethod
     def data_saver(input_params: pd.DataFrame, secondary_inputs: pd.DataFrame, model: str, 
-                   current_dictory: str = r"E:\Correlate\model_outputs"):
+                   current_dictory: str = r"E:\Correlate\model_outputs", 
+                   notes: Optional[str] = [], gridsearch: Optional[bool] = False):
         """
         data_saver:
 
@@ -141,6 +153,10 @@ class data_process:
         of the model (i.e. number of layers on a nn, degree of polynomial), pd.DataFrame
         - model_parames: model parameters,
         - current_directory: directory to be used for saving the data
+        - notes: any note to be considered, str
+        - gridsearch: a boolean variable to identify whether the saving procedure is used during
+        gridsearch procedures. If True: only the txt file is generated and returns no variables
+        and "secondary_inputs" should be an empty list
 
         Outputs:
         - saved_params: a file created that incorporates the values of the input parameters,
@@ -190,53 +206,77 @@ class data_process:
             path_third = path_test_3
             os.makedirs(path_third)
 
-        # Create subfolders for each time-stamped folder
-        folder_1 = "Generated plots"
-        plots_save_path = os.path.join(path_third, folder_1)
-        os.makedirs(plots_save_path)
+        if gridsearch == False:
+            # Create subfolders for each time-stamped folder
+            folder_1 = "Generated plots"
+            plots_save_path = os.path.join(path_third, folder_1)
+            os.makedirs(plots_save_path)
 
-        folder_2 = f"{model} results"
-        error_save_path = os.path.join(path_third, folder_2)
-        os.makedirs(error_save_path)
+            folder_2 = f"{model} results"
+            error_save_path = os.path.join(path_third, folder_2)
+            os.makedirs(error_save_path)
 
-        ## Create report ##
-        report_path = os.path.join(path_third, f"model_input_summary.txt")
+            ## Create report ##
+            report_path = os.path.join(path_third, f"model_input_summary.txt")
 
-        # Build the report text
-        full_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        lines = []
-        lines.append(f"RESULTS REPORT - {model}")
-        lines.append("="*70)
-        lines.append(f"Generated (EET, UTC+2): {full_time}")
-        lines.append("Author: Antoniadis Panagiotis")
-        lines.append("-"*70)
-        lines.append("")
-        lines.append("Model input parameters")
-        lines.append(input_params.to_string())
-        lines.append("")
-        lines.append("Model secondary inputs")
-        lines.append(secondary_inputs.to_string())
-        lines.append("")
-        lines.append("Notes:")
-        notes = textwrap.fill(
-            "This report contains the inputs parameters for the corresponding model trained "
-            "on the ICAO data for the CFM56 engine family. "
-            "Four operating points are considered along with three features "
-            "(Fuel Flow, Thrust rating and Pressure ratio) and one response (EI NOx). "
-            "Along with this report, the loss plots and the averaged value (per batch) "
-            "of RMSE and MAPE, for the each epoch, are saved.", width=80
-        )
-        lines.append(notes)
-        lines.append("")
-        lines.append("="*70)
-        lines.append("End of report.")
-        lines.append("")
+            # Build the report text
+            full_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            lines = []
+            lines.append(f"RESULTS REPORT - {model}")
+            lines.append("="*70)
+            lines.append(f"Generated (EET, UTC+2): {full_time}")
+            lines.append("Author: Antoniadis Panagiotis")
+            lines.append("-"*70)
+            lines.append("")
+            lines.append("Model input parameters")
+            lines.append(input_params.to_string())
+            lines.append("")
+            lines.append("Model secondary inputs")
+            lines.append(secondary_inputs.to_string())
+            lines.append("")
+            lines.append("Notes:")
+            notes = notes
+            lines.append(notes)
+            lines.append("")
+            lines.append("="*70)
+            lines.append("End of report.")
+            lines.append("")
 
-        # Write data
-        with open(report_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(lines))
+            # Write data
+            with open(report_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+            
+            return error_save_path, plots_save_path 
         
-        return error_save_path, plots_save_path 
+        elif gridsearch == True:
+            
+            ## Create report ##
+            report_path = os.path.join(path_third, f"grid_search_results_summary.txt")
+
+            # Build the report text
+            full_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            lines = []
+            lines.append(f"RESULTS REPORT - {model}")
+            lines.append("="*70)
+            lines.append(f"Generated (EET, UTC+2): {full_time}")
+            lines.append("Author: Antoniadis Panagiotis")
+            lines.append("-"*70)
+            lines.append("")
+            lines.append("Grid search results")
+            lines.append(input_params.to_string())
+            lines.append("")
+            lines.append("Notes:")
+            notes = notes
+            lines.append(notes)
+            lines.append("")
+            lines.append("="*70)
+            lines.append("End of report.")
+            lines.append("")
+
+            # Write data
+            with open(report_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(lines))
+        
         
         
 

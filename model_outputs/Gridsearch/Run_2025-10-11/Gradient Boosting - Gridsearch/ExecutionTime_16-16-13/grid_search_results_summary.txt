@@ -1,0 +1,20 @@
+RESULTS REPORT - Gradient Boosting - Gridsearch
+======================================================================
+Generated (EET, UTC+2): 2025-10-11 16:16:13
+Author: Antoniadis Panagiotis
+----------------------------------------------------------------------
+
+Grid search results
+                         Value     Value     Value     Value
+Operating point           Idle       T/O       C/O       App
+Learning rate            0.029     0.029     0.029     0.021
+Maximum tree depth          10        10        10        10
+Number of estimators        10        10        10        10
+Subsample size             0.7       0.8       0.8       0.1
+Best score - R2       0.012223  0.160227  0.036871  0.093056
+
+Notes:
+Training on the CFM56 ICAO Emissions Databank data
+
+======================================================================
+End of report.
