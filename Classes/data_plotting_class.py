@@ -471,11 +471,11 @@ class data_plotting:
 
         ## First case - Number of estimators vs Error + Depth
         n_estimators_min = 1
-        n_estimators_max = 5*n_estimators+n_estimators_min
+        n_estimators_max = 4*n_estimators+n_estimators_min
         n_estimators_step = int((n_estimators_max-n_estimators_min)/10) 
         
         tree_depth_min = 1
-        tree_depth_max = 5*tree_depth + tree_depth_min
+        tree_depth_max = 4*tree_depth + tree_depth_min
         tree_depth_step = int((tree_depth_max - tree_depth_min)/4)
         
         # Single parameter grid-search 
@@ -485,10 +485,14 @@ class data_plotting:
         # Gridsearch
         for i in range(tree_depth_min, tree_depth_max, tree_depth_step):
             
-            if i != 1:
-                depth = np.round(i, -1)
-            else: 
+            if i == 1:
                 depth = 1
+            else:
+                if i in range(2, 11):
+                    depth = i
+                else:
+                    depth = np.round(i, -1)
+
             estimator = n_estimators_min
             while estimator < n_estimators_max: 
 
@@ -590,12 +594,13 @@ class data_plotting:
 
         ## Seconde case - Tree depth vs error + Estimators
         n_estimators_min = 1
-        n_estimators_max = 5*n_estimators+n_estimators_min
+        n_estimators_max = 4*n_estimators+n_estimators_min
         n_estimators_step = int((n_estimators_max-n_estimators_min)/4) 
         
+        # Struggles for low values of tree depth. If statement below fixes floating steps into 1, for low value tree depths
         tree_depth_min = 1
-        tree_depth_max = 5*tree_depth + tree_depth_min
-        tree_depth_step = int((tree_depth_max - tree_depth_min)/10)
+        tree_depth_max = 4*tree_depth + tree_depth_min
+        tree_depth_step = int((tree_depth_max - tree_depth_min)/10) if (tree_depth_max - tree_depth_min)/10 > 1 else 1  
         
         # Single parameter grid-search 
         data_to_plot_train = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Train MAPE", "Train RMSE", "Train R2"])
@@ -609,6 +614,7 @@ class data_plotting:
             else: 
                 estimator = 1
             depth = tree_depth_min
+            
             while depth < tree_depth_max: 
 
                 # Extract parameters from self
