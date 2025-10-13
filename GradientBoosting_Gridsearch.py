@@ -61,7 +61,13 @@ for op in ops:
 
     gbr_GS.fit(X_train_scaled, y_train.values)
 
-   
+    all_results = pd.DataFrame(data = gbr_GS.cv_results_)
+    path_out = fr"C:\Users\panos\Thesis2025\2025-10-11_23-51-03\Correlate\model_outputs\Gridsearch\Run_2025-10-12\grid_search_all_res_121025_{op}.csv"
+    all_results.to_csv(path_out)
+    
+    best_params = gbr_GS.best_params_
+    best_score = gbr_GS.best_score_
+ 
     best_params = gbr_GS.best_params_
     best_score = gbr_GS.best_score_
     

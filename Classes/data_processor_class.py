@@ -144,7 +144,7 @@ class data_process:
     @staticmethod
     def data_saver(input_params: pd.DataFrame, secondary_inputs: pd.DataFrame, model: str, 
                    current_dictory: str = r"E:\Correlate\model_outputs", 
-                   notes: Optional[str] = [], gridsearch: Optional[bool] = False):
+                   notes: Optional[str] = "Empty", gridsearch: Optional[bool] = False):
         """
         data_saver:
 

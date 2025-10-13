@@ -3,9 +3,9 @@ import numpy as np
 
 from Classes.data_processor_class import data_process
 from Classes.models_class import models_per_OP
-from sklearn.preprocessing import StandardScaler
+from Classes.data_plotting_class import data_plotting
 
-def gbr_main(model_structure: dict, include_plots: bool = False, save_results: bool = True):
+def gbr_main(model_structure: dict, include_learning_curve: bool = False, include_complexity_plot: bool = False, save_results: bool = True):
     
     """
     gbr_main: the main function that controls the execution of the 
@@ -14,8 +14,8 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     Inputs:
     - model_structure: a, per operating point, structured dictionary that includes
     all the primary parameters for the creation of the gradient boosting model, dictionary
-    - inlcude_plots: a boolean parameter that handles the inclusion of plots. If True,
-    the plots are shown and saved on the designated folder. If False, nothing happens, boolean
+    - inlcude_learning_plot: 
+    - include_complexity_plot:
     - save_results: a boolean parameter that handles the saving of the results, specifically the
     numerical results. If yes, the values of the metrics are saved at a designated folder, 
     if False, nothing happens
@@ -45,7 +45,8 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     # Unpdack variables
     training_split = model_structure[op]["Train split"]
     include_development = model_structure[op]["Include development split"]
-    include_learning_curve = include_plots
+    include_learning_curve = include_learning_curve
+    include_complexity_plot = include_complexity_plot
     save_results = save_results
 
     # Get data
@@ -72,7 +73,8 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     primary_inputs = pd.DataFrame(data = model_structure)
 
     secondary_inputs_dict = {
-        "Include Plots": include_plots, 
+        "Include Learning curve": include_learning_curve, 
+        "Include complexity plots": include_complexity_plot,
         "Save results": save_results
     }
     secondary_inputs = pd.DataFrame(data = secondary_inputs_dict, index = ["Value"])
@@ -80,7 +82,7 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     if save_results == True:
         error_save_path, plots_save_path = data_process.data_saver(
             input_params = primary_inputs, secondary_inputs = secondary_inputs, 
-            model = "Gradient Boosting")
+            model = "Gradient Boosting", notes = "Empty", gridsearch=False)
     else: 
         error_save_path, plots_save_path = None, None
 
@@ -99,10 +101,15 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
     # Learning curve
     if include_learning_curve == True:
         gbr.Learning_curve(data = df_final_idle, scaler = scaler, model = model, 
-                        model_features = model_features, operating_point = op,
-                        plots_save_path = plots_save_path)
+                    model_features = model_features, operating_point = op,
+                    plots_save_path = plots_save_path)
     else: pass
-
+    
+    if include_complexity_plot == True:
+        data_plotting.gbr_complexity_plot(model_params=model_structure, 
+                        X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
+                        op = op, model = model, plots_save_path = plots_save_path)
+    else: pass
 
     ## Take-off
     op = "T/O"
@@ -143,11 +150,16 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
 
     # Learning curve
     if include_learning_curve == True:
-        gbr.Learning_curve(data = df_final_to, scaler = scaler, model = model, 
-                        model_features = model_features, operating_point = op,
-                        plots_save_path = plots_save_path)
+        gbr.Learning_curve(data = df_final_idle, scaler = scaler, model = model, 
+                    model_features = model_features, operating_point = op,
+                    plots_save_path = plots_save_path)
     else: pass
-
+    
+    if include_complexity_plot == True:
+        data_plotting.gbr_complexity_plot(model_params=model_structure, 
+                        X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
+                        op = op, model = model, plots_save_path = plots_save_path)
+    else: pass
 
     ## Climb-out
     op = "C/O"
@@ -189,11 +201,16 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
 
     # Learning curve
     if include_learning_curve == True:
-        gbr.Learning_curve(data = df_final_co, scaler = scaler, model = model, 
-                        model_features = model_features, operating_point = op,
-                        plots_save_path = plots_save_path)
+        gbr.Learning_curve(data = df_final_idle, scaler = scaler, model = model, 
+                    model_features = model_features, operating_point = op,
+                    plots_save_path = plots_save_path)
     else: pass
-
+    
+    if include_complexity_plot == True:
+        data_plotting.gbr_complexity_plot(model_params=model_structure, 
+                        X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
+                        op = op, model = model, plots_save_path = plots_save_path)
+    else: pass
 
     ## Approach
     op = "App"
@@ -234,7 +251,13 @@ def gbr_main(model_structure: dict, include_plots: bool = False, save_results: b
 
     # Learning curve
     if include_learning_curve == True:
-        gbr.Learning_curve(data = df_final_app, scaler = scaler, model = model, 
-                        model_features = model_features, operating_point = op,
-                        plots_save_path = plots_save_path)
+        gbr.Learning_curve(data = df_final_idle, scaler = scaler, model = model, 
+                    model_features = model_features, operating_point = op,
+                    plots_save_path = plots_save_path)
+    else: pass
+    
+    if include_complexity_plot == True:
+        data_plotting.gbr_complexity_plot(model_params=model_structure, 
+                        X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
+                        op = op, model = model, plots_save_path = plots_save_path)
     else: pass

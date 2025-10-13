@@ -1,0 +1,2 @@
+Operating point,Best parameters,Best score
+Idle,"{'learning_rate': np.float64(0.009000000000000001), 'max_depth': 40, 'n_estimators': 200, 'subsample': np.float64(0.1)}",0.4072785305895598

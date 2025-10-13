@@ -1,14 +1,20 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
+
 from matplotlib import pyplot as plt  
 import matplotlib.gridspec as gridspec  
-import Classes.correlations_class as correlate
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_percentage_error, r2_score, root_mean_squared_error
+
 import warnings
-from Classes.latex_class import latex as lx
-from Classes.FuelFlow_class import FuelFlowMethods as ffms
 from typing import Optional
 import os
+
+from Classes.latex_class import latex as lx
+from Classes.FuelFlow_class import FuelFlowMethods as ffms
+import Classes.correlations_class as correlate
 
 class data_plotting:
 
@@ -435,5 +441,267 @@ class data_plotting:
                 fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
             else:
                 fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+
+        plt.show()
+    
+    @staticmethod
+    def gbr_complexity_plot(model_params: dict,  X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame,
+                            y_test: pd.DataFrame, op: str, model: str, plots_save_path: str = None):
+
+        """    
+        gbr_complexity_plot:
+
+        Input:
+        - model:
+        - model_params:
+        - data: 
+        - x_axis_parameter: dictionary with the name being the name of the parameter to be grid-searched and
+        a list indicating the start, stop and step of the range to be searched, i.e. {"n_estimators":[1, 100, 2]}
+        - op: operating point
+        
+        Output:
+        """ 
+
+        # Unpack
+        criterion = model_params[op]["Criterion"]
+        learning_rate = model_params[op]["Learning rate"]
+        subsample_size = model_params[op]["Subsample size"]
+        n_estimators = model_params[op]["Number of estimators"]
+        tree_depth = model_params[op]["Maximum Tree depth"]
+
+        ## First case - Number of estimators vs Error + Depth
+        n_estimators_min = 1
+        n_estimators_max = 5*n_estimators+n_estimators_min
+        n_estimators_step = int((n_estimators_max-n_estimators_min)/10) 
+        
+        tree_depth_min = 1
+        tree_depth_max = 5*tree_depth + tree_depth_min
+        tree_depth_step = int((tree_depth_max - tree_depth_min)/4)
+        
+        # Single parameter grid-search 
+        data_to_plot_train = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Train MAPE", "Train RMSE", "Train R2"])
+        data_to_plot_test = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Test MAPE", "Test RMSE", "Test R2"])
+
+        # Gridsearch
+        for i in range(tree_depth_min, tree_depth_max, tree_depth_step):
+            
+            if i != 1:
+                depth = np.round(i, -1)
+            else: 
+                depth = 1
+            estimator = n_estimators_min
+            while estimator < n_estimators_max: 
+
+                # Build parameter dataframe                
+                #model_params[op]["Number of estimators"] = estimator
+
+                # Extract parameters from self
+                scaler = StandardScaler()
+                X_train_scaled = scaler.fit_transform(X_train)
+                X_test_scaled  = scaler.transform(X_test) 
+
+                # Initialiaze regressor
+                gbr = GradientBoostingRegressor(n_estimators=estimator, learning_rate=learning_rate,
+                                                criterion=criterion, max_depth=depth, subsample = subsample_size)
+
+                # Train Regressor 
+                fitted_gbr = gbr.fit(X_train_scaled, y_train)
+
+                # Predict based on test
+                y_train_pred = fitted_gbr.predict(X_train_scaled)
+                y_test_pred = fitted_gbr.predict(X_test_scaled)
+
+                # Get metrics
+                train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
+                test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
+                train_rmse = root_mean_squared_error(y_train, y_train_pred)
+                test_rmse = root_mean_squared_error(y_test, y_test_pred)
+                train_r2 = r2_score(y_train, y_train_pred)
+                test_r2 = r2_score(y_test, y_test_pred)
+
+                # Prepare data for plotting
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index=True)
+
+               # Increase estimator
+                estimator += n_estimators_step
+
+        # Time to plot 
+        fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+
+        # Get unique tree depths
+        tree_depths = sorted(data_to_plot_train["Tree depth"].unique())
+
+        # Left subplot: Train R2 vs Number of Estimators for each tree depth
+        for idx, depth in enumerate(tree_depths):
+            train_subset = data_to_plot_train[data_to_plot_train["Tree depth"] == depth]
+            linestyle = '-' if idx == 0 else '--'
+            axs[0].plot(
+                train_subset["No.Estimators"],
+                train_subset["Train R2"],
+                label=f"Depth={depth}",
+                linestyle=linestyle
+            )
+
+        axs[0].set_xlabel("Number of Estimators")
+        axs[0].set_ylabel("R² Score (Train)")
+        axs[0].set_title("Train R² vs Number of Estimators")
+        axs[0].grid(color="silver", linestyle=":")
+        axs[0].legend()
+
+        # Right subplot: Test R2 vs Number of Estimators for each tree depth
+        for idx, depth in enumerate(tree_depths):
+            test_subset = data_to_plot_test[data_to_plot_test["Tree depth"] == depth]
+            linestyle = '-' if idx == 0 else '--'
+            axs[1].plot(
+                test_subset["No.Estimators"],
+                test_subset["Test R2"],
+                label=f"Depth={depth}",
+                linestyle=linestyle
+            )
+
+        axs[1].set_xlabel("Number of Estimators")
+        axs[1].set_ylabel("R² Score (Test)")
+        axs[1].set_title("Test R² vs Number of Estimators")
+        axs[1].grid(color="silver", linestyle=":")
+        axs[1].legend()
+
+        fig.suptitle(f"R² vs Number of Estimators for Various Tree Depths - {op}", fontsize="x-large")
+        fig.tight_layout()
+        
+        if plots_save_path == None:
+            pass
+        else:
+            if op == "T/O":
+                op = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+            elif op == "C/O":
+                op = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+        
+        #plt.show()
+
+        ## Seconde case - Tree depth vs error + Estimators
+        n_estimators_min = 1
+        n_estimators_max = 5*n_estimators+n_estimators_min
+        n_estimators_step = int((n_estimators_max-n_estimators_min)/4) 
+        
+        tree_depth_min = 1
+        tree_depth_max = 5*tree_depth + tree_depth_min
+        tree_depth_step = int((tree_depth_max - tree_depth_min)/10)
+        
+        # Single parameter grid-search 
+        data_to_plot_train = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Train MAPE", "Train RMSE", "Train R2"])
+        data_to_plot_test = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Test MAPE", "Test RMSE", "Test R2"])
+
+        # Gridsearch
+        for i in range(n_estimators_min, n_estimators_max, n_estimators_step):
+            
+            if i != 1:
+                estimator = np.round(i, -1)
+            else: 
+                estimator = 1
+            depth = tree_depth_min
+            while depth < tree_depth_max: 
+
+                # Extract parameters from self
+                scaler = StandardScaler()
+                X_train_scaled = scaler.fit_transform(X_train)
+                X_test_scaled  = scaler.transform(X_test) 
+
+                # Initialiaze regressor
+                gbr = GradientBoostingRegressor(n_estimators=estimator, learning_rate=learning_rate,
+                                                criterion=criterion, max_depth=depth, subsample = subsample_size)
+
+                # Train Regressor 
+                fitted_gbr = gbr.fit(X_train_scaled, y_train)
+
+                # Predict based on test
+                y_train_pred = fitted_gbr.predict(X_train_scaled)
+                y_test_pred = fitted_gbr.predict(X_test_scaled)
+
+                # Get metrics
+                train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
+                test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
+                train_rmse = root_mean_squared_error(y_train, y_train_pred)
+                test_rmse = root_mean_squared_error(y_test, y_test_pred)
+                train_r2 = r2_score(y_train, y_train_pred)
+                test_r2 = r2_score(y_test, y_test_pred)
+
+                # Prepare data for plotting
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index=True)
+
+               # Increase estimator
+                depth += tree_depth_step
+
+        # Get unique estimator values
+        data_to_plot_test.dropna()
+        data_to_plot_train.dropna()
+
+        estimator_values = sorted(data_to_plot_train["No.Estimators"].unique())
+
+        fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+
+        # Left subplot: Train R2 vs Tree Depth for each estimator value
+        for idx, estimator in enumerate(estimator_values):
+            train_subset = data_to_plot_train[data_to_plot_train["No.Estimators"] == estimator]
+            linestyle = '-' if idx == 0 else '--'
+            axs[0].plot(
+                train_subset["Tree depth"],
+                train_subset["Train R2"],
+                label=f"Estimators={estimator}",
+                linestyle=linestyle
+            )
+
+        axs[0].set_xlabel("Tree Depth")
+        axs[0].set_ylabel("R² Score (Train)")
+        axs[0].set_title("Train R² vs Tree Depth")
+        axs[0].grid(color="silver", linestyle=":")
+        axs[0].legend()
+
+        # Right subplot: Test R2 vs Tree Depth for each estimator value
+        for idx, estimator in enumerate(estimator_values):
+            test_subset = data_to_plot_test[data_to_plot_test["No.Estimators"] == estimator]
+            linestyle = '-' if idx == 0 else '--'
+            axs[1].plot(
+                test_subset["Tree depth"],
+                test_subset["Test R2"],
+                label=f"Estimators={estimator}",
+                linestyle=linestyle
+            )
+
+        axs[1].set_xlabel("Tree Depth")
+        axs[1].set_ylabel("R² Score (Test)")
+        axs[1].set_title("Test R² vs Tree Depth")
+        axs[1].grid(color="silver", linestyle=":")
+        axs[1].legend()
+
+        fig.suptitle(f"R² vs Tree Depth for Various Estimator Values - {op}", fontsize="x-large")
+        fig.tight_layout()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if op == "T/O":
+                op = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+            elif op == "C/O":
+                op = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
 
         plt.show()

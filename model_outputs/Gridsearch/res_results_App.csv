@@ -1,0 +1,2 @@
+Operating point,Best parameters,Best score
+App,"{'learning_rate': np.float64(0.009000000000000001), 'max_depth': 80, 'n_estimators': 140, 'subsample': np.float64(0.1)}",0.24276750223235768
