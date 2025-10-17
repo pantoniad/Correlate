@@ -1,8 +1,8 @@
 from GradientBoosting_main import gbr_main
 
 ## Secondary inputs
-include_learning_curve = False
-include_complexity_plot = False
+include_learning_curve = True
+include_complexity_plot = True
 save_results = True
 
 ## Primary inputs

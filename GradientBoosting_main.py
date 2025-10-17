@@ -150,7 +150,7 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
 
     # Learning curve
     if include_learning_curve == True:
-        gbr.Learning_curve(data = df_final_idle, scaler = scaler, model = model, 
+        gbr.Learning_curve(data = df_final_to, scaler = scaler, model = model, 
                     model_features = model_features, operating_point = op,
                     plots_save_path = plots_save_path)
     else: pass
@@ -201,7 +201,7 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
 
     # Learning curve
     if include_learning_curve == True:
-        gbr.Learning_curve(data = df_final_idle, scaler = scaler, model = model, 
+        gbr.Learning_curve(data = df_final_co, scaler = scaler, model = model, 
                     model_features = model_features, operating_point = op,
                     plots_save_path = plots_save_path)
     else: pass
@@ -251,7 +251,7 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
 
     # Learning curve
     if include_learning_curve == True:
-        gbr.Learning_curve(data = df_final_idle, scaler = scaler, model = model, 
+        gbr.Learning_curve(data = df_final_app, scaler = scaler, model = model, 
                     model_features = model_features, operating_point = op,
                     plots_save_path = plots_save_path)
     else: pass
