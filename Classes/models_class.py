@@ -597,7 +597,7 @@ class models_per_OP:
         def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
                         learning_rate: int, num_fc_layers: int, num_nodes_per_layer: list, 
                         optimizer_sel: torch.optim, activation_f: nn.functional = "relu", 
-                        device: Optional[str] = "cpu", include_plots: Optional[bool] = False,
+                        device: Optional[str] = "cpu", engine_specs: dict = [], include_plots: Optional[bool] = False,
                         error_save_path: str = None, plots_save_path: str = None):
             """
             ann_creation:
@@ -633,7 +633,7 @@ class models_per_OP:
             elif operating_point == "C/O":
                 operating_point = "CO"
 
-            # Create saving path  
+            # Create saving paths
             weights_save_path = os.path.join(error_save_path, f"Model weights")
             if os.path.exists(weights_save_path):
                 pass
@@ -742,12 +742,30 @@ class models_per_OP:
                     print()
                     print(f"Epoch \t Avg Training RMSE \t Avg Validation RMSE \t Avg Training MAPE \t Avg Validation MAPE")
                     print(f"{i} \t {avg_rmse} \t {avg_rmse_v} \t {avg_mape} \t {avg_mape_v}")
-
+            
             # Create and save plots
             if include_plots == True:
                 # Plot errors
                 data_plotting.ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, 
                                             epochs, operating_point, plots_save_path)
+            # Validate on engine 
+            if not engine_specs:
+                pass
+            else:
+                # Get prediction
+                features_engine = torch.tensor([engine_specs["Pressure Ratio"], engine_specs["Rated Thrust (kN)"], engine_specs["Fuel flow (kg/s)"]])
+                y_pred_engine = model(features_engine)
+
+                # Save features and response
+                engine_pred = pd.DataFrame( data = {
+                    "Engine model": "CFM56-7B26",
+                    "Pressure ratio": engine_specs["Pressure Ratio"],
+                    "Rated thrust (kN)": engine_specs["Rated Thrust (kN)"],
+                    "Fuel flow (kg/s)": engine_specs["Fuel flow (kg/s)"],
+                    "Predicted EI value (gNOx/kgFuel)": y_pred_engine.cpu().detach().numpy()
+                }, index = ["Value"]
+                )
+                engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{operating_point}.csv"))
 
             # Save loss function/metrics results
             if error_save_path == None:
@@ -755,15 +773,14 @@ class models_per_OP:
             elif error_save_path != None:
                 
                 data = {
-                    "Best epoch Train": {
+                    f"Best epoch ({best_epoch}) Train": {
                         "RMSE": rmse_train[best_epoch],
                         "MAPE": mape_train[best_epoch],
                         "R2": r2_train[best_epoch]},
-                    "Best epoch Validation": {
+                    f"Best epoch ({best_epoch}) Validation": {
                         "RMSE": rmse_valid[best_epoch],
                         "MAPE": mape_valid[best_epoch],
-                        "R2": r2_valid[best_epoch]
-                    }
+                        "R2": r2_valid[best_epoch]},
                 }
 
                 error_saved = pd.DataFrame(
@@ -771,6 +788,3 @@ class models_per_OP:
                 ).T
 
                 error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
-
-
-
