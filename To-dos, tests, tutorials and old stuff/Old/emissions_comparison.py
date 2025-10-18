@@ -4,7 +4,7 @@ import correlations_functions as fn
 from matplotlib import pyplot as plt
 
 ## Extract data from csv file
-data_og = pd.read_csv(r"E:/Computational_results/Databank_and_correlations_comparison/Databank/ICAO_data.csv", delimiter=";")
+data_og = pd.read_csv(r"E:\Correlate\Databank\ICAO_data.CSV", delimiter=";")
 
 ## List of columns to keep
 clmns = ["Pressure Ratio", "B/P Ratio", "Rated Thrust (kN)", "Ambient Baro Min (kPa)",

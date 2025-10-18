@@ -30,7 +30,6 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     ## Idle ##
     # Ready data
     op = "Idle"
-    print(f"Now executing: {op}")
 
     # Unpack data from model_structure dictionary
     training_split = model_structure[op]["Training split"]
@@ -110,12 +109,12 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     print()
     print(f"Now executing: {op}")
 
-    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
-    df_final_idle["Rated Thrust (kN)"] = df_final_idle["Rated Thrust (kN)"].values.astype(float)*0.07
+    df_final_to = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
+    df_final_to["Rated Thrust (kN)"] = df_final_to["Rated Thrust (kN)"].values.astype(float)*0.07
 
     # Features and response
-    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
-    response = df_final_idle[f"NOx EI {op} (g/kg)"]
+    features = df_final_to.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
+    response = df_final_to[f"NOx EI {op} (g/kg)"]
 
     # Split the data
     X_train, y_train, X_test, y_test = data_process.splitter(
@@ -155,12 +154,12 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     print()
     print(f"Now executing: {op}")
 
-    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
-    df_final_idle["Rated Thrust (kN)"] = df_final_idle["Rated Thrust (kN)"].values.astype(float)*0.07
+    df_final_co = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
+    df_final_co["Rated Thrust (kN)"] = df_final_co["Rated Thrust (kN)"].values.astype(float)*0.07
 
     # Features and response
-    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
-    response = df_final_idle[f"NOx EI {op} (g/kg)"]
+    features = df_final_co.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
+    response = df_final_co[f"NOx EI {op} (g/kg)"]
 
     # Split the data
     X_train, y_train, X_test, y_test = data_process.splitter(
@@ -201,12 +200,12 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
     print()
     print(f"Now executing: {op}")
 
-    df_final_idle = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
-    df_final_idle["Rated Thrust (kN)"] = df_final_idle["Rated Thrust (kN)"].values.astype(float)*0.07
+    df_final_app = data_process.df_former(df_cleaned, clmns = ["Pressure Ratio", "Rated Thrust (kN)"], parameter = op)
+    df_final_app["Rated Thrust (kN)"] = df_final_app["Rated Thrust (kN)"].values.astype(float)*0.07
 
     # Features and response
-    features = df_final_idle.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
-    response = df_final_idle[f"NOx EI {op} (g/kg)"]
+    features = df_final_app.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
+    response = df_final_app[f"NOx EI {op} (g/kg)"]
 
     # Split the data
     X_train, y_train, X_test, y_test = data_process.splitter(

@@ -2,7 +2,7 @@ from ANN_main import ann_main
 
 ## Model parameters ##
 # Secondary inputs
-device = "gpu"
+device = "cpu"
 include_plots = True
 save_results = True
 
@@ -11,10 +11,10 @@ model_str = {
     "Idle": {
         "Training split": 0.6,
         "Include development split": False, 
-        "Learning rate": 1e-3,
-        "Epochs": 1500,
-        "Number of FC layers": 3,
-        "Number of nodes per layer": [3, 2, 2, 1, 1],
+        "Learning rate": 0.5e-3,
+        "Epochs": 500,
+        "Number of FC layers": 5,
+        "Number of nodes per layer": [3, 10, 10, 10, 10, 10, 1],
         "Activation Function": "relu",
         "Optimizer": "ASDG"
     },
@@ -23,8 +23,8 @@ model_str = {
         "Include development split": False, 
         "Learning rate": 1e-3,
         "Epochs": 500,
-        "Number of FC layers": 3,
-        "Number of nodes per layer": [3, 5, 10, 5, 1],
+        "Number of FC layers": 5,
+        "Number of nodes per layer": [3, 5, 10, 10, 10, 5, 1],
         "Activation Function": "relu",
         "Optimizer": "Adam"
     },

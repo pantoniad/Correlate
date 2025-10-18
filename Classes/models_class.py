@@ -11,6 +11,7 @@ from sklearn.model_selection import learning_curve
 from typing import Optional
 import warnings
 import os
+import copy
 
 import matplotlib.pyplot as plt
 
@@ -38,6 +39,7 @@ class models_per_OP:
         self.X_test = X_test
         self.y_test = y_test
 
+    # Split data
     def polReg(self, parameters: dict):
 
         """
@@ -610,7 +612,19 @@ class models_per_OP:
             - 
 
             """
-            
+            # Correct operating point for saving
+            if operating_point == "T/O":
+                operating_point = "TO"
+            elif operating_point == "C/O":
+                operating_point = "CO"
+
+            # Create saving path  
+            weights_save_path = os.path.join(error_save_path, f"Model weights")
+            if os.path.exists(weights_save_path):
+                pass
+            else:
+                os.mkdir(weights_save_path)
+
             # Set device to gpu
             if device == None:
                 warnings.warn(f"No device given. Checking Cuda")
@@ -626,9 +640,6 @@ class models_per_OP:
             elif device == "CPU" or device == "cpu":
                 print(f"Using specified device: {device}")
                 device = "cpu"
-
-            #    device = "cpu"
-            # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
             # Manual seed for iterable results
             torch.manual_seed(41)
@@ -664,6 +675,8 @@ class models_per_OP:
             rmse_valid = []
             mape_train = []
             mape_valid = []
+            best_mape_v = float('inf')
+            #best_mape_train = float('inf')
 
             # Iterate through epochs to train
             epochs = epochs + 1
@@ -681,6 +694,30 @@ class models_per_OP:
                 rmse_valid.append(avg_rmse_v)
                 mape_valid.append(avg_mape_v)
                 
+                # Keep best model
+                is_best = avg_mape_v < best_mape_v
+                best_mape_v = min(avg_mape_v, best_mape_v)
+                if is_best:
+                    # Retrieve model parameters
+                    best_mape_v = avg_mape_v
+                    best_mape_train = avg_mape
+                    best_epoch = i
+                    best_model = copy.deepcopy(model.state_dict())
+                    best_optim = copy.deepcopy(optimizer.state_dict())
+
+                    # Check if saved file for corresponding operating point exists
+                    try:
+                        for fname in os.listdir(weights_save_path):
+                            if f"ANN_best_model_{operating_point}" in fname:
+                                os.remove(os.path.join(weights_save_path, fname))
+                    except Exception as e:
+                        warnings.warn(f"Could not clean previous weights: {e}")
+                    
+                    # Save model                   
+                    filename = f"ANN_best_model_{operating_point}_epoch_{best_epoch}.pt"
+                    path = os.path.join(weights_save_path, filename)
+                    torch.save(best_model, path)
+
                 # Print results    
                 if i % (epochs // 5) == 0:
                     print()
@@ -709,14 +746,7 @@ class models_per_OP:
                     data = data
                 )
 
-                if operating_point == "T/O":
-                    operating_point = "Take-off"
-                    error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
-                elif operating_point == "C/O":
-                    operating_point = "Climb-out"
-                    error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
-                else:
-                    error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+                error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
 
 
 
