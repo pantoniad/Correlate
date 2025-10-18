@@ -504,6 +504,7 @@ class models_per_OP:
             # Define running losses
             running_rmse = 0
             running_mape = 0
+            running_r2 = 0
 
             # Iterate through batches
             for j, (features_sample, response_sample) in enumerate(train_loader):
@@ -519,8 +520,11 @@ class models_per_OP:
                 # Get result from loss function
                 rmse = torch.sqrt(criterion(y_pred, response_sample))
                 running_rmse += rmse
-                running_mape = mean_absolute_percentage_error(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
-                
+                mape = mean_absolute_percentage_error(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
+                running_mape =+ mape
+                r2 = r2_score(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
+                running_r2 =+ r2
+
                 # Update weights and optimizer
                 rmse.backward()
                 optimizer.step()
@@ -531,7 +535,11 @@ class models_per_OP:
 
             # Get MAPE in array type
             avg_mape = running_mape/(j+1)
-            return avg_rmse, avg_mape
+
+            # Get R2 in array type
+            avg_r2 = running_r2/(j+1)
+
+            return avg_rmse, avg_mape, avg_r2
 
         @staticmethod
         def validate_one_epoch(model: torch.nn.Module, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
@@ -554,6 +562,7 @@ class models_per_OP:
             # Define running losses
             running_rmse = 0
             running_mape = 0
+            running_r2 = 0
 
             # Validate for each batch
             with torch.no_grad():
@@ -569,6 +578,8 @@ class models_per_OP:
                     running_rmse += rmse_v
                     mape_v = mean_absolute_percentage_error(response_sample.cpu().detach(), y_pred_v.cpu().detach())
                     running_mape += mape_v
+                    r2 = r2_score(response_sample.cpu().detach(), y_pred_v.cpu().detach())
+                    running_r2 =+ r2
 
                 # Get average RMSE in array type for the batches
                 avg_rmse_v = running_rmse/(j+1)
@@ -576,7 +587,11 @@ class models_per_OP:
 
                 # Get average MAPE in array type for the batches
                 avg_mape_v = running_mape/(j+1)
-            return avg_rmse_v, avg_mape_v
+
+                # Get average R2 in array type
+                avg_r2 = running_r2/(j+1)
+
+            return avg_rmse_v, avg_mape_v, avg_r2
 
 
         def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
@@ -675,6 +690,8 @@ class models_per_OP:
             rmse_valid = []
             mape_train = []
             mape_valid = []
+            r2_train = []
+            r2_valid = []
             best_mape_v = float('inf')
             #best_mape_train = float('inf')
 
@@ -684,16 +701,18 @@ class models_per_OP:
                 
                 ## Model training ##
                 model.train()
-                avg_rmse, avg_mape = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
+                avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
                 rmse_train.append(avg_rmse)
                 mape_train.append(avg_mape)
+                r2_train.append(avg_r2)
 
                 ## Model validation ##
                 model.eval()
-                avg_rmse_v, avg_mape_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
+                avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
                 rmse_valid.append(avg_rmse_v)
                 mape_valid.append(avg_mape_v)
-                
+                r2_valid.append(avg_r2_v)
+
                 # Keep best model
                 is_best = avg_mape_v < best_mape_v
                 best_mape_v = min(avg_mape_v, best_mape_v)
@@ -736,15 +755,20 @@ class models_per_OP:
             elif error_save_path != None:
                 
                 data = {
-                    "Train RMSE": rmse_train,
-                    "Validation RMSE": rmse_valid,
-                    "Train MAPE": mape_train,
-                    "Validation MAPE": mape_valid
+                    "Best epoch Train": {
+                        "RMSE": rmse_train[best_epoch],
+                        "MAPE": mape_train[best_epoch],
+                        "R2": r2_train[best_epoch]},
+                    "Best epoch Validation": {
+                        "RMSE": rmse_valid[best_epoch],
+                        "MAPE": mape_valid[best_epoch],
+                        "R2": r2_valid[best_epoch]
+                    }
                 }
 
                 error_saved = pd.DataFrame(
                     data = data
-                )
+                ).T
 
                 error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
 

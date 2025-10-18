@@ -91,6 +91,9 @@ def ann_main(model_structure: dict, device: str, include_plots: Optional[bool] =
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
                                 device = device, include_plots = include_plots, 
                                 error_save_path = error_save_path, plots_save_path = plots_save_path)
+    
+    # Validate model on experimental data
+    
 
     ## T/O ##
     # Ready data
