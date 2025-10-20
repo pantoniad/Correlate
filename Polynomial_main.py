@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
+import os
 
 from Classes.data_processor_class import data_process
 from Classes.models_class import models_per_OP
 
 from Classes.data_processor_class import data_process
 
-def polynomial_main(model_structure: dict, include_bias: bool = False, 
+def polynomial_main(model_structure: dict, engine_specs: dict = [], include_bias: bool = False, 
                     include_plots: bool = False, save_results: bool = True):
     
     """
@@ -15,7 +16,9 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
 
     Inputs:
     - model_structure: the primary inpputs for the model. Contains the most 
-    important parameters such as: polynomial degree and train dataset size, dictionary
+    important parameters such as: polynomial degree and train dataset size, dictionary,
+    - engine_specs: a dictionary that contains the specifications used for the engine to
+    be used for validation, dictionary
     - include_bias: directly linked to the "include_bias" input of the 
     PolynomialFeatures method of sklearn, boolean
     - include_plots: boolean variable to check whether to include the learning curves
@@ -103,7 +106,36 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     # Initialize model
     model, modelFeatures, scaler, train_results, test_results = polynomialReg.polReg(
         parameters = parameters)
+   
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_idle = pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": 0.07*engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow Idle (kg/sec)": engine_specs["Fuel flow Idle (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_idle)
+        features_engine_poly = modelFeatures["Model features"].transform(features_engine_scaled)
+        y_pred_engine = model.predict(features_engine_poly)
 
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_idle["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_idle["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_idle["Fuel Flow Idle (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{op}.csv")) 
+ 
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results, error_save_path = error_save_path, operating_point = op)
     print(f"Polynomial Regression, Operating point: {op} metrics")
@@ -148,6 +180,37 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     model, modelFeatures, scaler, train_results, test_results = polynomialReg.polReg(
         parameters = parameters 
     )
+    
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_to = pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow T/O (kg/sec)": engine_specs["Fuel flow Take-off (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_to)
+        features_engine_poly = modelFeatures["Model features"].transform(features_engine_scaled)
+        y_pred_engine = model.predict(features_engine_poly)
+
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_to["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_to["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_to["Fuel Flow T/O (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+
+        oper = "TO"
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
+
 
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results,
@@ -176,7 +239,7 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     df_final_co["Rated Thrust (kN)"] = df_final_co["Rated Thrust (kN)"].values.astype(float)*0.85
 
     # Features and response
-    features = df_final_co.filter(["Pressure Ratio", f"Rated Thrust (kN)", "Fuel Flow {op} (kg/sec)"])
+    features = df_final_co.filter(["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op} (kg/sec)"])
     response = df_final_co[f"NOx EI {op} (g/kg)"]
 
     # Split the data
@@ -194,6 +257,37 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     model, modelFeatures, scaler, train_results, test_results = polynomialReg.polReg(
         parameters = parameters)
     
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_co= pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": 0.85*engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow C/O (kg/sec)": engine_specs["Fuel flow Climb-out (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_co)
+        features_engine_poly = modelFeatures["Model features"].transform(features_engine_scaled)
+        y_pred_engine = model.predict(features_engine_poly)
+
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_co["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_co["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_co["Fuel Flow C/O (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+
+        oper = "CO"
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
+
+ 
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results,
                                                 error_save_path = error_save_path, operating_point = op)
@@ -239,6 +333,36 @@ def polynomial_main(model_structure: dict, include_bias: bool = False,
     model, modelFeatures, scaler, train_results, test_results = polynomialReg.polReg(
         parameters = parameters 
     )
+    
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_app= pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": 0.3*engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow App (kg/sec)": engine_specs["Fuel flow Approach (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_app)
+        features_engine_poly = modelFeatures["Model features"].transform(features_engine_scaled)
+        y_pred_engine = model.predict(features_engine_poly)
+
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_app["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_app["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_app["Fuel Flow App (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{op}.csv")) 
+
 
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results,

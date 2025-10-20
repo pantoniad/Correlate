@@ -146,7 +146,7 @@ class models_per_OP:
         # Predict based on test
         y_train_pred = fitted_gbr.predict(X_train_scaled)
         y_test_pred = fitted_gbr.predict(X_test_scaled)
-
+        
         # Create output dataframes
         d1 = {
            "Y train": y_train,

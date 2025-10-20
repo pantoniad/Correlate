@@ -1,11 +1,12 @@
 import pandas as pd
 import numpy as np
+import os
 
 from Classes.data_processor_class import data_process
 from Classes.models_class import models_per_OP
 from Classes.data_plotting_class import data_plotting
 
-def gbr_main(model_structure: dict, include_learning_curve: bool = False, include_complexity_plot: bool = False, save_results: bool = True):
+def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_curve: bool = False, include_complexity_plot: bool = False, save_results: bool = True):
     
     """
     gbr_main: the main function that controls the execution of the 
@@ -14,6 +15,8 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
     Inputs:
     - model_structure: a, per operating point, structured dictionary that includes
     all the primary parameters for the creation of the gradient boosting model, dictionary
+    - engine_specs: a dictionary that contains the specifications used for the engine to
+    be used for validation, dictionary
     - inlcude_learning_plot: 
     - include_complexity_plot:
     - save_results: a boolean parameter that handles the saving of the results, specifically the
@@ -23,7 +26,6 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
     Outputs:
 
     """
-
     ## Data used on the script ##
 
     # Load ICAO data
@@ -90,6 +92,34 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
     parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
     model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
 
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_idle = pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": 0.07*engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow Idle (kg/sec)": engine_specs["Fuel flow Idle (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_idle)
+        y_pred_engine = model.predict(features_engine_scaled)
+
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_idle["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_idle["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_idle["Fuel Flow Idle (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{op}.csv"))
+
+
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
                                       error_save_path = error_save_path, operating_point = op)
@@ -141,9 +171,40 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
     parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
     model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
 
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_to = pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow T/O (kg/sec)": engine_specs["Fuel flow Take-off (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_to)
+        y_pred_engine = model.predict(features_engine_scaled)
+
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_to["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_to["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_to["Fuel Flow T/O (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+
+        oper = "TO"
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
+
+
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results, 
                                       operating_point = op, error_save_path = error_save_path)
+    
     print(f"Gradient Boosting, Operating point: {op} metrics")
     print(metrics.head())
     print()
@@ -191,7 +252,36 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
     # Initialize the model
     parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
     model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
+    
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_co = pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": 0.85*engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow C/O (kg/sec)": engine_specs["Fuel flow Climb-out (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_co)
+        y_pred_engine = model.predict(features_engine_scaled)
 
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_co["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_co["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_co["Fuel Flow C/O (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+
+        oper = "CO"
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
+    
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
                                       operating_point = op, error_save_path = error_save_path)
@@ -242,6 +332,34 @@ def gbr_main(model_structure: dict, include_learning_curve: bool = False, includ
     # Initialize the model
     parameters = {k: v for k, v in model_structure[op].items() if k != "Train split" and k != "Include development split"}
     model, model_features, scaler, train_results, test_results = gbr.gradientBoosting(parameters)
+
+    # Validate on engine
+    if not engine_specs:
+        pass
+    else:
+        # Get prediction
+        engine_specs_df_app = pd.DataFrame(
+            data = {
+                "Pressure Ratio": engine_specs["Pressure Ratio"],
+                "Rated Thrust (kN)": 0.3*engine_specs["Rated Thrust (kN)"],
+                "Fuel Flow App (kg/sec)": engine_specs["Fuel flow Approach (kg/s)"]
+            },
+            index = ["Value"]
+        )
+        features_engine_scaled = scaler.transform(engine_specs_df_app)
+        y_pred_engine = model.predict(features_engine_scaled)
+
+        # Save features and response
+        engine_pred = pd.DataFrame( data = {
+            "Engine model": "CFM56-7B26",
+            "Pressure ratio": engine_specs_df_app["Pressure Ratio"],
+            "Rated thrust (kN)": engine_specs_df_app["Rated Thrust (kN)"],
+            "Fuel flow (kg/s)": engine_specs_df_app["Fuel Flow App (kg/sec)"],
+            "Predicted EI value (gNOx/kgFuel)": y_pred_engine
+        }, index = ["Value"]
+        )
+
+        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{op}.csv")) 
 
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
