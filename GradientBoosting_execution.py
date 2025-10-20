@@ -1,8 +1,8 @@
 from GradientBoosting_main import gbr_main
 
 ## Secondary inputs
-include_learning_curve = True
-include_complexity_plot = True
+include_learning_curve = False
+include_complexity_plot = False
 save_results = True
 
 ## Primary inputs
@@ -45,5 +45,14 @@ primary_inputs = {
     }
 }
 
-gbr_main(model_structure = primary_inputs, include_learning_curve = include_learning_curve,
+engine_specs = {
+    "Pressure Ratio": 27.6,
+    "Rated Thrust (kN)": 117,
+    "Fuel flow Idle (kg/s)": 0.144,
+    "Fuel flow Take-off (kg/s)": 1.25,
+    "Fuel flow Climb-out (kg/s)": 1,
+    "Fuel flow Approach (kg/s)": 0.348
+}
+
+gbr_main(model_structure = primary_inputs, engine_specs = engine_specs, include_learning_curve = include_learning_curve,
          include_complexity_plot = include_complexity_plot, save_results = save_results)
