@@ -3,7 +3,8 @@ from Classes.data_processor_class import data_process
 from Classes.models_class import models_per_OP
 from typing import Optional
 
-def ann_main(model_structure: dict, engine_specs: dict, device: str, include_plots: Optional[bool] = False, save_results: Optional[bool] = True):
+def ann_main(model_structure: dict, engine_specs: dict, device: str, include_plots: Optional[bool] = False, include_complexity_plots: Optional[bool] = False,
+             save_results: Optional[bool] = True):
     """
     ann_main:
 
@@ -102,6 +103,7 @@ def ann_main(model_structure: dict, engine_specs: dict, device: str, include_plo
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
                                 device = device, engine_specs = engine_specs_idle, include_plots = include_plots, 
+                                include_complexity_plots = include_complexity_plots,
                                 error_save_path = error_save_path, plots_save_path = plots_save_path)
 
     ## T/O ##
@@ -156,6 +158,7 @@ def ann_main(model_structure: dict, engine_specs: dict, device: str, include_plo
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
                                 device = device, engine_specs = engine_specs_to, include_plots = include_plots,
+                                include_complexity_plots = include_complexity_plots,
                                 error_save_path = error_save_path, plots_save_path = plots_save_path)
 
     ## C/O ##
@@ -205,11 +208,12 @@ def ann_main(model_structure: dict, engine_specs: dict, device: str, include_plo
     test_data = pd.concat([X_test, y_test], axis = 1)
 
     # Initialize model
-    models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
+    model_idle = models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
                                 epochs = epochs, learning_rate = learning_rate, 
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
                                 device = device, engine_specs = engine_specs_co, include_plots = include_plots,
+                                include_complexity_plots = include_complexity_plots,
                                 error_save_path = error_save_path, plots_save_path = plots_save_path)
 
     ## App ##
@@ -264,4 +268,5 @@ def ann_main(model_structure: dict, engine_specs: dict, device: str, include_plo
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 
                                 device = device, engine_specs = engine_specs_app, include_plots = include_plots,
+                                include_complexity_plots = include_complexity_plots,
                                 error_save_path = error_save_path, plots_save_path = plots_save_path)

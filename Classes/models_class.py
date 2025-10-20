@@ -598,7 +598,7 @@ class models_per_OP:
                         learning_rate: int, num_fc_layers: int, num_nodes_per_layer: list, 
                         optimizer_sel: torch.optim, activation_f: nn.functional = "relu", 
                         device: Optional[str] = "cpu", engine_specs: dict = [], include_plots: Optional[bool] = False,
-                        error_save_path: str = None, plots_save_path: str = None):
+                        include_complexity_plots: Optional[bool] = False, error_save_path: str = None, plots_save_path: str = None):
             """
             ann_creation:
 
@@ -748,12 +748,13 @@ class models_per_OP:
                 # Plot errors
                 data_plotting.ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, 
                                             epochs, operating_point, plots_save_path)
+     
             # Validate on engine 
             if not engine_specs:
                 pass
             else:
                 # Get prediction
-                features_engine = torch.tensor([engine_specs["Pressure Ratio"], engine_specs["Rated Thrust (kN)"], engine_specs["Fuel flow (kg/s)"]])
+                features_engine = torch.tensor([engine_specs["Pressure Ratio"], engine_specs["Rated Thrust (kN)"], engine_specs["Fuel flow (kg/s)"]]).to(device)
                 y_pred_engine = model(features_engine)
 
                 # Save features and response
@@ -788,3 +789,119 @@ class models_per_OP:
                 ).T
 
                 error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+            
+            # Gridsearch
+            if include_complexity_plots == True:
+
+                # Create parameters
+                layers_min = 1
+                
+                if num_fc_layers != 1:
+                    layers_max = 2*num_fc_layers
+                else:
+                    layers_max = 6*num_fc_layers
+                
+                if num_fc_layers != 1:
+                    layers_step = int(abs((layers_max-layers_min)/4))
+                    if layers_step == 0:
+                        layers_step = 1
+                else:
+                    layers_step = 1
+
+                neurons_min = 1
+                neurons_max = 2*max(num_nodes_per_layer) if max(num_nodes_per_layer) != 1 else 6*max(num_nodes_per_layer)
+                neurons_step = int(abs((neurons_max-neurons_min)/4)) if max(num_nodes_per_layer) != 1 else 1
+
+                # Initialize saving dataframes
+                data_to_plot_train = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Train MAPE", "Train RMSE", "Train R2"])
+                data_to_plot_test = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Test MAPE", "Test RMSE", "Test R2"])
+
+                # Gridsearch - No. Layers
+                num_neurons = 5
+                for layers in range(layers_min, layers_max, layers_step):
+                    
+                    # Create list of nodes/neurons per layer
+                    deep_layers = [num_neurons] * layers
+                    neurons_gridsearch = [3]+deep_layers+[1]
+
+                    # Create model
+                    model_gridsearch = models_per_OP.ann.Model(num_fc_layers = layers, 
+                                            num_nodes_per_layer = neurons_gridsearch,
+                                            activation_function = activation_f)
+                    optimizer_new = torch.optim.Adam(model_gridsearch.parameters(), lr = learning_rate)
+                    model_gridsearch = model_gridsearch.to(device)
+
+                    for epoch in range(epochs):
+
+                        ## Model training ##
+                        model_gridsearch.train()
+                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
+                        line_df = pd.DataFrame(data = line_dt, index =["Value"])
+                        data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                        ## Model validation ##
+                        model.eval()
+                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
+                        line_df = pd.DataFrame(data = line_dt, index = ["Value"])
+                        data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
+
+                # Complexity plot
+                data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Deep Layers",
+                                                    given_variable_value = num_fc_layers, epochs = epochs,
+                                                    sup_title = "MAPE vs Epochs for various No. Deep Layers, 5 neurons/layer",
+                                                    x_label_train = "Number of Epochs", x_label_test = "Number of Epochs",
+                                                    y_label_train = "Train MAPE (%)", y_label_test = "Test MAPE (%)",
+                                                    title_train = "Train MAPE vs Number of Deep Layers",
+                                                    title_test = "Test MAPE vs Number of Deep Layers",
+                                                    operating_point = operating_point, plots_save_path = plots_save_path
+                )
+
+                # Gridsearch - No. Neurons
+                # Initialize saving dataframes
+                data_to_plot_train = pd.DataFrame(columns = ["No. Neurons", "Epoch", "Train MAPE", "Train RMSE", "Train R2"])
+                data_to_plot_test = pd.DataFrame(columns = ["No. Neurons", "Epoch", "Test MAPE", "Test RMSE", "Test R2"])
+
+                num_layers = 5
+                for neurons in range(neurons_min, neurons_max, neurons_step):
+                    
+                    # Create list of nodes/neurons per layer
+                    deep_layers = [neurons] * num_layers 
+                    neurons_gridsearch = [3]+deep_layers+[1]
+
+                    # Create model
+                    model_gridsearch = models_per_OP.ann.Model(num_fc_layers = num_layers, 
+                                            num_nodes_per_layer = neurons_gridsearch,
+                                            activation_function = activation_f)
+                    optimizer_new = torch.optim.Adam(model_gridsearch.parameters(), lr = learning_rate)
+                    model_gridsearch = model_gridsearch.to(device)
+
+                    for epoch in range(epochs):
+
+                        ## Model training ##
+                        model_gridsearch.train()
+                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
+                        line_df = pd.DataFrame(data = line_dt, index =["Value"])
+                        data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                        ## Model validation ##
+                        model.eval()
+                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
+                        line_df = pd.DataFrame(data = line_dt, index = ["Value"])
+                        data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
+                
+                # Complexity plot
+                data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Neurons",
+                                                    given_variable_value = max(num_nodes_per_layer), epochs = epochs,
+                                                    sup_title = "MAPE vs Epochs for various No. Neurons, 5 Layers",
+                                                    x_label_train = "Number of Epochs", x_label_test = "Number of Epochs",
+                                                    y_label_train = "Train MAPE (%)", y_label_test = "Test MAPE (%)",
+                                                    title_train = "Train MAPE vs Number of Neurons",
+                                                    title_test = "Test MAPE vs Number of Neurons",
+                                                    operating_point = operating_point, plots_save_path = plots_save_path
+                )
+
+            return model

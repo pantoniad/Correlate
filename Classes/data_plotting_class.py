@@ -124,7 +124,6 @@ class data_plotting:
 
         # Create figure
         fig = plt.figure(figsize = (size[0], size[1]))
-        #gs = gridspec.GridSpec(3, 1, height_ratios=[9, 1, 1], figure=fig)
 
         # Create dot plot
         if method == "Dotplot":
@@ -189,7 +188,7 @@ class data_plotting:
                                 + ", ".join(valid_methods))
         
         # Mean value plotting
-        plt.plot(
+        ax.plot(
             mean_points.index,
             mean_points.values,      
             "--*",
@@ -209,7 +208,8 @@ class data_plotting:
                 labels, 
                 dtCorrs.iloc[:][i],
                 lineStyle[pointer], 
-                label = i 
+                label = i,
+                markersize = 10
             )
 
             # Increase the count of the pointer
@@ -219,9 +219,11 @@ class data_plotting:
         plt.plot(
             labels,
             dtmodels["Polynomial Regression"],
-            "-d",
+            "-.d",
             label = "Polynomial (2) Regression",
-            zorder = 10
+            zorder = 10,
+            markersize = 10,
+            color = "greenyellow"
         )
         
         # Place the experimental data
@@ -230,17 +232,20 @@ class data_plotting:
             exp["Turgut - CFM56-7B26"],
             "-8",
             label = "Turgut, CFM56-7B26",
-            zorder = 10
+            zorder = 10,
+            color = "cyan",
+            markersize = 10
         )
-
-        
-
+        #ax.set_facecolor("whitesmoke")
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")
-        plt.legend(loc = "best")
-        plt.ylabel(yLabel)
-        plt.xlabel(xLabel)
-        plt.title(title)
+        plt.legend(loc = "best", fontsize = 12)
+        plt.ylabel(yLabel, fontsize = 15)
+        plt.yticks(fontsize = 13)
+        plt.xlabel(xLabel, fontsize = 15)
+        plt.xticks(fontsize = 13)
+        ax.set_title(label = title, fontsize = "xx-large")
+        #plt.title(title)
         #minlim = 1.05*min(df_all.min(numeric_only=True).Value, dtCorrs.min().min(), exp.min().min(), dtmodels.min().min().min())
         #maxlim = 1.05*max(df_all.max(numeric_only=True).Value, dtCorrs.max().max(), exp.max().max(), dtmodels.max().max().max())
         #plt.yticks(np.arange(minlim, maxlim,100))
@@ -445,21 +450,117 @@ class data_plotting:
         plt.show()
     
     @staticmethod
+    def ann_loss_plot_advanced(data_to_plot_train: pd.DataFrame, data_to_plot_test: pd.DataFrame, 
+                               variable_of_interest: str, given_variable_value: int, epochs: int, 
+                               sup_title: str, x_label_train: str, y_label_train: str, title_train: str,
+                               x_label_test: str, y_label_test: str, title_test: str, operating_point: str,
+                               plots_save_path: str = None
+                               ):
+        """
+        ann_loss_plot_advanced: this method handles the plotting of the gridsearch conducted for the ANN. 
+        It is dumped advanced because it can handle both multiple layers and multiple neurons. Its goal is
+        to produce two figures, each containing a train (left) and a test (right) plot. In the first figure,
+        the effect of the number of deep layers on the performance of the ANN is observed, whereas in the 
+        second figure the effect of the number of neuros for a set number of layers is plotted. 
+        This method does not compete with the ann_loss_plot, as the second one produces a loss plot for the given structure
+        of the ANN, while this method creates a new ANN structure based on the needs of each gridsearch.
+
+        Inputs:
+        - data_to_plot_train: the data used for plotting here and are retrieved during training. Pandas dataframe with
+        the following structure {}"<Variable of interest>": <value>, "Epoch": <epoch>, "Train/Test MAPE": <>, 
+        "Train/Test RMSE": <>, "Train/Test R2": <>}
+        - data_to_plot_test: the data used for plotting here and retrieved during testing. Pandas dataframe with a 
+        structure as shown in the data_to_plot_train dataframe
+        - variable_of_interest: the variable the will be used as the basis for the gridsearch. As this method is coupled 
+        with the ANN, the two variables that have been tested are "No. Deep Layers" and "No. Neurons" for the given 
+        structure of the data_to_plot_train/test dataframes, str
+        - given_variable_value: the value given to the variable of interest by the user during initialization, int
+        - epochs: the number of epochs as given by the user during initialization, int,
+        - sup_title: the super-title of the plot, str,
+        - x_label_train/test: the label given in the train and test x-axis of the plots of the figure, str,
+        - y_label_train/test: the label given in the train and test y-axis of the plots of the figure, str
+        - title_train/test: the title given in the train and test plots of the figure, str
+        - operating_point: the operating point that is considered, str
+        - plots_save_path: the current directory used for saving the generated plots
+
+        Outputs:
+        - Plots in the plots_save_path
+
+        """
+        # Unpack variables
+
+        # Plot 
+        variable_values = sorted(data_to_plot_train[variable_of_interest].unique())
+
+        fig, axs = plt.subplots(1, 2, figsize = (10,6))
+                
+        for no_variable in variable_values:
+            mape_plot_train = data_to_plot_train[data_to_plot_train[variable_of_interest] == no_variable]["Train MAPE"]
+            linestyle = "-" if no_variable == given_variable_value else "--"
+            axs[0].plot(
+                range(0, epochs - 1, 15), 
+                mape_plot_train.values[0:-1:15],
+                label = f"{variable_of_interest} = {no_variable}",
+                linestyle = linestyle
+            )
+            axs[0].set_xlabel(x_label_train)
+            axs[0].set_ylabel(y_label_train)
+            axs[0].grid(color="silver", linestyle=":")
+            axs[0].set_title(title_train)    
+            axs[0].legend()
+
+            mape_plot_test = data_to_plot_test[data_to_plot_test[variable_of_interest] == no_variable]["Test MAPE"]
+            linestyle = "-" if no_variable == given_variable_value else "--"
+            axs[1].plot(range(0, epochs - 1, 15),
+                        mape_plot_test.values[0:-1:15],
+                        label = f"{variable_of_interest} = {no_variable}",
+                        linestyle = linestyle
+            )
+            axs[1].set_xlabel(x_label_test)
+            axs[1].set_ylabel(y_label_test)
+            axs[1].grid(color="silver", linestyle=":")
+            axs[1].set_title(title_test)    
+            axs[1].legend()
+        
+        fig.suptitle(f"{sup_title} - {operating_point}") 
+        fig.tight_layout()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plots_{variable_of_interest}_ANN_{operating_point}.png"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plots_{variable_of_interest}_ANN_{operating_point}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plots_{variable_of_interest}_ANN_{operating_point}.png"))
+
+        plt.show()        
+
+    @staticmethod
     def gbr_complexity_plot(model_params: dict,  X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame,
                             y_test: pd.DataFrame, op: str, model: str, plots_save_path: str = None):
 
         """    
-        gbr_complexity_plot:
+        gbr_complexity_plot: Complexity plot generation method for the Gradient Boosting algorithm. This method 
+        generates two figures that contain two plots each one for training (left) and one for testing (right). 
+        The first figure depicts the effect of the number of estimators on the performance of the Decision Tree 
+        base learner, and on GBR, while the second showcases the effect of the tree depth on the same paremeters
 
         Input:
-        - model:
-        - model_params:
-        - data: 
-        - x_axis_parameter: dictionary with the name being the name of the parameter to be grid-searched and
-        a list indicating the start, stop and step of the range to be searched, i.e. {"n_estimators":[1, 100, 2]}
-        - op: operating point
+        - model_params: dictionary that contains the parameters that define the structure of the decision tree 
+        base learner. Dictionary
+        - X_train/test: the features used for training/testing, pd.DataFrame,
+        - y_train/test: the responses used for validating the response of the model during training/testing, 
+        pd.Dataframe,
+        - op: operating point considered, str,
+        - model: the model used, str,
+        - plots_save_path: path used for saving the generated figures, str, Defaults to None -> no saving
         
         Output:
+        - Plots in the plots_save_path
         """ 
 
         # Unpack
@@ -495,9 +596,6 @@ class data_plotting:
 
             estimator = n_estimators_min
             while estimator < n_estimators_max: 
-
-                # Build parameter dataframe                
-                #model_params[op]["Number of estimators"] = estimator
 
                 # Extract parameters from self
                 scaler = StandardScaler()
