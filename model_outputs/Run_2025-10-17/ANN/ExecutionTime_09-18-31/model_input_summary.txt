@@ -1,0 +1,26 @@
+RESULTS REPORT - ANN
+======================================================================
+Generated (EET, UTC+2): 2025-10-17 09:18:31
+Author: Antoniadis Panagiotis
+----------------------------------------------------------------------
+
+Model input parameters
+                                      Idle               T/O               C/O               App
+Training split                         0.6               0.6               0.6               0.6
+Include development split            False             False             False             False
+Learning rate                       0.0005             0.001             0.001             0.001
+Epochs                                1500               500               500               500
+Number of FC layers                      3                 3                 3                 3
+Number of nodes per layer  [3, 2, 2, 1, 1]  [3, 5, 10, 5, 1]  [3, 5, 10, 5, 1]  [3, 5, 10, 5, 1]
+Activation Function                   relu              relu              relu              relu
+Optimizer                             ASDG              Adam              Adam              Adam
+
+Model secondary inputs
+      Execution device  Include plots  Save results
+Value              gpu           True          True
+
+Notes:
+Empty
+
+======================================================================
+End of report.

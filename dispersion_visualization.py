@@ -152,7 +152,7 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relati
         mean_points.values,      
         "--*",
         markersize = 10,
-        color = "black",
+        color = "greenyellow",
         zorder = 10,
         label = "Mean values - ICAO Databank"
     )
@@ -167,7 +167,8 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relati
             labels, 
             dtCorrs.iloc[:][i],
             lineStyle[pointer], 
-            label = i 
+            label = i,
+            markersize = 10
         )
 
         # Increase the count of the pointer
@@ -179,15 +180,18 @@ def distribution_plots(df_all, mean_points, dtCorrs, exp, meanEC, meanEE, relati
         exp["Turgut - CFM56-7B26"],
         "-8",
         label = "Turgut, CFM56-7B26",
-        zorder = 10
+        zorder = 10, 
+        markersize = 10,
+        color = "cyan"
     )
 
     # Additional plot settings, Show plot
     plt.grid(color = "silver", linestyle = ":")
     plt.legend(loc = "best")
-    plt.ylabel(yLabel)
-    plt.xlabel(xLabel)
+    plt.ylabel(yLabel, fontsize = 16)
+    plt.xlabel(xLabel, fontsize = 16)
     plt.title(title)
+    ax.set_title(label = title, fontsize = "xx-large")
     plt.yticks(range(ylimits[0], ylimits[1], ylimits[2]))
 
     plt.show()
@@ -416,13 +420,13 @@ for point in dtPoints.keys():
         #"Becker": becker,
         #"Perkavec": perkavec,
         "Rokke": rokke,
-        "Lewis": lewis,
+        #"Lewis": lewis,
         "Kyprianidis": kyprianidis,
         "Novelo": novelo,
-        "Lefebvre": lefebvre,
+        #"Lefebvre": lefebvre,
         "GasTurb": gasturb,
-        "General Electric": ge,
-        "Aeronox": aeronox
+        #"General Electric": ge,
+        #"Aeronox": aeronox
     }
 
     index = [point]
@@ -480,7 +484,7 @@ exp = pd.DataFrame(
     index = dtPoints.keys()    
 )
 
-experimental = lx(df = exp, filename = "data/experimental.tex", caption = "Turgut et. al - CFM56-7B26", label = "tab:exp")
+experimental = lx(df = exp, filename = r"E:\Correlate\model_outputs\Data\experimental.tex", caption = "Turgut et. al - CFM56-7B26", label = "tab:exp")
 experimental.df_to_lxTable()
 
 print(exp)
@@ -502,7 +506,7 @@ mean_points = pd.DataFrame(
     index = labels
 )
 
-mean_lx = lx(df = mean_points, filename = "data/means.tex", caption = "Operating points - Mean values", label = "tab:means")
+mean_lx = lx(df = mean_points, filename = r"E:\Correlate\model_outputs\Data\means.tex", caption = "Operating points - Mean values", label = "tab:means")
 mean_lx.df_to_lxTable()
 
 print(mean_points)
@@ -517,21 +521,21 @@ print(relativeEE)
 
 # Convert dataframes to latex tables
 # Relative error - EC: correlation equations error, EE: experimental error
-relativeEC = lx(df = relativeEC.T, filename = "data/relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
+relativeEC = lx(df = relativeEC.T, filename = r"E:\Correlate\model_outputs\Data\relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
 relativeEC.df_to_lxTable()
 
-relativeEE = lx(df = relativeEE.T, filename = "data/relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
+relativeEE = lx(df = relativeEE.T, filename = r"E:\Correlate\model_outputs\Data\relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
 relativeEE.df_to_lxTable()
 
 # Mean relative error - EC: Correlation equations error, EE: experimental error
-meanEC = lx(df = meanEC, filename = "data/MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
+meanEC = lx(df = meanEC, filename = r"E:\Correlate\model_outputs\Data\MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
 meanEC.df_to_lxTable()
 
-meanEE = lx(df = meanEE, filename = "data/MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
+meanEE = lx(df = meanEE, filename = r"E:\Correlate\model_outputs\Data\MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
 meanEE.df_to_lxTable()
 
 # Values of thermodynamic parameters
-dtPoints = lx(df = dtPoints, filename = "data/ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
+dtPoints = lx(df = dtPoints, filename = r"E:\Correlate\model_outputs\Data\ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
 dtPoints.df_to_lxTable()
 
 # Engine specifications
@@ -550,7 +554,7 @@ specs = pd.DataFrame(
     index = ["Parameter", "Value"]
 )
 
-engineSpecs = lx(df = specs.T, filename = "data/specs.tex", caption = "CFM56-7B26 specifications",
+engineSpecs = lx(df = specs.T, filename = r"E:\Correlate\model_outputs\Dataspecs.tex", caption = "CFM56-7B26 specifications",
                  label = "tab:specs")
 engineSpecs.df_to_lxTable()
 
@@ -567,7 +571,7 @@ lto_ops = pd.DataFrame(
     index = ["Altitude (m)", "Required thrust (kN)", "Flight speed (Mach)", "Axial fan speed (Mach)"]
 )
 
-conditions = lx(df = lto_ops, filename = "data/lto_ops.tex", 
+conditions = lx(df = lto_ops, filename = r"E:\Correlate\model_outputs\Data\lto_ops.tex", 
                 caption = "LTO operating conditions", label = "tab:lto")
 conditions.df_to_lxTable()
 
@@ -581,7 +585,7 @@ distribution_plots(
     meanEE,
     relativeEC,
     relativeEE,
-    method = "Swarmplot",
+    method = "Violinplot",
     size = [12,9],
     ylimits = [0, 70, 10], # min, max, step 
     title = "NOx EI over engine operation points - Dot plot - CFM56 family", 

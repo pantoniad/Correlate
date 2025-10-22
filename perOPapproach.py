@@ -19,10 +19,9 @@ clmns = ["Pressure Ratio", "Rated Thrust (kN)", "Fuel Flow Idle (kg/sec)",
          "NOx EI Idle (g/kg)", "NOx EI T/O (g/kg)", "NOx EI C/O (g/kg)",
          "NOx EI App (g/kg)"]
 
-drange = [[61, 169]]
+drange = [[61, 169]] # CFM56 family range 
 
-dfCleanUp = data_process(df = df, clmns = clmns, drange = drange)
-df = dfCleanUp.csv_cleanup(reset_index = True, save_to_csv = True, path = "Databank/CFM56data.csv")
+df = data_process.csv_cleanup(df = df, clmns = clmns, drange = drange, reset_index = True, save_to_csv = True, path = "Databank/CFM56data.csv")
 
 ops = ["Idle", "T/O", "C/O", "App"]
 
@@ -30,7 +29,7 @@ ops = ["Idle", "T/O", "C/O", "App"]
 # Col1: Tin, Col2: Tout, Co3: Pin (Pa), Col4: m_dot_core, Col5: m_dot_fuel (kg/s)
 d = {
     ops[0]: [797.1, 1290, 2755850, 10.564, 0.0137, 0.144],
-    ops[1]: [809.95, 2250, 2929690, 46.897, 0.0446, 1.2],
+    ops[1]: [809.95, 2250, 2929690, 46.897, 0.0446, 1.25],
     ops[2]: [805.1, 2000, 2828980, 45.44, 0.03596, 1],
     ops[3]: [787.91, 1400, 2539920, 31.89, 0.01718, 0.348]
 }
@@ -80,6 +79,7 @@ models_res = {
 } 
 
 # Iterate through the operating points
+#ops = ["Idle", "T/O", "C/O", "App"]
 for i in ops:
     
     print(i)
@@ -115,25 +115,25 @@ for i in ops:
     features = df3.drop(columns=f"NOx EI {i} (g/kg)")
     response = df3[f"NOx EI {i} (g/kg)"]
 
-    # Initialize `models_per_OP class
-    models = models_per_OP(
-        data = df3,
-        features = features,
-        response = response
+    # Split data
+    X_train, y_train, X_test, y_test = data_process.splitter(
+        x = features,
+        y = response,
+        train_split = 0.6
     )
 
-    # Split data
-    X_train, y_train, X_dev, y_dev, X_test, y_test = models.splitter(
-        train_split = 0.30,
-        test_split = 0.30,
-        dev_split = 0.40
+    # Initialize `models_per_OP class
+    models = models_per_OP(
+        X_train = X_train,
+        y_train = y_train,
+        X_test = X_test,
+        y_test = y_test
     )
 
     # Polynomial model 
     # Train on the dev set (only applicable to Polynomial regression as of now)
     parameters = {"Degrees": 2, "Include Bias": False}
     polymodel, polyfeatures, x_scaler, train_poly, test_poly = models.polReg(
-        xtrain = X_train, ytrain = y_train, xtest = X_dev, ytest = y_dev,
         parameters = parameters
     )
     
@@ -144,7 +144,7 @@ for i in ops:
 
     # Predict based on the thermodynamic data
     x_new_scaled = x_scaler.transform(x_new_df)
-    x_new_poly = polyfeatures.transform(x_new_scaled)
+    x_new_poly = polyfeatures["Model features"].transform(x_new_scaled)
     y_new = polymodel.predict(x_new_poly)
     
     # Save prediction results
@@ -157,14 +157,13 @@ for i in ops:
     # Gradient boosting
     # Train on the dev set (only applicable to Polynomial regression as of now)
     #parameters = {"Degrees": 2, "Include Bias": False}
-    gbr, x_scaler, train_gbr, test_gbr = models.gradientBoosting(
-        xtrain = X_train, ytrain = y_train, xtest = X_dev, ytest = y_dev
-    )
+    #gbr, x_scaler, train_gbr, test_gbr = models.gradientBoosting(
+    #)
     
     # Get metrics
-    metrics = models.performance_metrics(train = train_gbr, test = test_gbr)
-    print(f"Operating point: {i} metrics")
-    print(metrics.head())
+    #metrics = models.performance_metrics(train = train_gbr, test = test_gbr)
+    #print(f"Operating point: {i} metrics")
+    #print(metrics.head())
 
     # Predict based on the thermodynamic data
     x_new_scaled = x_scaler.transform(x_new_df)
@@ -175,7 +174,7 @@ for i in ops:
     #models_res["Polynomial Regression"][i] = y_new
     
     # Learning curve
-    #models.Learning_curve(model = gbr, operating_point = i)
+   # models.Learning_curve(model = gbr, operating_point = i)
     
  
 
@@ -246,10 +245,10 @@ for point in dtPoints.keys():
         "Lewis": lewis,
         "Kyprianidis": kyprianidis,
         "Novelo": novelo,
-        "Lefebvre": lefebvre,
+        #"Lefebvre": lefebvre,
         "GasTurb": gasturb,
-        "General Electric": ge,
-        "Aeronox": aeronox
+        #"General Electric": ge,
+        #"Aeronox": aeronox
     }
 
     index = [point]
@@ -274,8 +273,8 @@ speed = [0, 0.4, 0.4, 0.3]  # Mach number
 alt = [0, 11, 304, 905]     # meters
 
 d = {
-    "EINOx": engineData.iloc[0][0:4].values.astype(float),
-    "Fuel Flows": engineData.iloc[0][4:8].values.astype(float),
+    "EINOx": engineData.iloc[74][4:8].values.astype(float),
+    "Fuel Flows": engineData.iloc[74][0:4].values.astype(float),
     "Flight altitude": alt,
     "Flight Speed": speed
 }
@@ -294,8 +293,8 @@ dtCorrs["DLR Fuel Flow"] = ffeinox.values.T
 
 # Experimental data insertion - Dataframe format
 exp_data = {
-    "Turgut - CFM56-7B26": [1.8, 24.4, (12.6+16.4)/2, 2.8],
-    "Becker - PG6541B": [7.73*10**(-4)*30, 7.73*10**(-4)*80, 7.73*10**(-4)*260, 7.73*10**(-4)*300]
+    "Turgut - CFM56-7B26": [1.8, 24.4, (12.6+16.4)/2, 2.8]
+    #,"Becker - PG6541B": [7.73*10**(-4)*30, 7.73*10**(-4)*80, 7.73*10**(-4)*260, 7.73*10**(-4)*300]
 }
 
 exp = pd.DataFrame(
@@ -303,8 +302,8 @@ exp = pd.DataFrame(
     index = dtPoints.keys()    
 )
 
-experimental = lx(df = exp, filename = "data/experimental.tex", caption = "Turgut et. al - CFM56-7B26", label = "tab:exp")
-experimental.df_to_lxTable()
+#experimental = lx(df = exp, filename = "data/experimental.tex", caption = "Turgut et. al - CFM56-7B26", label = "tab:exp")
+#experimental.df_to_lxTable()
 
 # Dot plot #
 # Colour palette
@@ -328,8 +327,8 @@ mean_points = pd.DataFrame(
     index = labels
 )
 
-mean_lx = lx(df = mean_points, filename = "data/means.tex", caption = "Operating points - Mean values", label = "tab:means")
-mean_lx.df_to_lxTable()
+#mean_lx = lx(df = mean_points, filename = "data/means.tex", caption = "Operating points - Mean values", label = "tab:means")
+#mean_lx.df_to_lxTable()
 
 # Mean relative error and standard deviation 
 errors = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_points = mean_points, dtmodels = dtmodels)
@@ -337,26 +336,26 @@ errors = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_point
 
 # Convert dataframes to latex tables
 # Relative error - EC: correlation equations error, EE: experimental error
-relativeEC = lx(df = relativeEC.T, filename = "data/relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
-relativeEC.df_to_lxTable()
+#relativeEC = lx(df = relativeEC.T, filename = "data/relECerror.tex", caption = "Relative error between correalation results and ICAO mean value", label = "tab:relec")
+#relativeEC.df_to_lxTable()
 
-relativeEE = lx(df = relativeEE.T, filename = "data/relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
-relativeEE.df_to_lxTable()
+#relativeEE = lx(df = relativeEE.T, filename = "data/relEEerror.tex", caption = "Relative error between experimental data and ICAO men value", label = "tab:relee")
+#relativeEE.df_to_lxTable()
 
 # Mean relative error - EC: Correlation equations error, EE: experimental error
-meanEC = lx(df = meanEC, filename = "data/MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
-meanEC.df_to_lxTable()
+#meanEC = lx(df = meanEC, filename = "data/MEANEC.tex", caption = "Mean relative error - Correlation equations", label = "meanEC")
+#meanEC.df_to_lxTable()
 
-meanEE = lx(df = meanEE, filename = "data/MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
-meanEE.df_to_lxTable()
+#meanEE = lx(df = meanEE, filename = "data/MEANEE.tex", caption = "Mean realtive error - Experimental data", label = "meanEE")
+#meanEE.df_to_lxTable()
 
 # Mean relative error: Models
-meanEM = lx(df = meanEM, filename = "data/MEANEM.tex", caption = "Mean relative error - Models", label = "meanEM")
-meanEM.df_to_lxTable() 
+#meanEM = lx(df = meanEM, filename = "data/MEANEM.tex", caption = "Mean relative error - Models", label = "meanEM")
+#meanEM.df_to_lxTable() 
 
 # Values of thermodynamic parameters
-dtPoints = lx(df = dtPoints, filename = "data/ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
-dtPoints.df_to_lxTable()
+#dtPoints = lx(df = dtPoints, filename = "data/ops.tex", caption = "Values of thermodynamic parameters - LTO Cycle points", label = "tab:Thermo")
+#dtPoints.df_to_lxTable()
 
 # Operating conditions for each point: Altitude, Required thrust, Flight speed, Axial fan speed
 d = {
@@ -371,9 +370,9 @@ lto_ops = pd.DataFrame(
     index = ["Altitude (m)", "Required thrust (kN)", "Flight speed (Mach)", "Axial fan speed (Mach)"]
 )
 
-conditions = lx(df = lto_ops, filename = "data/lto_ops.tex", 
-                caption = "LTO operating conditions", label = "tab:lto")
-conditions.df_to_lxTable()
+#conditions = lx(df = lto_ops, filename = "data/lto_ops.tex", 
+#                caption = "LTO operating conditions", label = "tab:lto")
+#conditions.df_to_lxTable()
 
 # Distribution plots
 distr_plots = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp, mean_points = mean_points, dtmodels = dtmodels)

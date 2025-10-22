@@ -1,0 +1,25 @@
+RESULTS REPORT - Gradient Boosting
+======================================================================
+Generated (EET, UTC+2): 2025-10-13 15:46:54
+Author: Antoniadis Panagiotis
+----------------------------------------------------------------------
+
+Model input parameters
+                                   Idle           T/O           C/O           App
+Train split                         0.5           0.5           0.5           0.5
+Include development split         False         False         False         False
+Number of estimators                500           500           300           300
+Learning rate                     0.001         0.001         0.001         0.001
+Criterion                  friedman_mse  friedman_mse  friedman_mse  friedman_mse
+Maximum Tree depth                   35            50           100            50
+Subsample size                      0.4           0.4           0.4           0.4
+
+Model secondary inputs
+       Include Learning curve  Include complexity plots  Save results
+Value                    True                      True          True
+
+Notes:
+Empty
+
+======================================================================
+End of report.

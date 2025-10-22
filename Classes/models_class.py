@@ -1,80 +1,52 @@
 import numpy as np
 
 import pandas as pd
-from sklearn.model_selection import train_test_split
+import sklearn
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.pipeline import Pipeline
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score, root_mean_squared_error
-from sklearn.model_selection import learning_curve, LearningCurveDisplay
+from sklearn.metrics import mean_absolute_percentage_error, r2_score, root_mean_squared_error
+from sklearn.model_selection import learning_curve
 
 from typing import Optional
-from Classes.latex_class import latex as ltx
+import warnings
+import os
+import copy
 
 import matplotlib.pyplot as plt
 
-np.random.seed(42)
+import torch
+import torch.nn.functional as F
+import torch.nn as nn
+
+from Classes.data_plotting_class import data_plotting
+
+np.random.seed(34)
 
 class models_per_OP:
 
-    def __init__(self, data: pd.DataFrame, features: list, response: list):
+    def __init__(self, X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame, y_test: pd.DataFrame):
         
-        self.data = data
-        self.features = features
-        self.response = response
-
-    def splitter(self, train_split: Optional[float] = 0.6, test_split: Optional[float] = 0.4, dev_split: Optional[float] = 0.2):
-
         """
-        splitter: Splits the data into train, dev and test based on the proportions given above. 
-        If dev test is not needed, the user can define only the splits of the train and test 
-        sets. 
-
         Inputs:
-        - self
-        - train_split: the percentage of data used for model training, float,
-        - test_split: the percentage of data used for testing, float,
-        - dev_split: the percentage of data used for the development, float
-
-        Outputs:
-        - xtrain, ytrain: data part for the training
-        - xdev, ydev: data part for the development
-        - xtest, ytest: data part for the testing
-
+        - X_train:
+        - y_train:
+        - X_test:
+        - y_test:
         """
-        # Extract data from self
-        data = self.data
-        x = self.features
-        y = self.response
+        self.X_train = X_train
+        self.y_train = y_train
+        self.X_test = X_test
+        self.y_test = y_test
 
-        # Split data: Train and temp
-        xtrain, Xtemp, ytrain, Ytemp = train_test_split(
-            x, y, train_size=train_split, random_state=11
-        )
-
-        # Split data: Temp to Dev and Test
-        # Dev: train, Test: test, get split %
-        size = dev_split/(test_split+dev_split)
-
-        xdev, xtest, ydev, ytest = train_test_split(
-            Xtemp, Ytemp, train_size=size, random_state=42
-        )
-
-        return xtrain, ytrain, xdev, ydev, xtest, ytest
-
-    def polReg(self, xtrain: pd.DataFrame, ytrain: pd.DataFrame, xtest: pd.DataFrame, ytest: pd.DataFrame,
-               parameters: dict):
+    # Split data
+    def polReg(self, parameters: dict):
 
         """
         polReg: Polynomial Regression model. This function houses the code
         for generating a polynomial regression model
 
         Inputs: 
-        - xtrain, ytrain: the features and response data used for 
-        trainning, Dataframe
-        - xtest, ytest: the features and response data used for 
-        testing, Dataframe
         -parameters: the parameters needed to define the polynomial 
         regression model, Dictionary
 
@@ -88,46 +60,54 @@ class models_per_OP:
         """
         
         # Upack from self
-        data = self.data
+        X_train = self.X_train
+        X_test = self.X_test
+        y_train = self.y_train
+        y_test = self.y_test
 
         # Extract parameters
         deg = parameters["Degrees"]
         bias = parameters["Include Bias"]
 
-        x_scaler = StandardScaler()
-        xtrain_scaled = x_scaler.fit_transform(xtrain)
-        xtest_scaled  = x_scaler.transform(xtest)
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled  = scaler.transform(X_test)
 
         # Polynomial object
         poly = PolynomialFeatures(degree = deg, include_bias = bias)
-        x_train_poly = poly.fit_transform(xtrain_scaled)
-        x_test_poly = poly.transform(xtest_scaled)
+        X_train_poly = poly.fit_transform(X_train_scaled)
+        X_test_poly = poly.transform(X_test_scaled)
         
         # Linear regression objet
         lin = LinearRegression()
-        lin.fit(x_train_poly, ytrain)
+        lin.fit(X_train_poly, y_train)
 
         # Predict
-        y_train_pred = lin.predict(x_train_poly)
-        y_test_pred = lin.predict(x_test_poly)
+        y_train_pred = lin.predict(X_train_poly)
+        y_test_pred = lin.predict(X_test_poly)
         
         # Create output dataframe
         d1 = {
-           "Y train": ytrain,
+           "Y train": y_train,
            "Y train Pred": y_train_pred,
         }
         
         d2 = {
-           "Y test": ytest,
+           "Y test": y_test,
            "Y test Pred": y_test_pred,
         }
         
+        # Get returns ready
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
+        model_features = {
+            "Model type": "Polynomial Regression",
+            "Model features": poly
+        }
 
-        return lin, poly, x_scaler, train_results, test_results
+        return lin, model_features, scaler, train_results, test_results
 
-    def gradientBoosting(self, xtrain: pd.DataFrame, xtest: pd.DataFrame, ytrain: pd.DataFrame, ytest: pd.DataFrame, params: dict = None):
+    def gradientBoosting(self, parameters: dict = None):
         """
         gbr: GradientBoostingRegressor wrapper
 
@@ -139,42 +119,56 @@ class models_per_OP:
         
         """
         # Extract parameters from self
-        features = self.features
-        response = self.response
+        X_train = self.X_train
+        X_test = self.X_test
+        y_train = self.y_train
+        y_test = self.y_test
         
         # Scale data
-        x_scaler = StandardScaler()
-        xtrain_scaled = x_scaler.fit_transform(xtrain)
-        xtest_scaled  = x_scaler.transform(xtest) 
+        scaler = StandardScaler()
+        X_train_scaled = scaler.fit_transform(X_train)
+        X_test_scaled  = scaler.transform(X_test) 
+
+        # Extract parameters from "parameters"
+        n_estimators = parameters["Number of estimators"]
+        learning_rate = parameters["Learning rate"]
+        criterion = parameters["Criterion"]
+        max_depth = parameters["Maximum Tree depth"]
+        subsample_size = parameters["Subsample size"]
 
         # Initialiaze regressor
-        gbr = GradientBoostingRegressor()
+        gbr = GradientBoostingRegressor(n_estimators=n_estimators, learning_rate= learning_rate,
+                                        criterion=criterion, max_depth=max_depth, subsample = subsample_size)
 
         # Train Regressor 
-        gbr.fit(xtrain_scaled, ytrain)
+        fitted_gbr = gbr.fit(X_train_scaled, y_train)
 
         # Predict based on test
-        y_train_pred = gbr.predict(xtrain_scaled)
-        y_test_pred = gbr.predict(xtest_scaled)
-
+        y_train_pred = fitted_gbr.predict(X_train_scaled)
+        y_test_pred = fitted_gbr.predict(X_test_scaled)
+        
         # Create output dataframes
         d1 = {
-           "Y train": ytrain,
+           "Y train": y_train,
            "Y train Pred": y_train_pred,
         }
         
         d2 = {
-           "Y test": ytest,
+           "Y test": y_test,
            "Y test Pred": y_test_pred,
         }
         
+        # Get returns ready
         train_results = pd.DataFrame(data = d1)
         test_results = pd.DataFrame(data = d2)
+        model_features = {
+            "Model type": "Gradient Boosting"
+        }
 
-        return gbr, x_scaler, train_results, test_results
+        return gbr, model_features, scaler, train_results, test_results
 
 
-    def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame):
+    def performance_metrics(self, train: pd.DataFrame, test: pd.DataFrame, operating_point: str, error_save_path: str = None):
                            # to_latex: bool = False, parameters = Optional[pd.DataFrame]):
         """
         performance_metrics: This function returns the values of a series of performance metrics
@@ -199,31 +193,38 @@ class models_per_OP:
 
         """
         # Extract valuers from dataframe
-        ytrain = train["Y train"]
+        y_train = train["Y train"]
         y_train_pred = train["Y train Pred"]
-        ytest = test["Y test"]
+        y_test = test["Y test"]
         y_test_pred = test["Y test Pred"]
 
         # Evaluate results
-        train_mse = mean_absolute_error(ytrain, y_train_pred)
-        test_mse = mean_absolute_error(ytest, y_test_pred)
-        train_rmse = root_mean_squared_error(ytrain, y_train_pred)
-        test_rmse = root_mean_squared_error(ytest, y_test_pred)
-        train_r2 = r2_score(ytrain, y_train_pred)
-        test_r2 = r2_score(ytest, y_test_pred)
+        train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
+        test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
+        train_rmse = root_mean_squared_error(y_train, y_train_pred)
+        test_rmse = root_mean_squared_error(y_test, y_test_pred)
+        train_r2 = r2_score(y_train, y_train_pred)
+        test_r2 = r2_score(y_test, y_test_pred)
 
-        # CRMSD
+        # CRMSD - Train
+        #pred = y_train_pred.values.astype(float)
+        #pred_median = np.median(y_test_pred.values.astype(float))
+        #real = y_test.values.astype(float) 
+        #real_median = np.median(y_test.values.astype(float))
+        #crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+
+        # CRMSD - Test
         pred = y_test_pred.values.astype(float)
         pred_median = np.median(y_test_pred.values.astype(float))
-        real = ytest.values.astype(float) 
-        real_median = np.median(ytest.values.astype(float))
+        real = y_test.values.astype(float) 
+        real_median = np.median(y_test.values.astype(float))
         crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
 
         # Results to dataframe
         d = {
-           "MSE":{
-               "Train": train_mse,
-               "Test": test_mse
+           "MAPE":{
+               "Train": train_mape,
+               "Test": test_mape
            },
            "RMSE":{
                "Train": train_rmse,
@@ -241,6 +242,21 @@ class models_per_OP:
         
         metrics = pd.DataFrame(data = d)
 
+        # Save loss function/metrics results
+        if error_save_path == None:
+            pass
+        elif error_save_path != None:
+            
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                metrics.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                metrics.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+            else:
+                metrics.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+
+
         """
         # Save to latex table
         path = parameters["Path"]
@@ -257,30 +273,26 @@ class models_per_OP:
         """
         return metrics
     
-    def Learning_curve(self, model: object, model_features: Optional[object] = None, operating_point: Optional[str] = None):
+    def Learning_curve(self, data: pd.DataFrame, scaler: sklearn.preprocessing.StandardScaler, 
+                       model: object, model_features: Optional[object] = None, operating_point: Optional[str] = None,
+                       plots_save_path: str = None):
 
         """
         Learning_curve: creates a learning curve for the given data set, 
 
         Inputs:
         - model: the fitted model, object
-        - model_features: Optional entry that contains the features of the model. 
-        i.e. if Polynomial regression is used, then the Polynomial Features method 
-        has to be imported to get the characteristics of the polynomial fit,
+        - model_features: Only applicable to PolynomialFeatures. Optional entry 
+        that contains the features of the model.  
         - operating_point: the operating point that the engine works at.
         Used for plotting purposes, str
         """
 
-        # Extract data from self
-        data = self.data
-
-        # Break the data down into based on the operating point
+        # Break the data down
         X = data.iloc[:, range(0, len(data.keys())-1)]
         y = data.iloc[:, -1]
 
-        x_scaler = StandardScaler()
-        X_scaled = x_scaler.fit_transform(X)
-        #y_scaled  = x_scaler.transform(y)
+        X_scaled = scaler.fit_transform(X)
 
         # Learning curve 
         train_sizes, train_scores, test_scores = learning_curve(model, X_scaled, y, train_sizes = np.arange(0.1, 1, 0.05), cv = 7, scoring = "r2")
@@ -292,16 +304,18 @@ class models_per_OP:
         std_test = np.std(test_scores, axis = 1)
 
         # Extract model features
-        if model_features.degree != None:
-            model_type = f"Pol. Regresion ({model_features.degree})"
-        else:
-            pass
+        if model_features["Model type"] == "Polynomial Regression":
+            model_type = f"{model_features["Model type"]}: ({model_features["Model features"].degree})"
+        elif model_features["Model type"] == "Gradient Boosting":
+            model_type = f"{model_features["Model type"]}"
+        elif model_features["Model type"] == "Artificial Neural Networks":
+            model_type = f"{model_features["Model type"]}"
 
         # Visualize No.1
         fig1, ax1 = plt.subplots( figsize = (7, 5))
-        plt.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2")
-        plt.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2")
-        plt.plot()
+        ax1.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2")
+        ax1.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2")
+        ax1.plot()
 
         ax1.fill_between(train_sizes, mean_train + std_train, mean_train - std_train,
                          where=((mean_train + std_train) >= (mean_train - std_train)),
@@ -311,32 +325,583 @@ class models_per_OP:
                          where=((mean_test + std_test) >= (mean_test - std_test)),
                          color = "red", alpha = 0.2)
 
-
-
-        plt.xlabel("Training set size")
-        plt.ylabel("Score - Coefficient of Determination (R2)")
-        plt.grid(color = "silver", linestyle = ":")
-        #plt.ylim([min(min(mean_test), min(mean_train)) - 0.01*min(min(mean_test), min(mean_train)),
-        #           max(max(mean_test), max(mean_train)) + 0.01*max(max(mean_test), max(mean_train))])
+        ax1.set_xlabel("Training set size")
+        ax1.set_ylabel("Score - Coefficient of Determination (R2)")
+        ax1.grid(color = "silver", linestyle = ":")
         
         if operating_point != None: 
-            plt.title(f"Learning curve - {operating_point} conditions - {model_type}")
+            fig1.suptitle(f"Learning curve - {operating_point} conditions - {model_type}")
         else:
-            plt.title(f"Learning curve - {model_type}")
+            fig1.suptitle(f"Learning curve - {model_type}")
         
-        plt.legend()
+        ax1.legend()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{type(model).__name__}_{operating_point}.png"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{type(model).__name__}_{operating_point}.png"))
+            else:
+                fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{type(model).__name__}_{operating_point}.png"))
+
         plt.show()
 
-    def iterate_through_ops(self,):
+    #def Learning_curve_ann(self, ):
+
+    class ann():
 
         """
-        iterate_through_ops:
+        ann: A class that contains all the required functions and sub-classes
+        to train the ANN
 
-        Inputs:
+        Inputs: None
+        Outputs: None
 
-        Outputs:
-
+        All information for subclasses and methods are given below
         """
 
-        pass
+        class Model(nn.Module):
+            """
+            Model: a nn.Module initialized class used to create the structure of
+            the required ANN.             
+            """
 
+            def __init__(self, num_fc_layers: int, num_nodes_per_layer: list, 
+                        activation_function: torch.nn.functional):
+                         
+                        #in_features: int = 3, h1: int = 5, h2: int = 15, h3: int = 10, h4: int = 5, out_features: int = 1):
+                
+                """
+                __init__
+
+                Inputs:
+                - self
+                - in_features: number of input features, int,
+                - h1...hn: the number of nodes per layer, int
+                - out_features: the number of output features, int
+
+                Outputs: None
+                """
+                super().__init__() # Intiantiate the nn module
+
+                # Check if len of array of nodes is equal to the number of FC layers
+                num_nodes_per_layer_dropped = num_nodes_per_layer[1:-1]
+                if num_fc_layers != len(num_nodes_per_layer_dropped):
+                    raise Exception("Number of FC layers does not match length of nodes list")
+
+                # Place variables into self
+                if activation_function == "relu":
+                    self.activation_function = F.relu
+                else:
+                    warnings.warn("No activation function chosen. Using default: F.relu")
+                    self.activation_function = F.relu
+                self.layers = nn.ModuleList()
+
+                # Create ann structure
+                for i in range(len(num_nodes_per_layer) - 1):
+                    self.layers.append(nn.Linear(num_nodes_per_layer[i],
+                                                 num_nodes_per_layer[i+1]))
+                self.float()
+
+                # Define the structure: In -> Layer 1 -> Layer 2 -> Out using Fully Connected layers (FC)
+                #self.fc1 = nn.Linear(in_features, h1)
+                #self.fc2 = nn.Linear(h1, h2)
+                #self.fc3 = nn.Linear(h2,h3)
+                #self.fc4 = nn.Linear(h3, h4)
+                #self.out = nn.Linear(h4, out_features)
+                #self.float()
+                
+            def forward(self, x: torch.tensor):
+
+                """
+                forward: the method used for training the ANN. 
+
+                Inputs: 
+                - self
+                - x: the training data, tensor, retrived from a DataLoader
+
+                Outputs:
+                - y: the predicted values based on the inputs, tensor
+
+                """
+                for layer in self.layers[:-1]:
+                    x = self.activation_function(layer(x))
+                x = self.layers[-1](x)
+
+                #y = F.relu(self.fc1(x)) # relu: Rectified Linear Unit (outputs the input if positive, else outputs zero)
+                #y = F.relu(self.fc2(y))
+                #y = F.relu(self.fc3(y))
+                #y = F.relu(self.fc4(y))
+                #y = self.out(y)
+
+                return x
+
+        class CustomDataset(torch.utils.data.Dataset):
+
+            def __init__(self, data: pd.DataFrame):
+
+                """
+                __init__
+
+                Inputs: 
+                - data: data used to create the custom dataset. Contains
+                both features and responses in their corresponding collumns,
+                pd.Dataframe 
+
+                Outputs: None
+
+                """
+                feature1 = data["Pressure Ratio"]
+                feature2 = data["Rated Thrust (kN)"]
+                feature3 = data.loc[:, data.columns.str.contains("Fuel Flow")]
+                self.features = pd.concat([feature1, feature2, feature3], axis = 1)
+
+                response = data.loc[:, data.columns.str.contains("NOx EI")]
+                self.response = response
+
+            def __len__(self):
+                """
+                __len__: returns the length of the features
+                """
+                return len(self.features)
+
+            def __getitem__(self, index: int):
+                """
+                __getitem__: iterable object used to retrieve data from the features
+                and response tensors. 
+
+                Inputs:
+                - self
+                - index: used for indexing the tensors, int
+                """
+                features_sample = self.features.iloc[index,:].values
+                response_sample = self.response.iloc[index, :].values
+                return torch.tensor(features_sample.astype(np.float32())), torch.tensor(response_sample.astype(np.float32()))
+
+        @staticmethod
+        def train_one_epoch(model: torch.nn.Module, optimizer: torch.optim, criterion: torch.nn, train_loader: torch.utils.data.DataLoader, device: str):
+             
+            """
+            train_one_epoch: used for breaking the data apart into batches and then
+            training the ANN based on the model parameters and batches as specified 
+            by the dataloader
+
+            Inputs:
+            - model: the model instance, torch.nn.Module,
+            - optimizer: the optimizer instance, torch.nn.optim, 
+            - criterion: the criterion instance, torch.nn,
+            - train_loader: the traininng data in the form of a dataloader, torch.utils.data.DataLoader,
+            - device: the device which will be used for training, str
+
+            Outputs:
+            - avg_rmse: average value of train RMSE for the number of batches given 
+            - avg_mape: average value of train MAPE for the number of batches given
+            """
+            # Define running losses
+            running_rmse = 0
+            running_mape = 0
+            running_r2 = 0
+
+            # Iterate through batches
+            for j, (features_sample, response_sample) in enumerate(train_loader):
+
+                # Move tensors to device
+                features_sample = features_sample.to(device)
+                response_sample = response_sample.to(device)
+
+                # Train model
+                optimizer.zero_grad()
+                y_pred = model.forward(features_sample)
+                
+                # Get result from loss function
+                rmse = torch.sqrt(criterion(y_pred, response_sample))
+                running_rmse += rmse
+                mape = mean_absolute_percentage_error(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
+                running_mape =+ mape
+                r2 = r2_score(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
+                running_r2 =+ r2
+
+                # Update weights and optimizer
+                rmse.backward()
+                optimizer.step()
+
+            # Get RMSE in array type            
+            avg_rmse = running_rmse/(j+1)
+            avg_rmse = avg_rmse.cpu().detach().numpy()
+
+            # Get MAPE in array type
+            avg_mape = running_mape/(j+1)
+
+            # Get R2 in array type
+            avg_r2 = running_r2/(j+1)
+
+            return avg_rmse, avg_mape, avg_r2
+
+        @staticmethod
+        def validate_one_epoch(model: torch.nn.Module, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
+            """
+            validate_one_epoch: used for validating the trained model against unknown data broken apart into batches, 
+            as defined by the dataloader object
+
+            Inputs:
+            - model: the ANN model, torch.nn.Module,
+            - criterion: the loss criterion used for optimizing the model, torch.nn,
+            - test_loader: the test data used for validating the model, 
+            torch.utils.data.DataLoader
+            - device: the device used for running the model, str
+
+            Outputs:
+            - avg_rmse_v: average value of validation RMSE for the number of batches given
+            - avg_mape_v: average value of validation MAPE for the number of batches given
+
+            """
+            # Define running losses
+            running_rmse = 0
+            running_mape = 0
+            running_r2 = 0
+
+            # Validate for each batch
+            with torch.no_grad():
+                for j, (features_sample, response_sample) in enumerate(test_loader):
+                    
+                    # Trasfer tensors to device
+                    features_sample = features_sample.to(device)
+                    response_sample = response_sample.to(device)
+
+                    # Predict based on the trained model
+                    y_pred_v = model(features_sample)
+                    rmse_v = torch.sqrt(criterion(y_pred_v, response_sample))
+                    running_rmse += rmse_v
+                    mape_v = mean_absolute_percentage_error(response_sample.cpu().detach(), y_pred_v.cpu().detach())
+                    running_mape += mape_v
+                    r2 = r2_score(response_sample.cpu().detach(), y_pred_v.cpu().detach())
+                    running_r2 =+ r2
+
+                # Get average RMSE in array type for the batches
+                avg_rmse_v = running_rmse/(j+1)
+                avg_rmse_v = avg_rmse_v.cpu().detach().numpy()
+
+                # Get average MAPE in array type for the batches
+                avg_mape_v = running_mape/(j+1)
+
+                # Get average R2 in array type
+                avg_r2 = running_r2/(j+1)
+
+            return avg_rmse_v, avg_mape_v, avg_r2
+
+
+        def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
+                        learning_rate: int, num_fc_layers: int, num_nodes_per_layer: list, 
+                        optimizer_sel: torch.optim, activation_f: nn.functional = "relu", 
+                        device: Optional[str] = "cpu", engine_specs: dict = [], include_plots: Optional[bool] = False,
+                        include_complexity_plots: Optional[bool] = False, error_save_path: str = None, plots_save_path: str = None):
+            """
+            ann_creation:
+
+            Inputs:
+            - operating_point: The current operating point. Used for plotting, str,
+            - train_data: dataframe that contains the training data. Should contain
+            three (3) feature collumns, with keys "Pressure Ratio", "Rated Thrust (kN)" and
+            "Fuel Flow <> (kg/s)" where <> denotes the operating point, AND one (1) response
+            collumn with the key "NOx EI <> (g/kg)", with <> denoting the operating point. 
+            Data based on the ICAO Emissions Databank
+            - test_data: similar to train_data, for testing, data based on the ICAO 
+            Emissions Databank
+            - epochs: the number of epochs required to run the ANN
+            - learning_rate: the learning rate for the model, int,
+            - num_fc_layes: number of fully connected layers for the model, int,
+            - num_nodes_per_layer: the number of node per fully connected layer,
+            list of integers, first indicates number of features, second number of 
+            outputs,
+            - optimizer: the optimizer of choice, torch.optim,
+            - activation_function: the activation function of choice, torch.nn.functional,
+            - device: the device to be used for training. Default value is CPU, str
+            - include_plots: if yes, the loss plots are printed, boolean, 
+            default is False
+            
+            Outputs: 
+            - 
+
+            """
+            # Correct operating point for saving
+            if operating_point == "T/O":
+                operating_point = "TO"
+            elif operating_point == "C/O":
+                operating_point = "CO"
+
+            # Create saving paths
+            weights_save_path = os.path.join(error_save_path, f"Model weights")
+            if os.path.exists(weights_save_path):
+                pass
+            else:
+                os.mkdir(weights_save_path)
+
+            # Set device to gpu
+            if device == None:
+                warnings.warn(f"No device given. Checking Cuda")
+                if torch.cuda.is_available():
+                    device = torch.device("cuda")
+                    warnings.warn("No cuda device found. Switching to CPU")
+                else:
+                    device = torch.device("cpu")
+                    warnings.warn("Using CPU")
+            elif device == "GPU" or device == "gpu":
+                print(f"Using specified device: {device}")
+                device = torch.device("cuda")
+            elif device == "CPU" or device == "cpu":
+                print(f"Using specified device: {device}")
+                device = "cpu"
+
+            # Manual seed for iterable results
+            torch.manual_seed(41)
+
+            # Convert data to pytorch dataset
+            train_dataset = models_per_OP.ann.CustomDataset(data = train_data)
+            test_dataset = models_per_OP.ann.CustomDataset(data = test_data)
+
+            # Pass data to dataloader
+            train_loader = torch.utils.data.DataLoader(dataset = train_dataset, batch_size = 30, shuffle = True, pin_memory = True)
+            test_loader = torch.utils.data.DataLoader(dataset = test_dataset, batch_size = 30, shuffle = True, pin_memory = True)
+
+            ## ANN ##
+            # Instantiate ANN model
+            model = models_per_OP.ann.Model(num_fc_layers = num_fc_layers, 
+                                            num_nodes_per_layer = num_nodes_per_layer,
+                                            activation_function = activation_f)
+            model = model.to(device)
+
+            # Define NN parameters
+            criterion = nn.MSELoss() # Loss criterion
+            
+            # Select optimizer
+            if optimizer_sel == "Adam":
+                optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+            elif optimizer_sel == "ASDG":
+                optimizer = torch.optim.ASGD(model.parameters(), lr = learning_rate) 
+            else: 
+                warnings.warn("No optimizer selected. Using default: Adam")
+                optimizer = torch.optim.Adam(model.parameters(), lr = learning_rate)
+
+            rmse_train = []
+            rmse_valid = []
+            mape_train = []
+            mape_valid = []
+            r2_train = []
+            r2_valid = []
+            best_mape_v = float('inf')
+            #best_mape_train = float('inf')
+
+            # Iterate through epochs to train
+            epochs = epochs + 1
+            for i in range(epochs):
+                
+                ## Model training ##
+                model.train()
+                avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
+                rmse_train.append(avg_rmse)
+                mape_train.append(avg_mape)
+                r2_train.append(avg_r2)
+
+                ## Model validation ##
+                model.eval()
+                avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
+                rmse_valid.append(avg_rmse_v)
+                mape_valid.append(avg_mape_v)
+                r2_valid.append(avg_r2_v)
+
+                # Keep best model
+                is_best = avg_mape_v < best_mape_v
+                best_mape_v = min(avg_mape_v, best_mape_v)
+                if is_best:
+                    # Retrieve model parameters
+                    best_mape_v = avg_mape_v
+                    best_mape_train = avg_mape
+                    best_epoch = i
+                    best_model = copy.deepcopy(model.state_dict())
+                    best_optim = copy.deepcopy(optimizer.state_dict())
+
+                    # Check if saved file for corresponding operating point exists
+                    try:
+                        for fname in os.listdir(weights_save_path):
+                            if f"ANN_best_model_{operating_point}" in fname:
+                                os.remove(os.path.join(weights_save_path, fname))
+                    except Exception as e:
+                        warnings.warn(f"Could not clean previous weights: {e}")
+                    
+                    # Save model                   
+                    filename = f"ANN_best_model_{operating_point}_epoch_{best_epoch}.pt"
+                    path = os.path.join(weights_save_path, filename)
+                    torch.save(best_model, path)
+
+                # Print results    
+                if i % (epochs // 5) == 0:
+                    print()
+                    print(f"Epoch \t Avg Training RMSE \t Avg Validation RMSE \t Avg Training MAPE \t Avg Validation MAPE")
+                    print(f"{i} \t {avg_rmse} \t {avg_rmse_v} \t {avg_mape} \t {avg_mape_v}")
+            
+            # Create and save plots
+            if include_plots == True:
+                # Plot errors
+                data_plotting.ann_loss_plot(rmse_train, rmse_valid, mape_train, mape_valid, 
+                                            epochs, operating_point, plots_save_path)
+     
+            # Validate on engine 
+            if not engine_specs:
+                pass
+            else:
+                # Get prediction
+                features_engine = torch.tensor([engine_specs["Pressure Ratio"], engine_specs["Rated Thrust (kN)"], engine_specs["Fuel flow (kg/s)"]]).to(device)
+                y_pred_engine = model(features_engine)
+
+                # Save features and response
+                engine_pred = pd.DataFrame( data = {
+                    "Engine model": "CFM56-7B26",
+                    "Pressure ratio": engine_specs["Pressure Ratio"],
+                    "Rated thrust (kN)": engine_specs["Rated Thrust (kN)"],
+                    "Fuel flow (kg/s)": engine_specs["Fuel flow (kg/s)"],
+                    "Predicted EI value (gNOx/kgFuel)": y_pred_engine.cpu().detach().numpy()
+                }, index = ["Value"]
+                )
+                engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{operating_point}.csv"))
+
+            # Save loss function/metrics results
+            if error_save_path == None:
+                pass
+            elif error_save_path != None:
+                
+                data = {
+                    f"Best epoch ({best_epoch}) Train": {
+                        "RMSE": rmse_train[best_epoch],
+                        "MAPE": mape_train[best_epoch],
+                        "R2": r2_train[best_epoch]},
+                    f"Best epoch ({best_epoch}) Validation": {
+                        "RMSE": rmse_valid[best_epoch],
+                        "MAPE": mape_valid[best_epoch],
+                        "R2": r2_valid[best_epoch]},
+                }
+
+                error_saved = pd.DataFrame(
+                    data = data
+                ).T
+
+                error_saved.to_csv(os.path.join(error_save_path, f"saved_metrics_{operating_point}.csv"))
+            
+            # Gridsearch
+            if include_complexity_plots == True:
+
+                # Create parameters
+                layers_min = 1
+                
+                if num_fc_layers != 1:
+                    layers_max = 2*num_fc_layers
+                else:
+                    layers_max = 6*num_fc_layers
+                
+                if num_fc_layers != 1:
+                    layers_step = int(abs((layers_max-layers_min)/4))
+                    if layers_step == 0:
+                        layers_step = 1
+                else:
+                    layers_step = 1
+
+                neurons_min = 1
+                neurons_max = 2*max(num_nodes_per_layer) if max(num_nodes_per_layer) != 1 else 6*max(num_nodes_per_layer)
+                neurons_step = int(abs((neurons_max-neurons_min)/4)) if max(num_nodes_per_layer) != 1 else 1
+
+                # Initialize saving dataframes
+                data_to_plot_train = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Train MAPE", "Train RMSE", "Train R2"])
+                data_to_plot_test = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Test MAPE", "Test RMSE", "Test R2"])
+
+                # Gridsearch - No. Layers
+                num_neurons = 5
+                for layers in range(layers_min, layers_max, layers_step):
+                    
+                    # Create list of nodes/neurons per layer
+                    deep_layers = [num_neurons] * layers
+                    neurons_gridsearch = [3]+deep_layers+[1]
+
+                    # Create model
+                    model_gridsearch = models_per_OP.ann.Model(num_fc_layers = layers, 
+                                            num_nodes_per_layer = neurons_gridsearch,
+                                            activation_function = activation_f)
+                    optimizer_new = torch.optim.Adam(model_gridsearch.parameters(), lr = learning_rate)
+                    model_gridsearch = model_gridsearch.to(device)
+
+                    for epoch in range(epochs):
+
+                        ## Model training ##
+                        model_gridsearch.train()
+                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
+                        line_df = pd.DataFrame(data = line_dt, index =["Value"])
+                        data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                        ## Model validation ##
+                        model.eval()
+                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
+                        line_df = pd.DataFrame(data = line_dt, index = ["Value"])
+                        data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
+
+                # Complexity plot
+                data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Deep Layers",
+                                                    given_variable_value = num_fc_layers, epochs = epochs,
+                                                    sup_title = "MAPE vs Epochs for various No. Deep Layers, 5 neurons/layer",
+                                                    x_label_train = "Number of Epochs", x_label_test = "Number of Epochs",
+                                                    y_label_train = "Train MAPE (%)", y_label_test = "Test MAPE (%)",
+                                                    title_train = "Train MAPE vs Number of Deep Layers",
+                                                    title_test = "Test MAPE vs Number of Deep Layers",
+                                                    operating_point = operating_point, plots_save_path = plots_save_path
+                )
+
+                # Gridsearch - No. Neurons
+                # Initialize saving dataframes
+                data_to_plot_train = pd.DataFrame(columns = ["No. Neurons", "Epoch", "Train MAPE", "Train RMSE", "Train R2"])
+                data_to_plot_test = pd.DataFrame(columns = ["No. Neurons", "Epoch", "Test MAPE", "Test RMSE", "Test R2"])
+
+                num_layers = 5
+                for neurons in range(neurons_min, neurons_max, neurons_step):
+                    
+                    # Create list of nodes/neurons per layer
+                    deep_layers = [neurons] * num_layers 
+                    neurons_gridsearch = [3]+deep_layers+[1]
+
+                    # Create model
+                    model_gridsearch = models_per_OP.ann.Model(num_fc_layers = num_layers, 
+                                            num_nodes_per_layer = neurons_gridsearch,
+                                            activation_function = activation_f)
+                    optimizer_new = torch.optim.Adam(model_gridsearch.parameters(), lr = learning_rate)
+                    model_gridsearch = model_gridsearch.to(device)
+
+                    for epoch in range(epochs):
+
+                        ## Model training ##
+                        model_gridsearch.train()
+                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
+                        line_df = pd.DataFrame(data = line_dt, index =["Value"])
+                        data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                        ## Model validation ##
+                        model.eval()
+                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
+                        line_df = pd.DataFrame(data = line_dt, index = ["Value"])
+                        data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
+                
+                # Complexity plot
+                data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Neurons",
+                                                    given_variable_value = max(num_nodes_per_layer), epochs = epochs,
+                                                    sup_title = "MAPE vs Epochs for various No. Neurons, 5 Layers",
+                                                    x_label_train = "Number of Epochs", x_label_test = "Number of Epochs",
+                                                    y_label_train = "Train MAPE (%)", y_label_test = "Test MAPE (%)",
+                                                    title_train = "Train MAPE vs Number of Neurons",
+                                                    title_test = "Test MAPE vs Number of Neurons",
+                                                    operating_point = operating_point, plots_save_path = plots_save_path
+                )
+
+            return model

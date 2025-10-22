@@ -1,13 +1,20 @@
 import pandas as pd
 import numpy as np
 import seaborn as sns
+
 from matplotlib import pyplot as plt  
 import matplotlib.gridspec as gridspec  
-import Classes.correlations_class as correlate
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_absolute_percentage_error, r2_score, root_mean_squared_error
+
 import warnings
+from typing import Optional
+import os
+
 from Classes.latex_class import latex as lx
 from Classes.FuelFlow_class import FuelFlowMethods as ffms
-from typing import Optional
+import Classes.correlations_class as correlate
 
 class data_plotting:
 
@@ -64,7 +71,8 @@ class data_plotting:
                            dotPlotXlabel: str, 
                            dotPlotYlabel: str, 
                            lineStyle: list, 
-                           Jitter :float = None):
+                           Jitter :float = None,
+                           save_plots_path: Optional[str] = "Empty"):
         """
         distribution_plots: a function that is able to generate four kinds of plots based on the 
                             string given in the "method" parameter of the function. 
@@ -117,7 +125,6 @@ class data_plotting:
 
         # Create figure
         fig = plt.figure(figsize = (size[0], size[1]))
-        #gs = gridspec.GridSpec(3, 1, height_ratios=[9, 1, 1], figure=fig)
 
         # Create dot plot
         if method == "Dotplot":
@@ -182,8 +189,8 @@ class data_plotting:
                                 + ", ".join(valid_methods))
         
         # Mean value plotting
-        plt.plot(
-            mean_points.index,
+        ax.plot(
+            labels,
             mean_points.values,      
             "--*",
             markersize = 10,
@@ -202,7 +209,8 @@ class data_plotting:
                 labels, 
                 dtCorrs.iloc[:][i],
                 lineStyle[pointer], 
-                label = i 
+                label = i,
+                markersize = 10
             )
 
             # Increase the count of the pointer
@@ -212,31 +220,58 @@ class data_plotting:
         plt.plot(
             labels,
             dtmodels["Polynomial Regression"],
-            "-d",
+            "-.d",
             label = "Polynomial (2) Regression",
-            zorder = 10
+            zorder = 10,
+            markersize = 10,
+            color = "greenyellow"
         )
         
+        plt.plot(
+            labels,
+            dtmodels["Gradient Boosting"],
+            "-.d",
+            label = "Gradient boosting",
+            zorder = 10,
+            markersize = 10,
+            color = "gold"
+        )
+
+        plt.plot(
+            labels,
+            dtmodels["ANN"],
+            "-.d",
+            label = "ANN",
+            zorder = 10,
+            markersize = 10,
+            color = "deepskyblue"
+        )
+
         # Place the experimental data
         plt.plot(
             labels, 
-            exp["Turgut - CFM56-7B26"],
+            exp["Turgut - CFM56/7B26"],
             "-8",
-            label = "Turgut, CFM56-7B26",
-            zorder = 10
+            label = "Turgut, CFM56/7B26",
+            zorder = 10,
+            color = "cyan",
+            markersize = 10
         )
-
-        
 
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")
-        plt.legend(loc = "best")
-        plt.ylabel(yLabel)
-        plt.xlabel(xLabel)
-        plt.title(title)
-        #minlim = 1.05*min(df_all.min(numeric_only=True).Value, dtCorrs.min().min(), exp.min().min(), dtmodels.min().min().min())
-        #maxlim = 1.05*max(df_all.max(numeric_only=True).Value, dtCorrs.max().max(), exp.max().max(), dtmodels.max().max().max())
-        #plt.yticks(np.arange(minlim, maxlim,100))
+        plt.legend(loc = "best", fontsize = 12)
+        plt.ylabel(yLabel, fontsize = 15)
+        plt.yticks(fontsize = 13)
+        plt.xlabel(xLabel, fontsize = 15)
+        plt.xticks(fontsize = 13)
+        ax.set_title(label = title, fontsize = "xx-large")
+        plt.tight_layout()
+
+        # Save plot
+        if save_plots_path != "Empty":
+
+            fig.savefig(os.path.join(save_plots_path, f"Distribution plots.png"))
 
         plt.show()
 
@@ -391,6 +426,409 @@ class data_plotting:
 
         return meanEC, meanEE, meanEM, relativeECd, relativeEEd, relativeEM
     
-    def plot_3d(self):
+    @staticmethod
+    def ann_loss_plot(rmse_train: list, rmse_valid: list, mape_train: list, mape_valid: list, 
+                      epochs: int, operating_point: str, plots_save_path: str = None):
+        """
+        ann_loss_plot:
+
+        Input:
+
+        Output:
+        """
+     
+        # Plot the losses
+        fig = plt.figure(figsize=(9,7))
+        ax1 = fig.add_subplot(121)
+        ax2 = fig.add_subplot(122, sharex = ax1)
+
+        ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "royalblue")
+        ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "darkorange")
+        #ax1.set_xlabel("Number of Epochs")
+        ax1.set_ylabel("RMSE (gNOx/kgFuel)")
+        ax1.grid(color = "gray", linestyle = ":")
+        ax1.legend()
+
+        ax2.plot(range(epochs), [100*x for x in mape_train], label = "Train MAPE", color = "royalblue")
+        ax2.plot(range(epochs), [100*x for x in mape_valid], label = "Validation MAPE", color = "darkorange")
+        ax2.set_ylabel("MAPE (%)")
+        ax2.set_xlabel("Number of Epochs")
+        ax2.grid(color = "gray", linestyle = ":")
+        ax2.legend()
+        fig.suptitle(f"Train and Validation error of ANN - CFM56 family - Operating Point: {operating_point}", size = "x-large")
+        fig.tight_layout()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+
+        plt.show()
     
-        pass
+    @staticmethod
+    def ann_loss_plot_advanced(data_to_plot_train: pd.DataFrame, data_to_plot_test: pd.DataFrame, 
+                               variable_of_interest: str, given_variable_value: int, epochs: int, 
+                               sup_title: str, x_label_train: str, y_label_train: str, title_train: str,
+                               x_label_test: str, y_label_test: str, title_test: str, operating_point: str,
+                               plots_save_path: str = None
+                               ):
+        """
+        ann_loss_plot_advanced: this method handles the plotting of the gridsearch conducted for the ANN. 
+        It is dumped advanced because it can handle both multiple layers and multiple neurons. Its goal is
+        to produce two figures, each containing a train (left) and a test (right) plot. In the first figure,
+        the effect of the number of deep layers on the performance of the ANN is observed, whereas in the 
+        second figure the effect of the number of neuros for a set number of layers is plotted. 
+        This method does not compete with the ann_loss_plot, as the second one produces a loss plot for the given structure
+        of the ANN, while this method creates a new ANN structure based on the needs of each gridsearch.
+
+        Inputs:
+        - data_to_plot_train: the data used for plotting here and are retrieved during training. Pandas dataframe with
+        the following structure {}"<Variable of interest>": <value>, "Epoch": <epoch>, "Train/Test MAPE": <>, 
+        "Train/Test RMSE": <>, "Train/Test R2": <>}
+        - data_to_plot_test: the data used for plotting here and retrieved during testing. Pandas dataframe with a 
+        structure as shown in the data_to_plot_train dataframe
+        - variable_of_interest: the variable the will be used as the basis for the gridsearch. As this method is coupled 
+        with the ANN, the two variables that have been tested are "No. Deep Layers" and "No. Neurons" for the given 
+        structure of the data_to_plot_train/test dataframes, str
+        - given_variable_value: the value given to the variable of interest by the user during initialization, int
+        - epochs: the number of epochs as given by the user during initialization, int,
+        - sup_title: the super-title of the plot, str,
+        - x_label_train/test: the label given in the train and test x-axis of the plots of the figure, str,
+        - y_label_train/test: the label given in the train and test y-axis of the plots of the figure, str
+        - title_train/test: the title given in the train and test plots of the figure, str
+        - operating_point: the operating point that is considered, str
+        - plots_save_path: the current directory used for saving the generated plots
+
+        Outputs:
+        - Plots in the plots_save_path
+
+        """
+        # Unpack variables
+
+        # Plot 
+        variable_values = sorted(data_to_plot_train[variable_of_interest].unique())
+
+        fig, axs = plt.subplots(1, 2, figsize = (10,6))
+                
+        for no_variable in variable_values:
+            mape_plot_train = data_to_plot_train[data_to_plot_train[variable_of_interest] == no_variable]["Train MAPE"]
+            linestyle = "-" if no_variable == given_variable_value else "--"
+            axs[0].plot(
+                range(0, epochs - 1, 15), 
+                mape_plot_train.values[0:-1:15],
+                label = f"{variable_of_interest} = {no_variable}",
+                linestyle = linestyle
+            )
+            axs[0].set_xlabel(x_label_train)
+            axs[0].set_ylabel(y_label_train)
+            axs[0].grid(color="silver", linestyle=":")
+            axs[0].set_title(title_train)    
+            axs[0].legend()
+
+            mape_plot_test = data_to_plot_test[data_to_plot_test[variable_of_interest] == no_variable]["Test MAPE"]
+            linestyle = "-" if no_variable == given_variable_value else "--"
+            axs[1].plot(range(0, epochs - 1, 15),
+                        mape_plot_test.values[0:-1:15],
+                        label = f"{variable_of_interest} = {no_variable}",
+                        linestyle = linestyle
+            )
+            axs[1].set_xlabel(x_label_test)
+            axs[1].set_ylabel(y_label_test)
+            axs[1].grid(color="silver", linestyle=":")
+            axs[1].set_title(title_test)    
+            axs[1].legend()
+        
+        fig.suptitle(f"{sup_title} - {operating_point}") 
+        fig.tight_layout()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if operating_point == "T/O":
+                operating_point = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plots_{variable_of_interest}_ANN_{operating_point}.png"))
+            elif operating_point == "C/O":
+                operating_point = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plots_{variable_of_interest}_ANN_{operating_point}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plots_{variable_of_interest}_ANN_{operating_point}.png"))
+
+        plt.show()        
+
+    @staticmethod
+    def gbr_complexity_plot(model_params: dict,  X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame,
+                            y_test: pd.DataFrame, op: str, model: str, plots_save_path: str = None):
+
+        """    
+        gbr_complexity_plot: Complexity plot generation method for the Gradient Boosting algorithm. This method 
+        generates two figures that contain two plots each one for training (left) and one for testing (right). 
+        The first figure depicts the effect of the number of estimators on the performance of the Decision Tree 
+        base learner, and on GBR, while the second showcases the effect of the tree depth on the same paremeters
+
+        Input:
+        - model_params: dictionary that contains the parameters that define the structure of the decision tree 
+        base learner. Dictionary
+        - X_train/test: the features used for training/testing, pd.DataFrame,
+        - y_train/test: the responses used for validating the response of the model during training/testing, 
+        pd.Dataframe,
+        - op: operating point considered, str,
+        - model: the model used, str,
+        - plots_save_path: path used for saving the generated figures, str, Defaults to None -> no saving
+        
+        Output:
+        - Plots in the plots_save_path
+        """ 
+
+        # Unpack
+        criterion = model_params[op]["Criterion"]
+        learning_rate = model_params[op]["Learning rate"]
+        subsample_size = model_params[op]["Subsample size"]
+        n_estimators = model_params[op]["Number of estimators"]
+        tree_depth = model_params[op]["Maximum Tree depth"]
+
+        ## First case - Number of estimators vs Error + Depth
+        n_estimators_min = 1
+        n_estimators_max = 4*n_estimators+n_estimators_min
+        n_estimators_step = int((n_estimators_max-n_estimators_min)/10) 
+        
+        tree_depth_min = 1
+        tree_depth_max = 4*tree_depth + tree_depth_min
+        tree_depth_step = int((tree_depth_max - tree_depth_min)/4)
+        
+        # Single parameter grid-search 
+        data_to_plot_train = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Train MAPE", "Train RMSE", "Train R2"])
+        data_to_plot_test = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Test MAPE", "Test RMSE", "Test R2"])
+
+        # Gridsearch
+        for i in range(tree_depth_min, tree_depth_max, tree_depth_step):
+            
+            if i == 1:
+                depth = 1
+            else:
+                if i in range(2, 11):
+                    depth = i
+                else:
+                    depth = np.round(i, -1)
+
+            estimator = n_estimators_min
+            while estimator < n_estimators_max: 
+
+                # Extract parameters from self
+                scaler = StandardScaler()
+                X_train_scaled = scaler.fit_transform(X_train)
+                X_test_scaled  = scaler.transform(X_test) 
+
+                # Initialiaze regressor
+                gbr = GradientBoostingRegressor(n_estimators=estimator, learning_rate=learning_rate,
+                                                criterion=criterion, max_depth=depth, subsample = subsample_size)
+
+                # Train Regressor 
+                fitted_gbr = gbr.fit(X_train_scaled, y_train)
+
+                # Predict based on test
+                y_train_pred = fitted_gbr.predict(X_train_scaled)
+                y_test_pred = fitted_gbr.predict(X_test_scaled)
+
+                # Get metrics
+                train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
+                test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
+                train_rmse = root_mean_squared_error(y_train, y_train_pred)
+                test_rmse = root_mean_squared_error(y_test, y_test_pred)
+                train_r2 = r2_score(y_train, y_train_pred)
+                test_r2 = r2_score(y_test, y_test_pred)
+
+                # Prepare data for plotting
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index=True)
+
+               # Increase estimator
+                estimator += n_estimators_step
+
+        # Time to plot 
+        fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+
+        # Get unique tree depths
+        tree_depths = sorted(data_to_plot_train["Tree depth"].unique())
+
+        # Left subplot: Train R2 vs Number of Estimators for each tree depth
+        for idx, depth in enumerate(tree_depths):
+            train_subset = data_to_plot_train[data_to_plot_train["Tree depth"] == depth]
+            linestyle = '-' if idx == 0 else '--'
+            axs[0].plot(
+                train_subset["No.Estimators"],
+                train_subset["Train R2"],
+                label=f"Depth={depth}",
+                linestyle=linestyle
+            )
+
+        axs[0].set_xlabel("Number of Estimators")
+        axs[0].set_ylabel("R² Score (Train)")
+        axs[0].set_title("Train R² vs Number of Estimators")
+        axs[0].grid(color="silver", linestyle=":")
+        axs[0].legend()
+
+        # Right subplot: Test R2 vs Number of Estimators for each tree depth
+        for idx, depth in enumerate(tree_depths):
+            test_subset = data_to_plot_test[data_to_plot_test["Tree depth"] == depth]
+            linestyle = '-' if idx == 0 else '--'
+            axs[1].plot(
+                test_subset["No.Estimators"],
+                test_subset["Test R2"],
+                label=f"Depth={depth}",
+                linestyle=linestyle
+            )
+
+        axs[1].set_xlabel("Number of Estimators")
+        axs[1].set_ylabel("R² Score (Test)")
+        axs[1].set_title("Test R² vs Number of Estimators")
+        axs[1].grid(color="silver", linestyle=":")
+        axs[1].legend()
+
+        fig.suptitle(f"R² vs Number of Estimators for Various Tree Depths - {op}", fontsize="x-large")
+        fig.tight_layout()
+        
+        if plots_save_path == None:
+            pass
+        else:
+            if op == "T/O":
+                op = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+            elif op == "C/O":
+                op = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+        
+        #plt.show()
+
+        ## Seconde case - Tree depth vs error + Estimators
+        n_estimators_min = 1
+        n_estimators_max = 4*n_estimators+n_estimators_min
+        n_estimators_step = int((n_estimators_max-n_estimators_min)/4) 
+        
+        # Struggles for low values of tree depth. If statement below fixes floating steps into 1, for low value tree depths
+        tree_depth_min = 1
+        tree_depth_max = 4*tree_depth + tree_depth_min
+        tree_depth_step = int((tree_depth_max - tree_depth_min)/10) if (tree_depth_max - tree_depth_min)/10 > 1 else 1  
+        
+        # Single parameter grid-search 
+        data_to_plot_train = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Train MAPE", "Train RMSE", "Train R2"])
+        data_to_plot_test = pd.DataFrame(columns = ["Tree depth", "No.Estimators", "Test MAPE", "Test RMSE", "Test R2"])
+
+        # Gridsearch
+        for i in range(n_estimators_min, n_estimators_max, n_estimators_step):
+            
+            if i != 1:
+                estimator = np.round(i, -1)
+            else: 
+                estimator = 1
+            depth = tree_depth_min
+            
+            while depth < tree_depth_max: 
+
+                # Extract parameters from self
+                scaler = StandardScaler()
+                X_train_scaled = scaler.fit_transform(X_train)
+                X_test_scaled  = scaler.transform(X_test) 
+
+                # Initialiaze regressor
+                gbr = GradientBoostingRegressor(n_estimators=estimator, learning_rate=learning_rate,
+                                                criterion=criterion, max_depth=depth, subsample = subsample_size)
+
+                # Train Regressor 
+                fitted_gbr = gbr.fit(X_train_scaled, y_train)
+
+                # Predict based on test
+                y_train_pred = fitted_gbr.predict(X_train_scaled)
+                y_test_pred = fitted_gbr.predict(X_test_scaled)
+
+                # Get metrics
+                train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
+                test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
+                train_rmse = root_mean_squared_error(y_train, y_train_pred)
+                test_rmse = root_mean_squared_error(y_test, y_test_pred)
+                train_r2 = r2_score(y_train, y_train_pred)
+                test_r2 = r2_score(y_test, y_test_pred)
+
+                # Prepare data for plotting
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
+
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2}
+                line_df = pd.DataFrame(data = line_dt, index=["Value"])
+                data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index=True)
+
+               # Increase estimator
+                depth += tree_depth_step
+
+        # Get unique estimator values
+        data_to_plot_test.dropna()
+        data_to_plot_train.dropna()
+
+        estimator_values = sorted(data_to_plot_train["No.Estimators"].unique())
+
+        fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+
+        # Left subplot: Train R2 vs Tree Depth for each estimator value
+        for idx, estimator in enumerate(estimator_values):
+            train_subset = data_to_plot_train[data_to_plot_train["No.Estimators"] == estimator]
+            linestyle = '-' if idx == 0 else '--'
+            axs[0].plot(
+                train_subset["Tree depth"],
+                train_subset["Train R2"],
+                label=f"Estimators={estimator}",
+                linestyle=linestyle
+            )
+
+        axs[0].set_xlabel("Tree Depth")
+        axs[0].set_ylabel("R² Score (Train)")
+        axs[0].set_title("Train R² vs Tree Depth")
+        axs[0].grid(color="silver", linestyle=":")
+        axs[0].legend()
+
+        # Right subplot: Test R2 vs Tree Depth for each estimator value
+        for idx, estimator in enumerate(estimator_values):
+            test_subset = data_to_plot_test[data_to_plot_test["No.Estimators"] == estimator]
+            linestyle = '-' if idx == 0 else '--'
+            axs[1].plot(
+                test_subset["Tree depth"],
+                test_subset["Test R2"],
+                label=f"Estimators={estimator}",
+                linestyle=linestyle
+            )
+
+        axs[1].set_xlabel("Tree Depth")
+        axs[1].set_ylabel("R² Score (Test)")
+        axs[1].set_title("Test R² vs Tree Depth")
+        axs[1].grid(color="silver", linestyle=":")
+        axs[1].legend()
+
+        fig.suptitle(f"R² vs Tree Depth for Various Estimator Values - {op}", fontsize="x-large")
+        fig.tight_layout()
+
+        if plots_save_path == None:
+            pass
+        else:
+            if op == "T/O":
+                op = "Take-off"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+            elif op == "C/O":
+                op = "Climb-out"
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+            else:
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+
+        plt.show()

@@ -1,0 +1,92 @@
+1. Incorporate ann class into models_class and test -> Done
+2. Run ann for all operating points 
+3. Introduce more metrics from the class and Learning curves
+4. Attach validation on the error plot
+5. ~~Try to use CUDA for gpu acceralation~~
+6. Research on the importance of metrics and epochs and other parameters of the NN
+7. Look into Deep Learning book 
+
+Questions:
+- What is the right sequence for the ANN set-up?
+
+Results:
+- Problem with the use of the data-dataloader interface. While all of the examples
+I have seen use the dataloader inside a for-loop waiting for 2 outputs from the method,
+my implementation does not reach that result. It might be a problem of data preparation,
+meaning that I might need to include a custom dataset function
+- The end goal here is to get the train-test error vs epoch plot. Currently I get 
+the training error but the results might very well be wrong because of the above problem,
+will have to implement it and then be sure,
+- The above also raise concerns over the workings of the pipeline. Might need to 
+create a new class that houses all of the ANN related stuff and a corresponding 
+outputs (Save) and input file
+
+29-09-2025
+Todos:
+- Integrate the dataset function (done)
+- Introduce the dataloader (done)
+- Plot Validation and Training error together (done)
+- Create separate funtions and classes for anything ANN related (done)
+- Introduce more metrics to the mix (done)
+- Adjust plots (Optional: and create a separate function for plotting) (done)
+- Add comments on the classes and methods (done)
+- Integrate model/parameter saving (not yet) and test input file (done)
+- Extend the code for all operating points (done)
+- make printing the results dependent on the number of epochs chosen (i.e. return results every epochs/5) (done)
+
+Model specific and Research To-Dos:
+- model inputs should be added by the user, not by default, (done)
+- structure of ann should be examined (why FC and not other types of layers?),
+- examine what early stoping is and why is it useful
+- model selection? what is this? do we select based on epoch? 
+- how to extract generated function 
+
+Problem (1/10/2025): (solved)
+- Έχω δημιουργήσει την συνάρτηση που κάνει την εκπαίδευση και το validation του μοντέλου μαζί με
+την δημιουργία διαγραμμάτων. Θέλω να δημιουργήσω ένα αρχείο το οποίο θα λειτουργεί σαν executable
+και σε εκείνο θα τοποθετείται οτιδήποτε σχετικό με το μοντέλο. Τελικά, θα πρέπει να χρησιμοποιώ μόνο
+αυτό το αρχείο για να τρέχω τις αναλύσεις. 
+Requirements:
+1. Προσομοίωση για πολλαπλά σημεία λειτουργίας,
+2. Μόνο ένα αρχείο σαν executable,
+3. Δημιουργία plots,
+4. Εξαγωγή δεδομένων με την μορφή dataframe
+
+Προτεινόμενη πορεία δράσης:
+1. Προσαρμογή της συνάρτησης στο model_class για call από το main script για την εκπαίδευση.
+2. Το main script θα καλεί ότι χρειάζεται για όλα τα σημεία λειτουργίας. Επιπλέον δυνατότητα 
+προσαρμογής νευρωνικού σα κάθε σημείο λειτορυγίας. Σίγουρα πρέπει να γίνει έλεγχος για να είμαστε
+σίγουροι ότι δεν είναι one-fits-all φάση. 
+
+To-dos: 
+- Saving parameters and results into external data file (look into naming convention)
+- Include operating point at plots to distinguish them (done)
+- Include some info about the model strucure to the plots to distinguish them
+
+To talk about saving the results of each model we frist have to define the requirements.
+Most importantly, we have to decide whether we want this tool (maybe a function) be used 
+for all the models we use (Polynomial Regression, Gradient boosting, ANNs).
+
+If this is the case then, the saving proceduce should not get into data processing as 
+each model has its own unique way of handling data. On the other hand, it should be 
+"agnostic" in a sense, meaning that it should not care about where the data being 
+handled comes from, as long as it has a particular structure.
+
+- What needs to be saved? 
+Requirements:
+- Input parameters
+    - NN structure for sure (number of layers, type of layers, number of nodes per layers)
+    - The number of epochs and the learning related
+    - Activation function and optimizer
+- Output parameters:
+    - Function expression, 
+    - Model error values 
+Start with those and we will see about other things that need to be added
+
+To-dos 2.10.2025:
+- Saving system 
+    - Inputs and outputs, (done)
+    - Filing system and naming convention, (done)
+    - Multi-model integration problem: How do we deal with mutliple models,
+- Intergation and testing of the system on all of the models
+- Research restarts
