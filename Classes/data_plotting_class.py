@@ -71,7 +71,8 @@ class data_plotting:
                            dotPlotXlabel: str, 
                            dotPlotYlabel: str, 
                            lineStyle: list, 
-                           Jitter :float = None):
+                           Jitter :float = None,
+                           save_plots_path: Optional[str] = "Empty"):
         """
         distribution_plots: a function that is able to generate four kinds of plots based on the 
                             string given in the "method" parameter of the function. 
@@ -189,7 +190,7 @@ class data_plotting:
         
         # Mean value plotting
         ax.plot(
-            mean_points.index,
+            labels,
             mean_points.values,      
             "--*",
             markersize = 10,
@@ -226,17 +227,37 @@ class data_plotting:
             color = "greenyellow"
         )
         
+        plt.plot(
+            labels,
+            dtmodels["Gradient Boosting"],
+            "-.d",
+            label = "Gradient boosting",
+            zorder = 10,
+            markersize = 10,
+            color = "gold"
+        )
+
+        plt.plot(
+            labels,
+            dtmodels["ANN"],
+            "-.d",
+            label = "ANN",
+            zorder = 10,
+            markersize = 10,
+            color = "deepskyblue"
+        )
+
         # Place the experimental data
         plt.plot(
             labels, 
-            exp["Turgut - CFM56-7B26"],
+            exp["Turgut - CFM56/7B26"],
             "-8",
-            label = "Turgut, CFM56-7B26",
+            label = "Turgut, CFM56/7B26",
             zorder = 10,
             color = "cyan",
             markersize = 10
         )
-        #ax.set_facecolor("whitesmoke")
+
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")
         plt.legend(loc = "best", fontsize = 12)
@@ -245,10 +266,12 @@ class data_plotting:
         plt.xlabel(xLabel, fontsize = 15)
         plt.xticks(fontsize = 13)
         ax.set_title(label = title, fontsize = "xx-large")
-        #plt.title(title)
-        #minlim = 1.05*min(df_all.min(numeric_only=True).Value, dtCorrs.min().min(), exp.min().min(), dtmodels.min().min().min())
-        #maxlim = 1.05*max(df_all.max(numeric_only=True).Value, dtCorrs.max().max(), exp.max().max(), dtmodels.max().max().max())
-        #plt.yticks(np.arange(minlim, maxlim,100))
+        plt.tight_layout()
+
+        # Save plot
+        if save_plots_path != "Empty":
+
+            fig.savefig(os.path.join(save_plots_path, f"Distribution plots.png"))
 
         plt.show()
 
