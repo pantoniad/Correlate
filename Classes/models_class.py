@@ -198,20 +198,24 @@ class models_per_OP:
         y_test = test["Y test"]
         y_test_pred = test["Y test Pred"]
 
-        # Evaluate results
+        # Evalutation metrics
         train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
         test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
         train_rmse = root_mean_squared_error(y_train, y_train_pred)
         test_rmse = root_mean_squared_error(y_test, y_test_pred)
         train_r2 = r2_score(y_train, y_train_pred)
         test_r2 = r2_score(y_test, y_test_pred)
+        train_data_std = np.std(y_train.values.astype(float))
+        test_data_std = np.std(y_test.values.astype(float))
+        train_pred_std = np.std(y_train_pred.values.astype(float))
+        test_pred_std = np.std(y_test_pred.values.astype(float))
 
         # CRMSD - Train
-        #pred = y_train_pred.values.astype(float)
-        #pred_median = np.median(y_test_pred.values.astype(float))
-        #real = y_test.values.astype(float) 
-        #real_median = np.median(y_test.values.astype(float))
-        #crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+        pred = y_train_pred.values.astype(float)
+        pred_median = np.median(y_train_pred.values.astype(float))
+        real = y_train.values.astype(float) 
+        real_median = np.median(y_train.values.astype(float))
+        crmsd_train = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
 
         # CRMSD - Test
         pred = y_test_pred.values.astype(float)
@@ -235,8 +239,16 @@ class models_per_OP:
                "Test": test_r2
            },
            "CRMSD":{
-               "Train": "-",
+               "Train": crmsd_train,
                "Test": crmsd_test
+           },
+           "Predictions Standard Deviation":{
+                "Train": train_pred_std,
+                "Test": test_pred_std  
+           },
+           "Data Standard Deviation":{
+               "Train": train_data_std,
+               "Test": test_data_std
            }
         } 
         
@@ -505,6 +517,9 @@ class models_per_OP:
             running_rmse = 0
             running_mape = 0
             running_r2 = 0
+            running_crmsd = 0
+            running_data_std = 0
+            running_pred_std = 0
 
             # Iterate through batches
             for j, (features_sample, response_sample) in enumerate(train_loader):
@@ -520,10 +535,25 @@ class models_per_OP:
                 # Get result from loss function
                 rmse = torch.sqrt(criterion(y_pred, response_sample))
                 running_rmse += rmse
+
                 mape = mean_absolute_percentage_error(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
                 running_mape =+ mape
+
                 r2 = r2_score(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
                 running_r2 =+ r2
+
+                pred = y_pred.cpu().detach().numpy()
+                pred_median = np.median(y_pred.cpu().detach().numpy())
+                real = response_sample.cpu().detach().numpy()
+                real_median = np.median(response_sample)
+                crmsd = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+                running_crmsd =+ crmsd
+
+                pred_std = np.std(y_pred.cpu().detach().numpy())
+                running_pred_std =+ pred_std
+
+                data_std = np.std(response_sample.cpu().detach().numpy())
+                running_data_std =+ data_std
 
                 # Update weights and optimizer
                 rmse.backward()
@@ -539,7 +569,14 @@ class models_per_OP:
             # Get R2 in array type
             avg_r2 = running_r2/(j+1)
 
-            return avg_rmse, avg_mape, avg_r2
+            # Get CRMSD in array type
+            avg_crmsd = running_crmsd/(j+1)
+
+            # Get Standard Deviation in array type
+            avg_data_std = running_data_std/(j+1)
+            avg_pred_std = running_pred_std/(j+1)
+
+            return avg_rmse, avg_mape, avg_r2, avg_crmsd, avg_data_std, avg_pred_std
 
         @staticmethod
         def validate_one_epoch(model: torch.nn.Module, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
@@ -563,6 +600,9 @@ class models_per_OP:
             running_rmse = 0
             running_mape = 0
             running_r2 = 0
+            running_crmsd = 0
+            running_data_std = 0
+            running_pred_std = 0
 
             # Validate for each batch
             with torch.no_grad():
@@ -574,12 +614,28 @@ class models_per_OP:
 
                     # Predict based on the trained model
                     y_pred_v = model(features_sample)
+                    
                     rmse_v = torch.sqrt(criterion(y_pred_v, response_sample))
                     running_rmse += rmse_v
+                    
                     mape_v = mean_absolute_percentage_error(response_sample.cpu().detach(), y_pred_v.cpu().detach())
                     running_mape += mape_v
+                    
                     r2 = r2_score(response_sample.cpu().detach(), y_pred_v.cpu().detach())
                     running_r2 =+ r2
+
+                    pred = y_pred_v.cpu().detach().numpy()
+                    pred_median = np.median(y_pred_v.cpu().detach().numpy())
+                    real = response_sample.cpu().detach().numpy()
+                    real_median = np.median(response_sample.detach().numpy())
+                    crmsd = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+                    running_crmsd =+ crmsd
+
+                    pred_std = np.std(y_pred_v.cpu().detach().numpy())
+                    running_pred_std =+ pred_std
+
+                    data_std = np.std(response_sample.cpu().detach().numpy())
+                    running_data_std =+ data_std
 
                 # Get average RMSE in array type for the batches
                 avg_rmse_v = running_rmse/(j+1)
@@ -591,7 +647,14 @@ class models_per_OP:
                 # Get average R2 in array type
                 avg_r2 = running_r2/(j+1)
 
-            return avg_rmse_v, avg_mape_v, avg_r2
+                # Get average CRMSD in array type
+                avg_crmsd = running_crmsd/(j+1)
+
+                # Get standard deviation of validation data in array type
+                avg_pred_std = running_pred_std/(j+1)
+                avg_data_std = running_data_std/(j+1)
+
+            return avg_rmse_v, avg_mape_v, avg_r2, avg_crmsd, avg_data_std, avg_pred_std
 
 
         def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
@@ -692,6 +755,12 @@ class models_per_OP:
             mape_valid = []
             r2_train = []
             r2_valid = []
+            crmsd_train = []
+            crmsd_test = []
+            data_std_train = []
+            data_std_test = []
+            pred_std_train = []
+            pred_std_test = []
             best_mape_v = float('inf')
             #best_mape_train = float('inf')
 
@@ -701,17 +770,23 @@ class models_per_OP:
                 
                 ## Model training ##
                 model.train()
-                avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
+                avg_rmse, avg_mape, avg_r2, avg_crmsd, avg_data_std, avg_pred_std = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
                 rmse_train.append(avg_rmse)
                 mape_train.append(avg_mape)
                 r2_train.append(avg_r2)
+                crmsd_train.append(avg_crmsd)
+                data_std_train.append(avg_data_std)
+                pred_std_train.append(avg_pred_std)
 
                 ## Model validation ##
                 model.eval()
-                avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
+                avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, avg_data_std_v, avg_pred_std_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
                 rmse_valid.append(avg_rmse_v)
                 mape_valid.append(avg_mape_v)
                 r2_valid.append(avg_r2_v)
+                crmsd_test.append(avg_crmsd_v)
+                data_std_test.append(avg_data_std_v)
+                pred_std_test.append(avg_pred_std_v)
 
                 # Keep best model
                 is_best = avg_mape_v < best_mape_v
@@ -775,13 +850,21 @@ class models_per_OP:
                 
                 data = {
                     f"Best epoch ({best_epoch}) Train": {
-                        "RMSE": rmse_train[best_epoch],
                         "MAPE": mape_train[best_epoch],
-                        "R2": r2_train[best_epoch]},
+                        "RMSE": rmse_train[best_epoch],
+                        "R2": r2_train[best_epoch],
+                        "CRMSD": crmsd_train[best_epoch],
+                        "Prediction Standard Deviation": pred_std_train[best_epoch],
+                        "Data Standard Deviation": data_std_train[best_epoch]
+                    },
                     f"Best epoch ({best_epoch}) Validation": {
-                        "RMSE": rmse_valid[best_epoch],
                         "MAPE": mape_valid[best_epoch],
-                        "R2": r2_valid[best_epoch]},
+                        "RMSE": rmse_valid[best_epoch],
+                        "R2": r2_valid[best_epoch],
+                        "CRMSD": crmsd_test[best_epoch],
+                        "Prediction Standard Deviation": pred_std_test[best_epoch],
+                        "Data Standard Deviation": data_std_test[best_epoch]
+                    }
                 }
 
                 error_saved = pd.DataFrame(
