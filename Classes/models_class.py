@@ -518,8 +518,9 @@ class models_per_OP:
             running_mape = 0
             running_r2 = 0
             running_crmsd = 0
-            running_data_std = 0
             running_pred_std = 0
+
+            data_std = np.std(train_loader.dataset.response.values.astype(float))
 
             # Iterate through batches
             for j, (features_sample, response_sample) in enumerate(train_loader):
@@ -537,23 +538,20 @@ class models_per_OP:
                 running_rmse += rmse
 
                 mape = mean_absolute_percentage_error(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
-                running_mape =+ mape
+                running_mape += mape
 
                 r2 = r2_score(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
-                running_r2 =+ r2
+                running_r2 += r2
 
                 pred = y_pred.cpu().detach().numpy()
                 pred_median = np.median(y_pred.cpu().detach().numpy())
                 real = response_sample.cpu().detach().numpy()
                 real_median = np.median(response_sample)
-                crmsd = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
-                running_crmsd =+ crmsd
+                crmsd = np.sqrt(1/len(real)*np.sum(((pred - pred_median)-(real - real_median))**2))
+                running_crmsd += crmsd
 
                 pred_std = np.std(y_pred.cpu().detach().numpy())
-                running_pred_std =+ pred_std
-
-                data_std = np.std(response_sample.cpu().detach().numpy())
-                running_data_std =+ data_std
+                running_pred_std += pred_std
 
                 # Update weights and optimizer
                 rmse.backward()
@@ -573,10 +571,9 @@ class models_per_OP:
             avg_crmsd = running_crmsd/(j+1)
 
             # Get Standard Deviation in array type
-            avg_data_std = running_data_std/(j+1)
             avg_pred_std = running_pred_std/(j+1)
 
-            return avg_rmse, avg_mape, avg_r2, avg_crmsd, avg_data_std, avg_pred_std
+            return avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std
 
         @staticmethod
         def validate_one_epoch(model: torch.nn.Module, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
@@ -601,8 +598,10 @@ class models_per_OP:
             running_mape = 0
             running_r2 = 0
             running_crmsd = 0
-            running_data_std = 0
             running_pred_std = 0
+
+            # Get data Standard Deviation
+            data_std = np.std(test_loader.dataset.response.values.astype(float))
 
             # Validate for each batch
             with torch.no_grad():
@@ -622,20 +621,17 @@ class models_per_OP:
                     running_mape += mape_v
                     
                     r2 = r2_score(response_sample.cpu().detach(), y_pred_v.cpu().detach())
-                    running_r2 =+ r2
+                    running_r2 += r2
 
                     pred = y_pred_v.cpu().detach().numpy()
                     pred_median = np.median(y_pred_v.cpu().detach().numpy())
                     real = response_sample.cpu().detach().numpy()
                     real_median = np.median(response_sample.detach().numpy())
                     crmsd = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
-                    running_crmsd =+ crmsd
+                    running_crmsd += crmsd
 
                     pred_std = np.std(y_pred_v.cpu().detach().numpy())
-                    running_pred_std =+ pred_std
-
-                    data_std = np.std(response_sample.cpu().detach().numpy())
-                    running_data_std =+ data_std
+                    running_pred_std += pred_std
 
                 # Get average RMSE in array type for the batches
                 avg_rmse_v = running_rmse/(j+1)
@@ -652,9 +648,8 @@ class models_per_OP:
 
                 # Get standard deviation of validation data in array type
                 avg_pred_std = running_pred_std/(j+1)
-                avg_data_std = running_data_std/(j+1)
 
-            return avg_rmse_v, avg_mape_v, avg_r2, avg_crmsd, avg_data_std, avg_pred_std
+            return avg_rmse_v, avg_mape_v, avg_r2, avg_crmsd, data_std, avg_pred_std
 
 
         def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
@@ -770,22 +765,22 @@ class models_per_OP:
                 
                 ## Model training ##
                 model.train()
-                avg_rmse, avg_mape, avg_r2, avg_crmsd, avg_data_std, avg_pred_std = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
+                avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
                 rmse_train.append(avg_rmse)
                 mape_train.append(avg_mape)
                 r2_train.append(avg_r2)
                 crmsd_train.append(avg_crmsd)
-                data_std_train.append(avg_data_std)
+                data_std_train.append(data_std)
                 pred_std_train.append(avg_pred_std)
 
                 ## Model validation ##
                 model.eval()
-                avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, avg_data_std_v, avg_pred_std_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
+                avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, data_std_v, avg_pred_std_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
                 rmse_valid.append(avg_rmse_v)
                 mape_valid.append(avg_mape_v)
                 r2_valid.append(avg_r2_v)
                 crmsd_test.append(avg_crmsd_v)
-                data_std_test.append(avg_data_std_v)
+                data_std_test.append(data_std_v)
                 pred_std_test.append(avg_pred_std_v)
 
                 # Keep best model
