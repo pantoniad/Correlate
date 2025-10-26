@@ -691,12 +691,26 @@ class models_per_OP:
             elif operating_point == "C/O":
                 operating_point = "CO"
 
-            # Create saving paths
+            # Create saving paths for best model
             weights_save_path = os.path.join(error_save_path, f"Model weights")
             if os.path.exists(weights_save_path):
                 pass
             else:
                 os.mkdir(weights_save_path)
+            
+            # Create saving paths for engine specific predicitons
+            engine_pred_path = os.path.join(error_save_path, f"Engine related predictions")
+            if os.path.exists(engine_pred_path):
+                pass
+            else:
+                os.mkdir(engine_pred_path)
+            
+            # Create saving directory for saving complexity gridsearch results
+            complexity_save_path = os.path.join(error_save_path, f"Complexity plots results")
+            if os.path.exists(complexity_save_path): 
+                pass
+            else: 
+                os.mkdir(complexity_save_path)
 
             # Set device to gpu
             if device == None:
@@ -823,6 +837,13 @@ class models_per_OP:
             if not engine_specs:
                 pass
             else:
+                try:
+                    for fname in os.listdir(weights_save_path):
+                        if f"ANN_best_model_{operating_point}" in fname:
+                            os.remove(os.path.join(weights_save_path, fname))
+                except Exception as e:
+                    warnings.warn(f"Could not clean previous weights: {e}")
+                
                 # Get prediction
                 features_engine = torch.tensor([engine_specs["Pressure Ratio"], engine_specs["Rated Thrust (kN)"], engine_specs["Fuel flow (kg/s)"]]).to(device)
                 y_pred_engine = model(features_engine)
@@ -836,7 +857,7 @@ class models_per_OP:
                     "Predicted EI value (gNOx/kgFuel)": y_pred_engine.cpu().detach().numpy()
                 }, index = ["Value"]
                 )
-                engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{operating_point}.csv"))
+                engine_pred.to_csv(os.path.join(engine_pred_path, f"engine_EI_pred_{operating_point}.csv"))
 
             # Save loss function/metrics results
             if error_save_path == None:
@@ -870,14 +891,16 @@ class models_per_OP:
             
             # Gridsearch
             if include_complexity_plots == True:
-
+                
                 # Create parameters
                 layers_min = 1
                 
-                if num_fc_layers != 1:
-                    layers_max = 2*num_fc_layers
-                else:
+                if num_fc_layers == 1:
                     layers_max = 6*num_fc_layers
+                if num_fc_layers == 2:
+                    layers_max = 3*num_fc_layers
+                else:
+                    layers_max = 2*num_fc_layers
                 
                 if num_fc_layers != 1:
                     layers_step = int(abs((layers_max-layers_min)/4))
@@ -913,17 +936,23 @@ class models_per_OP:
 
                         ## Model training ##
                         model_gridsearch.train()
-                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
-                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
+                        avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2, 
+                                   "Train CRMSD": avg_crmsd, "Train data Standard Deviation": data_std, "Train data based prediction Standard Deviation": avg_pred_std}
                         line_df = pd.DataFrame(data = line_dt, index =["Value"])
                         data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
 
                         ## Model validation ##
                         model.eval()
-                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
-                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
+                        avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, data_std_v, avg_pred_std_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v,
+                                   "Test CRMSD": avg_crmsd_v, "Tets data Standard Deviation": data_std_v, "Test data based prediciton Standard Deviation": avg_pred_std_v}
                         line_df = pd.DataFrame(data = line_dt, index = ["Value"])
                         data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
+
+                # Save gridsearch results
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_LAYERS_{type(model).__name__}_{operating_point}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_LAYERS_{type(model).__name__}_{operating_point}.csv"))
 
                 # Complexity plot
                 data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Deep Layers",
@@ -959,18 +988,22 @@ class models_per_OP:
 
                         ## Model training ##
                         model_gridsearch.train()
-                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
                         line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
                         line_df = pd.DataFrame(data = line_dt, index =["Value"])
                         data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
 
                         ## Model validation ##
                         model.eval()
-                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, data_std_v, avg_pred_std_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
                         line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
                         line_df = pd.DataFrame(data = line_dt, index = ["Value"])
                         data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
-                
+               
+                # Save gridsearch results
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_NEURONS_{type(model).__name__}_{operating_point}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_NEURONS_{type(model).__name__}_{operating_point}.csv"))
+ 
                 # Complexity plot
                 data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Neurons",
                                                     given_variable_value = max(num_nodes_per_layer), epochs = epochs,

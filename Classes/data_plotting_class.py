@@ -564,7 +564,7 @@ class data_plotting:
 
     @staticmethod
     def gbr_complexity_plot(model_params: dict,  X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame,
-                            y_test: pd.DataFrame, op: str, model: str, plots_save_path: str = None):
+                            y_test: pd.DataFrame, op: str, model: str, plots_save_path: str = None, error_save_path: str = None):
 
         """    
         gbr_complexity_plot: Complexity plot generation method for the Gradient Boosting algorithm. This method 
@@ -585,8 +585,7 @@ class data_plotting:
         Output:
         - Plots in the plots_save_path
         """ 
-
-        # Unpack
+                # Unpack
         criterion = model_params[op]["Criterion"]
         learning_rate = model_params[op]["Learning rate"]
         subsample_size = model_params[op]["Subsample size"]
@@ -643,17 +642,37 @@ class data_plotting:
                 test_rmse = root_mean_squared_error(y_test, y_test_pred)
                 train_r2 = r2_score(y_train, y_train_pred)
                 test_r2 = r2_score(y_test, y_test_pred)
+                train_data_std = np.std(y_train.values.astype(float))
+                test_data_std = np.std(y_test.values.astype(float))
+                train_pred_std = np.std(y_train_pred)
+                test_pred_std = np.std(y_test_pred)
+
+                # CRMSD - Train
+                pred = y_train_pred
+                pred_median = np.median(y_train_pred)
+                real = y_train.values.astype(float) 
+                real_median = np.median(y_train.values.astype(float))
+                crmsd_train = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+
+                # CRMSD - Test
+                pred = y_test_pred
+                pred_median = np.median(y_test_pred)
+                real = y_test.values.astype(float) 
+                real_median = np.median(y_test.values.astype(float))
+                crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
 
                 # Prepare data for plotting
-                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2}
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2,
+                           "Train CRMSD": crmsd_train, "Train data based prediction": train_pred_std, "Train data Standard Deviation": train_data_std}
                 line_df = pd.DataFrame(data = line_dt, index=["Value"])
                 data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
 
-                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2}
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2,
+                           "Test CRMSD": crmsd_test, "Test data based prediciton": test_pred_std, "Test data Standard Deviation": test_data_std}
                 line_df = pd.DataFrame(data = line_dt, index=["Value"])
                 data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index=True)
 
-               # Increase estimator
+                # Increase estimator
                 estimator += n_estimators_step
 
         # Time to plot 
@@ -699,6 +718,7 @@ class data_plotting:
         fig.suptitle(f"R² vs Number of Estimators for Various Tree Depths - {op}", fontsize="x-large")
         fig.tight_layout()
         
+        # Save plots and metrics
         if plots_save_path == None:
             pass
         else:
@@ -711,8 +731,28 @@ class data_plotting:
             else:
                 fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
         
-        #plt.show()
+        if error_save_path == None:
+            pass
+        else:
+            # Create saving paths
+            complexity_save_path = os.path.join(error_save_path, f"Complexity plots results")
+            if os.path.exists(complexity_save_path): 
+                pass
+            else: 
+                os.mkdir(complexity_save_path)
 
+            if op == "T/O":
+                op = "Take-off"
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{type(model).__name__}_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{type(model).__name__}_{op}.csv"))
+            elif op == "C/O":
+                op = "Climb-out"
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{type(model).__name__}_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{type(model).__name__}_{op}.csv"))
+            else:
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{type(model).__name__}_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{type(model).__name__}_{op}.csv"))
+       
         ## Seconde case - Tree depth vs error + Estimators
         n_estimators_min = 1
         n_estimators_max = 4*n_estimators+n_estimators_min
@@ -761,6 +801,25 @@ class data_plotting:
                 test_rmse = root_mean_squared_error(y_test, y_test_pred)
                 train_r2 = r2_score(y_train, y_train_pred)
                 test_r2 = r2_score(y_test, y_test_pred)
+                train_data_std = np.std(y_train.values.astype(float))
+                test_data_std = np.std(y_test.values.astype(float))
+                train_pred_std = np.std(y_train_pred)
+                test_pred_std = np.std(y_test_pred)
+
+                # CRMSD - Train
+                pred = y_train_pred
+                pred_median = np.median(y_train_pred)
+                real = y_train.values.astype(float) 
+                real_median = np.median(y_train.values.astype(float))
+                crmsd_train = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+
+                # CRMSD - Test
+                pred = y_test_pred
+                pred_median = np.median(y_test_pred)
+                real = y_test.values.astype(float) 
+                real_median = np.median(y_test.values.astype(float))
+                crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+
 
                 # Prepare data for plotting
                 line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2}
@@ -819,6 +878,7 @@ class data_plotting:
         fig.suptitle(f"R² vs Tree Depth for Various Estimator Values - {op}", fontsize="x-large")
         fig.tight_layout()
 
+        # Save plots and metrics
         if plots_save_path == None:
             pass
         else:
@@ -830,5 +890,27 @@ class data_plotting:
                 fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
             else:
                 fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+        
+        if error_save_path == None:
+            pass
+        else:
+            # Create saving paths
+            complexity_save_path = os.path.join(error_save_path, f"Complexity plots results")
+            if os.path.exists(complexity_save_path): 
+                pass
+            else: 
+                os.mkdir(complexity_save_path)
 
+            if op == "T/O":
+                op = "Take-off"
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{type(model).__name__}_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{type(model).__name__}_{op}.csv"))
+            elif op == "C/O":
+                op = "Climb-out"
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{type(model).__name__}_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{type(model).__name__}_{op}.csv"))
+            else:
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{type(model).__name__}_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{type(model).__name__}_{op}.csv"))
+    
         plt.show()
