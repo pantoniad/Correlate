@@ -7,6 +7,7 @@ import matplotlib.gridspec as gridspec
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, root_mean_squared_error
+import scipy
 
 import warnings
 from typing import Optional
@@ -661,14 +662,20 @@ class data_plotting:
                 real_median = np.median(y_test.values.astype(float))
                 crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
 
+                # Pearson
+                pearson_coeff_train = scipy.stats.pearsonr(y_train.astype(float), y_train_pred.astype(float)).statistic
+                pearson_coeff_test = scipy.stats.pearsonr(y_test.astype(float), y_test_pred.astype(float)).statistic
+
                 # Prepare data for plotting
                 line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2,
-                           "Train CRMSD": crmsd_train, "Train data based prediction": train_pred_std, "Train data Standard Deviation": train_data_std}
+                           "Train CRMSD": crmsd_train, "Train data based prediction": train_pred_std, "Train data Standard Deviation": train_data_std,
+                           "Train Pearson Correlation coefficient": pearson_coeff_train}
                 line_df = pd.DataFrame(data = line_dt, index=["Value"])
                 data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
 
                 line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2,
-                           "Test CRMSD": crmsd_test, "Test data based prediciton": test_pred_std, "Test data Standard Deviation": test_data_std}
+                           "Test CRMSD": crmsd_test, "Test data based prediciton": test_pred_std, "Test data Standard Deviation": test_data_std,
+                           "Test Pearson Correlation coefficient": pearson_coeff_test}
                 line_df = pd.DataFrame(data = line_dt, index=["Value"])
                 data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index=True)
 
@@ -724,12 +731,12 @@ class data_plotting:
         else:
             if op == "T/O":
                 op = "Take-off"
-                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{op}.png"))
             elif op == "C/O":
                 op = "Climb-out"
-                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{op}.png"))
             else:
-                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{type(model).__name__}_{op}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_estimator_{op}.png"))
         
         if error_save_path == None:
             pass
@@ -743,15 +750,15 @@ class data_plotting:
 
             if op == "T/O":
                 op = "Take-off"
-                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{type(model).__name__}_{op}.csv"))
-                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{type(model).__name__}_{op}.csv"))
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{op}.csv"))
             elif op == "C/O":
                 op = "Climb-out"
-                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{type(model).__name__}_{op}.csv"))
-                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{type(model).__name__}_{op}.csv"))
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{op}.csv"))
             else:
-                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{type(model).__name__}_{op}.csv"))
-                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{type(model).__name__}_{op}.csv"))
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_estimator_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_estimator_{op}.csv"))
        
         ## Seconde case - Tree depth vs error + Estimators
         n_estimators_min = 1
@@ -820,13 +827,18 @@ class data_plotting:
                 real_median = np.median(y_test.values.astype(float))
                 crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
 
+                # Pearson coefficient
+                pearson_coeff_train = scipy.stats.pearsonr(y_train.astype(float), y_train_pred.astype(float)).statistic
+                pearson_coeff_test = scipy.stats.pearsonr(y_test.astype(float), y_test_pred.astype(float)).statistic
 
                 # Prepare data for plotting
-                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2}
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Train MAPE": train_mape, "Train RMSE": train_rmse, "Train R2": train_r2,
+                           "Train Pearson Correlation coefficient": pearson_coeff_train}
                 line_df = pd.DataFrame(data = line_dt, index=["Value"])
                 data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
 
-                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2}
+                line_dt = {"Tree depth": depth, "No.Estimators": estimator, "Test MAPE": test_mape, "Test RMSE": test_rmse, "Test R2": test_r2,
+                           "Test Pearson Correlation coefficient": pearson_coeff_test}
                 line_df = pd.DataFrame(data = line_dt, index=["Value"])
                 data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index=True)
 
@@ -884,12 +896,12 @@ class data_plotting:
         else:
             if op == "T/O":
                 op = "Take-off"
-                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{op}.png"))
             elif op == "C/O":
                 op = "Climb-out"
-                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{op}.png"))
             else:
-                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{type(model).__name__}_{op}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"complexity_plot_depth_{op}.png"))
         
         if error_save_path == None:
             pass
@@ -903,14 +915,26 @@ class data_plotting:
 
             if op == "T/O":
                 op = "Take-off"
-                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{type(model).__name__}_{op}.csv"))
-                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{type(model).__name__}_{op}.csv"))
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{op}.csv"))
             elif op == "C/O":
                 op = "Climb-out"
-                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{type(model).__name__}_{op}.csv"))
-                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{type(model).__name__}_{op}.csv"))
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{op}.csv"))
             else:
-                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{type(model).__name__}_{op}.csv"))
-                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{type(model).__name__}_{op}.csv"))
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_depth_{op}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_depth_{op}.csv"))
     
         plt.show()
+
+@staticmethod
+def taylor_diagrams():
+
+    """
+    taylor_diagrams:
+
+    Inputs:
+
+    Outputs:
+    
+    """

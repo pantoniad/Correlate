@@ -208,7 +208,7 @@ def polynomial_main(model_structure: dict, engine_specs: dict = [], include_bias
         }, index = ["Value"]
         )
 
-        oper = "TO"
+        oper = "Take-off"
         engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
 
 
@@ -284,7 +284,7 @@ def polynomial_main(model_structure: dict, engine_specs: dict = [], include_bias
         }, index = ["Value"]
         )
 
-        oper = "CO"
+        oper = "Climb-out"
         engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
 
  

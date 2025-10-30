@@ -8,7 +8,7 @@ save_results = True
 ## Primary inputs
 primary_inputs = {
     "Idle": {
-        "Train split": 0.5,
+        "Train split": 0.6,
         "Include development split": False,
         "Number of estimators": 3500,
         "Learning rate": 1e-3,
@@ -17,7 +17,7 @@ primary_inputs = {
         "Subsample size": 0.4
     },
     "T/O":{
-        "Train split": 0.5,
+        "Train split": 0.6,
         "Include development split": False,
         "Number of estimators": 3500,
         "Learning rate": 1e-3,
@@ -26,7 +26,7 @@ primary_inputs = {
         "Subsample size": 0.4
     },
     "C/O": {
-        "Train split": 0.5,
+        "Train split": 0.6,
         "Include development split": False,
         "Number of estimators": 1250,
         "Learning rate": 1e-3,
@@ -35,7 +35,7 @@ primary_inputs = {
         "Subsample size": 0.4
     },
     "App": {
-        "Train split": 0.5,
+        "Train split": 0.6,
         "Include development split": False,
         "Number of estimators": 4000,
         "Learning rate": 1e-3,
