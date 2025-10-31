@@ -3,8 +3,8 @@ from ANN_main import ann_main
 ## Model parameters ##
 # Secondary inputs
 device = "cpu"
-include_plots = True
-include_complexity_plots = False
+include_plots = False
+include_complexity_plots = True
 save_results = True
 
 # Main inputs - Structure of ANNs per operating point 

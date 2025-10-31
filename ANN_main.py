@@ -208,7 +208,7 @@ def ann_main(model_structure: dict, engine_specs: dict, device: str, include_plo
     test_data = pd.concat([X_test, y_test], axis = 1)
 
     # Initialize model
-    model_idle = models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
+    models_per_OP.ann.ann_creation(operating_point = op, train_data=train_data, test_data=test_data, 
                                 epochs = epochs, learning_rate = learning_rate, 
                                 optimizer_sel = optimizer, activation_f = activation,
                                 num_fc_layers = fclayers, num_nodes_per_layer = num_nodes , 

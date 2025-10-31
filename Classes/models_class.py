@@ -8,6 +8,8 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, root_mean_squared_error
 from sklearn.model_selection import learning_curve
 
+import scipy
+
 from typing import Optional
 import warnings
 import os
@@ -198,27 +200,35 @@ class models_per_OP:
         y_test = test["Y test"]
         y_test_pred = test["Y test Pred"]
 
-        # Evaluate results
+        # Evalutation metrics
         train_mape = mean_absolute_percentage_error(y_train, y_train_pred)
         test_mape = mean_absolute_percentage_error(y_test, y_test_pred)
         train_rmse = root_mean_squared_error(y_train, y_train_pred)
         test_rmse = root_mean_squared_error(y_test, y_test_pred)
         train_r2 = r2_score(y_train, y_train_pred)
         test_r2 = r2_score(y_test, y_test_pred)
+        train_data_std = np.std(y_train.values.astype(float))
+        test_data_std = np.std(y_test.values.astype(float))
+        train_pred_std = np.std(y_train_pred.values.astype(float))
+        test_pred_std = np.std(y_test_pred.values.astype(float))
 
         # CRMSD - Train
-        #pred = y_train_pred.values.astype(float)
-        #pred_median = np.median(y_test_pred.values.astype(float))
-        #real = y_test.values.astype(float) 
-        #real_median = np.median(y_test.values.astype(float))
-        #crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+        pred = y_train_pred.values.astype(float)
+        pred_mean = np.nanmean(y_train_pred.values.astype(float))
+        real = y_train.values.astype(float) 
+        real_mean = np.nanmean(y_train.values.astype(float))
+        crmsd_train = np.sqrt(1/len(real)*np.sum(((pred - pred_mean)-(real - real_mean))**2))
 
         # CRMSD - Test
         pred = y_test_pred.values.astype(float)
-        pred_median = np.median(y_test_pred.values.astype(float))
+        pred_mean = np.nanmean(y_test_pred.values.astype(float))
         real = y_test.values.astype(float) 
-        real_median = np.median(y_test.values.astype(float))
-        crmsd_test = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+        real_mean = np.nanmean(y_test.values.astype(float))
+        crmsd_test = np.sqrt(1/len(real)*np.sum(((pred - pred_mean)-(real - real_mean))**2))
+
+        # Pearson coefficient
+        pearson_coeff_train = scipy.stats.pearsonr(y_train.values.astype(float), y_train_pred.values.astype(float))
+        pearson_coeff_test = scipy.stats.pearsonr(y_test.values.astype(float), y_test_pred.values.astype(float))
 
         # Results to dataframe
         d = {
@@ -235,8 +245,20 @@ class models_per_OP:
                "Test": test_r2
            },
            "CRMSD":{
-               "Train": "-",
+               "Train": crmsd_train,
                "Test": crmsd_test
+           },
+           "Predictions Standard Deviation":{
+                "Train": train_pred_std,
+                "Test": test_pred_std  
+           },
+           "Data Standard Deviation":{
+               "Train": train_data_std,
+               "Test": test_data_std
+           },
+           "Pearson Correlation coefficient":{
+               "Train": pearson_coeff_train.statistic,
+               "Test": pearson_coeff_test.statistic
            }
         } 
         
@@ -505,6 +527,11 @@ class models_per_OP:
             running_rmse = 0
             running_mape = 0
             running_r2 = 0
+            running_crmsd = 0
+            running_pred_std = 0
+            running_pearson = 0 
+
+            data_std = np.std(train_loader.dataset.response.values.astype(float))
 
             # Iterate through batches
             for j, (features_sample, response_sample) in enumerate(train_loader):
@@ -520,10 +547,25 @@ class models_per_OP:
                 # Get result from loss function
                 rmse = torch.sqrt(criterion(y_pred, response_sample))
                 running_rmse += rmse
+
                 mape = mean_absolute_percentage_error(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
-                running_mape =+ mape
+                running_mape += mape
+
                 r2 = r2_score(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
-                running_r2 =+ r2
+                running_r2 += r2
+
+                pred = y_pred.cpu().detach().numpy()
+                pred_median = np.median(y_pred.cpu().detach().numpy())
+                real = response_sample.cpu().detach().numpy()
+                real_median = np.median(response_sample)
+                crmsd = np.sqrt(1/len(real)*np.sum(((pred - pred_median)-(real - real_median))**2))
+                running_crmsd += crmsd
+
+                pred_std = np.std(y_pred.cpu().detach().numpy())
+                running_pred_std += pred_std
+
+                pearson = scipy.stats.pearsonr(response_sample.cpu().detach().numpy(), y_pred.cpu().detach().numpy())
+                running_pearson += pearson.statistic[0]
 
                 # Update weights and optimizer
                 rmse.backward()
@@ -539,7 +581,16 @@ class models_per_OP:
             # Get R2 in array type
             avg_r2 = running_r2/(j+1)
 
-            return avg_rmse, avg_mape, avg_r2
+            # Get CRMSD in array type
+            avg_crmsd = running_crmsd/(j+1)
+
+            # Get Standard Deviation in array type
+            avg_pred_std = running_pred_std/(j+1)
+
+            # Get Pearson Coefficient in array type
+            avg_pearson = running_pearson/(j+1)
+
+            return avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std, avg_pearson
 
         @staticmethod
         def validate_one_epoch(model: torch.nn.Module, criterion: torch.nn, test_loader: torch.utils.data.DataLoader, device: str):
@@ -563,6 +614,12 @@ class models_per_OP:
             running_rmse = 0
             running_mape = 0
             running_r2 = 0
+            running_crmsd = 0
+            running_pred_std = 0
+            running_pearson = 0 
+
+            # Get data Standard Deviation
+            data_std = np.std(test_loader.dataset.response.values.astype(float))
 
             # Validate for each batch
             with torch.no_grad():
@@ -574,12 +631,28 @@ class models_per_OP:
 
                     # Predict based on the trained model
                     y_pred_v = model(features_sample)
+                    
                     rmse_v = torch.sqrt(criterion(y_pred_v, response_sample))
                     running_rmse += rmse_v
+                    
                     mape_v = mean_absolute_percentage_error(response_sample.cpu().detach(), y_pred_v.cpu().detach())
                     running_mape += mape_v
+                    
                     r2 = r2_score(response_sample.cpu().detach(), y_pred_v.cpu().detach())
-                    running_r2 =+ r2
+                    running_r2 += r2
+
+                    pred = y_pred_v.cpu().detach().numpy()
+                    pred_median = np.median(y_pred_v.cpu().detach().numpy())
+                    real = response_sample.cpu().detach().numpy()
+                    real_median = np.median(response_sample.detach().numpy())
+                    crmsd = np.sqrt(1/len(pred)*np.sum(((pred - pred_median)-(real - real_median))**2))
+                    running_crmsd += crmsd
+
+                    pred_std = np.std(y_pred_v.cpu().detach().numpy())
+                    running_pred_std += pred_std
+
+                    pearson = scipy.stats.pearsonr(response_sample.cpu().detach().numpy(), y_pred_v.cpu().detach().numpy())
+                    running_pearson += pearson.statistic[0]
 
                 # Get average RMSE in array type for the batches
                 avg_rmse_v = running_rmse/(j+1)
@@ -591,7 +664,16 @@ class models_per_OP:
                 # Get average R2 in array type
                 avg_r2 = running_r2/(j+1)
 
-            return avg_rmse_v, avg_mape_v, avg_r2
+                # Get average CRMSD in array type
+                avg_crmsd = running_crmsd/(j+1)
+
+                # Get standard deviation of validation data in array type
+                avg_pred_std = running_pred_std/(j+1)
+
+                # Get Peasron Coefficient in array type
+                avg_pearson = running_pearson/(j+1)
+
+            return avg_rmse_v, avg_mape_v, avg_r2, avg_crmsd, data_std, avg_pred_std, avg_pearson
 
 
         def ann_creation(operating_point: str, train_data: pd.DataFrame, test_data: pd.DataFrame, epochs: int,
@@ -629,16 +711,30 @@ class models_per_OP:
             """
             # Correct operating point for saving
             if operating_point == "T/O":
-                operating_point = "TO"
+                operating_point = "Take-off"
             elif operating_point == "C/O":
-                operating_point = "CO"
+                operating_point = "Climb-out"
 
-            # Create saving paths
+            # Create saving paths for best model
             weights_save_path = os.path.join(error_save_path, f"Model weights")
             if os.path.exists(weights_save_path):
                 pass
             else:
                 os.mkdir(weights_save_path)
+            
+            # Create saving paths for engine specific predicitons
+            engine_pred_path = os.path.join(error_save_path, f"Engine related predictions")
+            if os.path.exists(engine_pred_path):
+                pass
+            else:
+                os.mkdir(engine_pred_path)
+            
+            # Create saving directory for saving complexity gridsearch results
+            complexity_save_path = os.path.join(error_save_path, f"Complexity plots results")
+            if os.path.exists(complexity_save_path): 
+                pass
+            else: 
+                os.mkdir(complexity_save_path)
 
             # Set device to gpu
             if device == None:
@@ -692,6 +788,14 @@ class models_per_OP:
             mape_valid = []
             r2_train = []
             r2_valid = []
+            crmsd_train = []
+            crmsd_test = []
+            data_std_train = []
+            data_std_test = []
+            pred_std_train = []
+            pred_std_test = []
+            pearson_train = []
+            pearson_test = []
             best_mape_v = float('inf')
             #best_mape_train = float('inf')
 
@@ -701,17 +805,25 @@ class models_per_OP:
                 
                 ## Model training ##
                 model.train()
-                avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
+                avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std, avg_pearson = models_per_OP.ann.train_one_epoch(model = model, optimizer = optimizer, criterion = criterion, train_loader = train_loader, device = device)
                 rmse_train.append(avg_rmse)
                 mape_train.append(avg_mape)
                 r2_train.append(avg_r2)
+                crmsd_train.append(avg_crmsd)
+                data_std_train.append(data_std)
+                pred_std_train.append(avg_pred_std)
+                pearson_train.append(avg_pearson)
 
                 ## Model validation ##
                 model.eval()
-                avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
+                avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, data_std_v, avg_pred_std_v, avg_pearson_v = models_per_OP.ann.validate_one_epoch(model = model, criterion=criterion, test_loader=test_loader, device=device)
                 rmse_valid.append(avg_rmse_v)
                 mape_valid.append(avg_mape_v)
                 r2_valid.append(avg_r2_v)
+                crmsd_test.append(avg_crmsd_v)
+                data_std_test.append(data_std_v)
+                pred_std_test.append(avg_pred_std_v)
+                pearson_test.append(avg_pearson_v)
 
                 # Keep best model
                 is_best = avg_mape_v < best_mape_v
@@ -753,6 +865,13 @@ class models_per_OP:
             if not engine_specs:
                 pass
             else:
+                try:
+                    for fname in os.listdir(weights_save_path):
+                        if f"ANN_best_model_{operating_point}" in fname:
+                            os.remove(os.path.join(weights_save_path, fname))
+                except Exception as e:
+                    warnings.warn(f"Could not clean previous weights: {e}")
+                
                 # Get prediction
                 features_engine = torch.tensor([engine_specs["Pressure Ratio"], engine_specs["Rated Thrust (kN)"], engine_specs["Fuel flow (kg/s)"]]).to(device)
                 y_pred_engine = model(features_engine)
@@ -766,7 +885,7 @@ class models_per_OP:
                     "Predicted EI value (gNOx/kgFuel)": y_pred_engine.cpu().detach().numpy()
                 }, index = ["Value"]
                 )
-                engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{operating_point}.csv"))
+                engine_pred.to_csv(os.path.join(engine_pred_path, f"engine_EI_pred_{operating_point}.csv"))
 
             # Save loss function/metrics results
             if error_save_path == None:
@@ -775,13 +894,23 @@ class models_per_OP:
                 
                 data = {
                     f"Best epoch ({best_epoch}) Train": {
-                        "RMSE": rmse_train[best_epoch],
                         "MAPE": mape_train[best_epoch],
-                        "R2": r2_train[best_epoch]},
+                        "RMSE": rmse_train[best_epoch],
+                        "R2": r2_train[best_epoch],
+                        "CRMSD": crmsd_train[best_epoch],
+                        "Predictions Standard Deviation": pred_std_train[best_epoch],
+                        "Data Standard Deviation": data_std_train[best_epoch],
+                        "Pearson Correlation coefficient": pearson_train[best_epoch]
+                    },
                     f"Best epoch ({best_epoch}) Validation": {
-                        "RMSE": rmse_valid[best_epoch],
                         "MAPE": mape_valid[best_epoch],
-                        "R2": r2_valid[best_epoch]},
+                        "RMSE": rmse_valid[best_epoch],
+                        "R2": r2_valid[best_epoch],
+                        "CRMSD": crmsd_test[best_epoch],
+                        "Predictions Standard Deviation": pred_std_test[best_epoch],
+                        "Data Standard Deviation": data_std_test[best_epoch],
+                        "Pearson Correlation coefficient": pearson_test[best_epoch]
+                    }
                 }
 
                 error_saved = pd.DataFrame(
@@ -792,14 +921,16 @@ class models_per_OP:
             
             # Gridsearch
             if include_complexity_plots == True:
-
+                
                 # Create parameters
                 layers_min = 1
                 
-                if num_fc_layers != 1:
-                    layers_max = 2*num_fc_layers
-                else:
+                if num_fc_layers == 1:
                     layers_max = 6*num_fc_layers
+                if num_fc_layers == 2:
+                    layers_max = 3*num_fc_layers
+                else:
+                    layers_max = 2*num_fc_layers
                 
                 if num_fc_layers != 1:
                     layers_step = int(abs((layers_max-layers_min)/4))
@@ -813,8 +944,8 @@ class models_per_OP:
                 neurons_step = int(abs((neurons_max-neurons_min)/4)) if max(num_nodes_per_layer) != 1 else 1
 
                 # Initialize saving dataframes
-                data_to_plot_train = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Train MAPE", "Train RMSE", "Train R2"])
-                data_to_plot_test = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Test MAPE", "Test RMSE", "Test R2"])
+                data_to_plot_train = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Train MAPE", "Train RMSE", "Train R2", "Train Pearson Correlation coefficient"])
+                data_to_plot_test = pd.DataFrame(columns = ["No. Deep Layers", "Epoch", "Test MAPE", "Test RMSE", "Test R2", "Test Pearson Correlation coefficient"])
 
                 # Gridsearch - No. Layers
                 num_neurons = 5
@@ -835,17 +966,25 @@ class models_per_OP:
 
                         ## Model training ##
                         model_gridsearch.train()
-                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
-                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
+                        avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std, avg_pearson = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2, 
+                                   "Train CRMSD": avg_crmsd, "Train data Standard Deviation": data_std, "Train data based prediction Standard Deviation": avg_pred_std,
+                                   "Train Pearson Correlation coefficient": avg_pearson}
                         line_df = pd.DataFrame(data = line_dt, index =["Value"])
                         data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
 
                         ## Model validation ##
                         model.eval()
-                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
-                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
+                        avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, data_std_v, avg_pred_std_v, avg_pearson_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        line_dt = {"No. Deep Layers": layers, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v,
+                                   "Test CRMSD": avg_crmsd_v, "Tets data Standard Deviation": data_std_v, "Test data based prediciton Standard Deviation": avg_pred_std_v,
+                                   "Test Pearson Correlation coefficient": avg_pearson_v}
                         line_df = pd.DataFrame(data = line_dt, index = ["Value"])
                         data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
+
+                # Save gridsearch results
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_LAYERS_{operating_point}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_LAYERS_{operating_point}.csv"))
 
                 # Complexity plot
                 data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Deep Layers",
@@ -881,18 +1020,22 @@ class models_per_OP:
 
                         ## Model training ##
                         model_gridsearch.train()
-                        avg_rmse, avg_mape, avg_r2 = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
+                        avg_rmse, avg_mape, avg_r2, avg_crmsd, data_std, avg_pred_std, avg_pearson = models_per_OP.ann.train_one_epoch(model = model_gridsearch, optimizer = optimizer_new, criterion = criterion, train_loader = train_loader, device = device)
                         line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Train MAPE": avg_mape, "Train RMSE": avg_rmse, "Train R2": avg_r2}
                         line_df = pd.DataFrame(data = line_dt, index =["Value"])
                         data_to_plot_train = pd.concat([data_to_plot_train, line_df], axis = 0, ignore_index=True)
 
                         ## Model validation ##
                         model.eval()
-                        avg_rmse_v, avg_mape_v, avg_r2_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
+                        avg_rmse_v, avg_mape_v, avg_r2_v, avg_crmsd_v, data_std_v, avg_pred_std_v, avg_pearson_v = models_per_OP.ann.validate_one_epoch(model = model_gridsearch, criterion=criterion, test_loader=test_loader, device=device)
                         line_dt = {"No. Neurons": neurons, "Epoch": epoch, "Test MAPE": avg_mape_v, "Test RMSE": avg_rmse_v, "Test R2": avg_r2_v}
                         line_df = pd.DataFrame(data = line_dt, index = ["Value"])
                         data_to_plot_test = pd.concat([data_to_plot_test, line_df], axis = 0, ignore_index = True)
-                
+               
+                # Save gridsearch results
+                data_to_plot_train.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_train_NEURONS_{type(model).__name__}_{operating_point}.csv"))
+                data_to_plot_test.to_csv(os.path.join(complexity_save_path, f"complexity_metrics_test_NEURONS_{type(model).__name__}_{operating_point}.csv"))
+ 
                 # Complexity plot
                 data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Neurons",
                                                     given_variable_value = max(num_nodes_per_layer), epochs = epochs,

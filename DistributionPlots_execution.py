@@ -39,14 +39,14 @@ correlation_equations = {
     "Export LaTeX table": True,
     "Becker": False,
     "Perkavec": False ,
-    "Rokke": False,
+    "Rokke": True,
     "Lewis": True,
     "Kyprianidis": True,
     "Novelo": True,
     "Lefebvre": False,
     "GasTurb": False,
-    "General Electric": False,
-    "Aeronox": False
+    "General Electric": True,
+    "Aeronox": True
 }
 
 fuel_flow_method = {

@@ -96,6 +96,13 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
     if not engine_specs:
         pass
     else:
+        # Get saving path
+        engine_pred_path = os.path.join(error_save_path, f"Engine related predictions")
+        if os.path.exists(engine_pred_path):
+            pass
+        else:
+            os.mkdir(engine_pred_path)
+
         # Get prediction
         engine_specs_df_idle = pd.DataFrame(
             data = {
@@ -117,7 +124,9 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
             "Predicted EI value (gNOx/kgFuel)": y_pred_engine
         }, index = ["Value"]
         )
-        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{op}.csv"))
+
+        # Save results
+        engine_pred.to_csv(os.path.join(engine_pred_path, fr"engine_EI_pred_{op}.csv"))
 
 
     # Get metrics
@@ -138,7 +147,7 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
     if include_complexity_plot == True:
         data_plotting.gbr_complexity_plot(model_params=model_structure, 
                         X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
-                        op = op, model = model, plots_save_path = plots_save_path)
+                        op = op, model = model, plots_save_path = plots_save_path, error_save_path = error_save_path)
     else: pass
 
     ## Take-off
@@ -198,7 +207,7 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
         )
 
         oper = "TO"
-        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
+        engine_pred.to_csv(os.path.join(engine_pred_path, f"engine_EI_pred_{oper}.csv")) 
 
 
     # Get metrics
@@ -219,7 +228,7 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
     if include_complexity_plot == True:
         data_plotting.gbr_complexity_plot(model_params=model_structure, 
                         X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
-                        op = op, model = model, plots_save_path = plots_save_path)
+                        op = op, model = model, plots_save_path = plots_save_path, error_save_path = error_save_path)
     else: pass
 
     ## Climb-out
@@ -280,7 +289,7 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
         )
 
         oper = "CO"
-        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{oper}.csv")) 
+        engine_pred.to_csv(os.path.join(engine_pred_path, f"engine_EI_pred_{oper}.csv")) 
     
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
@@ -299,7 +308,7 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
     if include_complexity_plot == True:
         data_plotting.gbr_complexity_plot(model_params=model_structure, 
                         X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
-                        op = op, model = model, plots_save_path = plots_save_path)
+                        op = op, model = model, plots_save_path = plots_save_path, error_save_path = error_save_path)
     else: pass
 
     ## Approach
@@ -359,7 +368,7 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
         }, index = ["Value"]
         )
 
-        engine_pred.to_csv(os.path.join(error_save_path, f"engine_EI_pred_{op}.csv")) 
+        engine_pred.to_csv(os.path.join(engine_pred_path, f"engine_EI_pred_{op}.csv")) 
 
     # Get metrics
     metrics = gbr.performance_metrics(train = train_results, test = test_results,
@@ -377,5 +386,5 @@ def gbr_main(model_structure: dict, engine_specs: dict = [], include_learning_cu
     if include_complexity_plot == True:
         data_plotting.gbr_complexity_plot(model_params=model_structure, 
                         X_train= X_train, y_train = y_train, X_test = X_test, y_test = y_test,
-                        op = op, model = model, plots_save_path = plots_save_path)
+                        op = op, model = model, plots_save_path = plots_save_path, error_save_path = error_save_path)
     else: pass
