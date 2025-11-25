@@ -22,9 +22,9 @@ class data_plotting:
 
     def __init__(self, df_all: pd.DataFrame, 
                  mean_points: pd.DataFrame,
-                 dtCorrs: Optional[pd.DataFrame] = None,
-                 exp: Optional[pd.DataFrame] = None,
-                 dtmodels: Optional[pd.DataFrame] = None
+                 dtCorrs: pd.DataFrame,
+                 exp: pd.DataFrame,
+                 dtmodels: pd.DataFrame
                 ):
         """
         Inputs:
@@ -49,16 +49,19 @@ class data_plotting:
         # Required
         self.df_all = df_all
         self.mean_points = mean_points
+        self.dtCorrs = dtCorrs
+        self.exp = exp
+        self.dtmodels = dtmodels
         
         # Optional
-        if dtCorrs.empty == False:
-            self.dtCorrs = dtCorrs
+        #if dtCorrs.empty == False:
+        #    self.dtCorrs = dtCorrs
         
-        if exp.empty == False:
-            self.exp = exp
+        #if exp.empty == False:
+        #    self.exp = exp
 
-        if dtmodels.empty == False:
-            self.dtmodels = dtmodels
+        #if dtmodels.empty == False:
+        #    self.dtmodels = dtmodels
         
     def distribution_plots(self,
                            method: str, 
@@ -105,13 +108,19 @@ class data_plotting:
             a Dot, Swarm, Violin or Box plot is generated
         
         """
-        
+
         # Extract data from self
         df_all = self.df_all
         mean_points = self.mean_points
         dtCorrs = self.dtCorrs
         exp = self.exp 
         dtmodels = self.dtmodels
+
+        # Check if all dataframes are empty 
+        if df_all.empty and mean_points.empty and dtCorrs.empty and exp.empty and dtmodels.empty:
+            print()
+            print("No data passed. Terminating fuction")
+            return
         
         # Valid distribution plot methods 
         valid_methods = ["Boxplot", "Swarmplot", "Dotplot", "Violinplot"]
@@ -203,61 +212,73 @@ class data_plotting:
         
         # Correlation equations value plotting
         pointer = 0
-        for i in dtCorrs.keys():
-            
-            # Add the data to the plot
-            plt.plot(
-                labels, 
-                dtCorrs.iloc[:][i],
-                lineStyle[pointer], 
-                label = i,
-                markersize = 10
-            )
+        if dtCorrs.empty:
+            pass
+        else:
+            for i in dtCorrs.keys():
+                
+                # Add the data to the plot
+                plt.plot(
+                    labels, 
+                    dtCorrs.iloc[:][i],
+                    lineStyle[pointer], 
+                    label = i,
+                    markersize = 10
+                )
 
-            # Increase the count of the pointer
-            pointer += pointer
+                # Increase the count of the pointer
+                pointer += pointer
         
         # Place the results from the models
-        plt.plot(
-            labels,
-            dtmodels["Polynomial Regression"],
-            "-.d",
-            label = "Polynomial (2) Regression",
-            zorder = 10,
-            markersize = 10,
-            color = "greenyellow"
-        )
-        
-        plt.plot(
-            labels,
-            dtmodels["Gradient Boosting"],
-            "-.d",
-            label = "Gradient boosting",
-            zorder = 10,
-            markersize = 10,
-            color = "gold"
-        )
+        if dtmodels.empty:
+            pass
+        else:
+            if dtmodels.keys()[0] == "Polynomial Regression":
+                plt.plot(
+                    labels,
+                    dtmodels["Polynomial Regression"],
+                    "-.d",
+                    label = "Polynomial (2) Regression",
+                    zorder = 10,
+                    markersize = 10,
+                    color = "greenyellow"
+                )
 
-        plt.plot(
-            labels,
-            dtmodels["ANN"],
-            "-.d",
-            label = "ANN",
-            zorder = 10,
-            markersize = 10,
-            color = "deepskyblue"
-        )
+            if dtmodels.keys()[1] == "Gradient Boosting":    
+                plt.plot(
+                    labels,
+                    dtmodels["Gradient Boosting"],
+                    "-.d",
+                    label = "Gradient boosting",
+                    zorder = 10,
+                    markersize = 10,
+                    color = "gold"
+                )
+
+            if dtmodels.keys()[2] == "ANN":
+                plt.plot(
+                    labels,
+                    dtmodels["ANN"],
+                    "-.d",
+                    label = "ANN",
+                    zorder = 10,
+                    markersize = 10,
+                    color = "deepskyblue"
+                )
 
         # Place the experimental data
-        plt.plot(
-            labels, 
-            exp["Turgut - CFM56/7B26"],
-            "-8",
-            label = "Turgut, CFM56/7B26",
-            zorder = 10,
-            color = "cyan",
-            markersize = 10
-        )
+        if exp.empty:
+            pass
+        else:
+            plt.plot(
+                labels, 
+                exp["Turgut - CFM56/7B26"],
+                "-8",
+                label = "Turgut, CFM56/7B26",
+                zorder = 10,
+                color = "cyan",
+                markersize = 10
+            )
 
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")

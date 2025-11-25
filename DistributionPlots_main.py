@@ -12,7 +12,7 @@ from Classes.FuelFlow_class import FuelFlowMethods
 from Classes.latex_class import latex
 
 def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engine_specs: dict,
-                           correlation_equations: dict, fuel_flow_method: dict, experimental_data: dict,
+                           correlation_equations: dict, fuel_flow_method: dict, experimental_data: dict, icao_data: dict,
                            surrogate_models: dict, distribution_plot_settings: dict, save_plots: dict = False,
                            save_results: bool = True, notes: str = "None"):
     """
@@ -52,6 +52,11 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
     Structure: {"Include": boolean, "<Source of the data>":{
     "Include": Boolean, "Export LaTeX table": boolean, "<Operating point> EI (g/kg): float}}
     
+    - icao_data: dictionary that handles the usage of ICAO data. The columns considered are included in 
+    the main file and the user does not need to define them. Structure: {"Include": boolean, 
+    "File path": <Path to the file>, "Row range for engine family": nested list, 
+    "Row range for specific engine from the family": nested list}
+
     - surrogate_models: multi-layer dictionary that contains the models to be used and the directory that 
     the predicted value for the EI of the engine under investigation is stored. The stored file must be a csv.
     Structure: {"Include": boolean, "<Model>": {
@@ -96,6 +101,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
     experimental_data_primary = pd.DataFrame(experimental_data)
     plot_settings_primary = pd.DataFrame(distribution_plot_settings, index = ["Argument/Value"]).T
 
+    # Get paths for plots and results saving
     if save_results == True and save_plots == True:
 
         error_save_path, plots_save_path = data_process.data_saver_distribution(
@@ -132,44 +138,53 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
         error_save_path, plots_save_path = None, None
 
     ## ICAO data ##
-    df = pd.read_csv(r"Databank/ICAO_data.csv", delimiter = ";")
+    if icao_data["Include"]:
 
-    clmns = ["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op[0]} (kg/sec)", 
-            f"Fuel Flow {op[1]} (kg/sec)", f"Fuel Flow {op[2]} (kg/sec)", f"Fuel Flow {op[3]} (kg/sec)",
-            f"{pollutant} EI {op[0]} (g/kg)", f"{pollutant} EI {op[1]} (g/kg)", f"{pollutant} EI {op[2]} (g/kg)",
-            f"{pollutant} EI {op[3]} (g/kg)"]
+        # Extract data
+        path = icao_data["File path"]
+        df = pd.read_csv(path, delimiter = ";")
 
-    drange = [[61, 169]] # CFM56 family range 
+        clmns = ["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {op[0]} (kg/sec)", 
+                f"Fuel Flow {op[1]} (kg/sec)", f"Fuel Flow {op[2]} (kg/sec)", f"Fuel Flow {op[3]} (kg/sec)",
+                f"{pollutant} EI {op[0]} (g/kg)", f"{pollutant} EI {op[1]} (g/kg)", f"{pollutant} EI {op[2]} (g/kg)",
+                f"{pollutant} EI {op[3]} (g/kg)"]
 
-    df = data_process.csv_cleanup(df = df, clmns = clmns, drange = drange, reset_index = True, save_to_csv = True, path = "Databank/CFM56data.csv")
+        drange = icao_data["Row range for engine family"] 
 
-    # Create the df_all for the distribution_plots method
-    dfa = df.filter(df.columns[df.columns.str.contains(pollutant)], axis = 1)
+        df = data_process.csv_cleanup(df = df, clmns = clmns, drange = drange, reset_index = True, save_to_csv = True, path = r"Databank/EngineData.csv")
 
-    plots = []
-    for i in op:
-        dfb = dfa.filter(df.columns[df.columns.str.contains(i)], axis = 1)
+        # Create the df_all for the distribution_plots method
+        dfa = df.filter(df.columns[df.columns.str.contains(pollutant)], axis = 1)
 
-        dfb_values = dfb[f"{pollutant} EI {i} (g/kg)"].astype(float).values
-        plots.append((f"{pollutant} {i}", np.sort(dfb_values)))
+        plots = []
+        for i in op:
+            dfb = dfa.filter(df.columns[df.columns.str.contains(i)], axis = 1)
 
-    df_all = pd.DataFrame({
-        "Pollutant": np.concatenate([[p[0]] * len(p[1]) for p in plots]),
-        "Value": np.concatenate([p[1] for p in plots])
-    })
+            dfb_values = dfb[f"{pollutant} EI {i} (g/kg)"].astype(float).values
+            plots.append((f"{pollutant} {i}", np.sort(dfb_values)))
 
-    # Get mean values per operating point
-    meanIdle = np.mean(df[f"{pollutant} EI Idle (g/kg)"].values.astype(float))
-    meanTO = np.mean(df[f"{pollutant} EI T/O (g/kg)"].values.astype(float))
-    meanCO = np.mean(df[f"{pollutant} EI C/O (g/kg)"].values.astype(float))
-    meanApp = np.mean(df[f"{pollutant} EI App (g/kg)"].values.astype(float))
+        icao_points = pd.DataFrame({
+            "Pollutant": np.concatenate([[p[0]] * len(p[1]) for p in plots]),
+            "Value": np.concatenate([p[1] for p in plots])
+        })
 
-    mean_points = pd.DataFrame(
-        data = {
-        pollutant: [meanIdle, meanTO, meanCO, meanApp]
-        },
-        index = labels
-    )
+        # Get mean values per operating point
+        meanIdle = np.mean(df[f"{pollutant} EI Idle (g/kg)"].values.astype(float))
+        meanTO = np.mean(df[f"{pollutant} EI T/O (g/kg)"].values.astype(float))
+        meanCO = np.mean(df[f"{pollutant} EI C/O (g/kg)"].values.astype(float))
+        meanApp = np.mean(df[f"{pollutant} EI App (g/kg)"].values.astype(float))
+
+        mean_points = pd.DataFrame(
+            data = {
+            pollutant: [meanIdle, meanTO, meanCO, meanApp]
+            },
+            index = labels
+        )
+
+    else:
+
+        icao_points = pd.DataFrame([])
+        mean_points = pd.DataFrame([])
 
     ## Experimental data ##
     if experimental_data["Include"] == True:
@@ -190,8 +205,9 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
             
             #exp_table = latex(df = exp_data, filename = "", caption = "", label = "")
 
-    else: 
-        pass
+    else:
+
+        exp_data = pd.DataFrame([])
 
     ## Correlation equations ##
     if correlation_equations["Include"]:
@@ -215,8 +231,6 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
                 0, 
                 1.293
             )
-
-            #for 
 
             # Get values from correlation equations
             if correlation_equations["Becker"]:
@@ -267,36 +281,45 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
             # Append temporary dataframe to external
             dtCorrs = pd.concat([dtCorrs, dt1], axis = 0)
+    
+    else: # No correlation equation is used
+        data = {"Idle": 0, "T/O": 0, "C/O": 0, "App": 0}
+        dtCorrs = pd.DataFrame(data, index = ["Point"]).T
 
     ## Fuel flow methods ##
-    cfm56_7b26 = [[74, 75]]
-    df_ffm = copy.deepcopy(df)
-    df_ffm = df_ffm.iloc[range(cfm56_7b26[0][0], cfm56_7b26[0][1])].reset_index()
-    df_ffm = df_ffm.drop(["index","Pressure Ratio", "Rated Thrust (kN)"], axis = 1)
+    if fuel_flow_method["Include"]:
+
+        engine_specific_range = fuel_flow_method["ICAO Emissions Databank range"]
+        df_ffm = copy.deepcopy(df)
+        df_ffm = df_ffm.iloc[range(engine_specific_range[0][0], engine_specific_range[0][1])].reset_index()
+        df_ffm = df_ffm.drop(["index","Pressure Ratio", "Rated Thrust (kN)"], axis = 1)
+        
+        # Operating conditions 
+        speed = operating_conditions["Flight speed (Mach number)"]  
+        alt = operating_conditions["Flight altitude (m)"]     
+        
+        d_ffm= {
+            "EINOx": df_ffm.iloc[0][4:9].values.astype(float),
+            "Fuel Flows": df_ffm.iloc[0][0:4].values.astype(float),
+            "Flight altitude": alt,
+            "Flight Speed": speed
+        }
+
+        datapoints = pd.DataFrame(
+            data = d_ffm,
+            index = ["Idle", "Take-off", "Climb-out", "Approach"]
+        )
+        datapoints = datapoints.T
+
+        ff = FuelFlowMethods(datapoints = datapoints, fitting = "Parabolic", check_fit = False)
+        pred_ei_ff = ff.dlrFF()
+
+        # Add fuel flow EIs to dtCorrs
+        dtCorrs["DLR Fuel Flow"] = pred_ei_ff.values.T
+
+        if dtCorrs.keys()[0] == "Point":
+            dtCorrs = dtCorrs.drop("Point", axis = 1)
     
-    # Operating conditions 
-    speed = operating_conditions["Flight speed (Mach number)"]  
-    alt = operating_conditions["Flight altitude (m)"]     
-    
-    d_ffm= {
-        "EINOx": df_ffm.iloc[0][4:9].values.astype(float),
-        "Fuel Flows": df_ffm.iloc[0][0:4].values.astype(float),
-        "Flight altitude": alt,
-        "Flight Speed": speed
-    }
-
-    datapoints = pd.DataFrame(
-        data = d_ffm,
-        index = ["Idle", "Take-off", "Climb-out", "Approach"]
-    )
-    datapoints = datapoints.T
-
-    ff = FuelFlowMethods(datapoints = datapoints, fitting = "Parabolic", check_fit = False)
-    pred_ei_ff = ff.dlrFF()
-
-    # Add fuel flow EIs to dtCorrs
-    dtCorrs["DLR Fuel Flow"] = pred_ei_ff.values.T
-
     ## Surrogate models ##
     if surrogate_models["Include"]:
         
@@ -339,6 +362,10 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
             # Concatinate along the y-axis
             df_surrogates_preds = pd.concat([df_surrogates_preds, df_inter], axis = 0)
 
+    else:
+        
+        df_surrogates_preds = pd.DataFrame([])
+
     ## Distribution plots ##
     
     # Colors and marker styles
@@ -352,7 +379,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
     ylabel = distribution_plot_settings["Y-axis label"]
 
     # Distribution plots
-    distr_plots = data_plotting(df_all = df_all, dtCorrs = dtCorrs, exp = exp_data, mean_points = mean_points, dtmodels = df_surrogates_preds)
+    distr_plots = data_plotting(df_all = icao_points, dtCorrs = dtCorrs, exp = exp_data, mean_points = mean_points, dtmodels = df_surrogates_preds)
     
     if save_plots == False:
 

@@ -5,14 +5,14 @@ import pandas as pd
 ## Primary inputs ##
 # Engine related
 operating_conditions = {
-    "Export LaTeX table": True,
+    "Export LaTeX table": False,
     "Flight altitude (m)": [0, 11, 305, 914],          # Idle, Take-off, Climb-out, Approach
     "Flight speed (Mach number)": [0, 0.3, 0.3, 0.2],
     "Axial fan speed (Mach number)": [0.09, 0.4, 0.4, 0.3]
 }
 
 thermodynamic = {
-    "Export LaTeX table": True,
+    "Export LaTeX table": False,
     "Index": ["Tbin", "Tbout", "Pbin", "m_dot_air", "FAR", "m_dot_fuel"],
     "Idle": [797.1, 1290, 2755850, 10.564, 0.0137, 0.144],      # 
     "Take-off": [809.95, 2250, 2929690, 46.897, 0.0446, 1.25],
@@ -36,17 +36,17 @@ engine_specs = {
 # Correlation equations and Semi-empirical methods
 correlation_equations = {
     "Include": True,
-    "Export LaTeX table": True,
-    "Becker": False,
+    "Export LaTeX table": False,
+    "Becker": True,
     "Perkavec": False ,
-    "Rokke": True,
-    "Lewis": True,
-    "Kyprianidis": True,
-    "Novelo": True,
+    "Rokke": False,
+    "Lewis": False,
+    "Kyprianidis": False,
+    "Novelo": False,
     "Lefebvre": False,
     "GasTurb": False,
-    "General Electric": True,
-    "Aeronox": True
+    "General Electric": False,
+    "Aeronox": False
 }
 
 fuel_flow_method = {
@@ -68,6 +68,14 @@ experimental_data = {
         "Approach EI (g/kg)": 2.8
     }
 }   
+
+# ICAO data
+icao_data = {
+    "Include": True,
+    "File path": r"Databank/ICAO_data.csv",
+    "Row range for engine family": [[61, 169]],
+    "Row range for specific engine from the family": [[74, 75]] 
+}
 
 # Surrogate models
 surrogate_models ={
@@ -103,6 +111,6 @@ notes_on_the_run = "Distribution plots generated as part of my thesis."
 # Run 
 DistributionPlots_main(operating_conditions = operating_conditions, thermodynamic = thermodynamic,
                        engine_specs = engine_specs, correlation_equations = correlation_equations,
-                       fuel_flow_method = fuel_flow_method, experimental_data = experimental_data,
+                       fuel_flow_method = fuel_flow_method, experimental_data = experimental_data, icao_data = icao_data,
                        surrogate_models = surrogate_models, distribution_plot_settings = distribution_plot_settings,
                        save_plots = save_plots, save_results = save_results, notes = notes_on_the_run)

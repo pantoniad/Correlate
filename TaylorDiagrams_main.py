@@ -233,7 +233,7 @@ for op in operating_points:
             showlabelsSTD = "off", showlabelsCOR = "off", titleCOR = "off", widthCOR = 0.01
         )
 
-        plt.title("Taylor diagram - Model comparison", pad=30)
+        plt.title(f"Taylor diagram - Model comparison - Operating point: {op}", pad=30)
         plt.tight_layout()
         plt.show()
     
