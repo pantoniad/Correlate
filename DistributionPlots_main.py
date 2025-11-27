@@ -170,9 +170,16 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
         # Get mean values per operating point
         meanIdle = np.mean(df[f"{pollutant} EI Idle (g/kg)"].values.astype(float))
+        stdIdle = np.round(np.std(df[f"{pollutant} EI Idle (g/kg)"].values.astype(float)),3)
+
         meanTO = np.mean(df[f"{pollutant} EI T/O (g/kg)"].values.astype(float))
+        stdTO = np.round(np.std(df[f"{pollutant} EI T/O (g/kg)"].values.astype(float)),3)
+
         meanCO = np.mean(df[f"{pollutant} EI C/O (g/kg)"].values.astype(float))
+        stdCO = np.round(np.std(df[f"{pollutant} EI C/O (g/kg)"].values.astype(float)),3)
+
         meanApp = np.mean(df[f"{pollutant} EI App (g/kg)"].values.astype(float))
+        stdApp = np.round(np.std(df[f"{pollutant} EI App (g/kg)"].values.astype(float)),3)
 
         mean_points = pd.DataFrame(
             data = {
@@ -181,10 +188,22 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
             index = labels
         )
 
+        # Get data for specific engine
+        engineIdle = df.iloc[74:75]["NOx EI Idle (g/kg)"].values[0]
+        engineTO = df.iloc[74:75]["NOx EI T/O (g/kg)"].values[0]
+        engineCO = df.iloc[74:75]["NOx EI C/O (g/kg)"].values[0]
+        engineApp = df.iloc[74:75]["NOx EI App (g/kg)"].values[0]
+
+        engine_icao_eis = pd.DataFrame(
+            data = {"EI": [engineIdle, engineTO, engineCO, engineApp]},
+            index = labels  
+        ).T
+
     else:
 
         icao_points = pd.DataFrame([])
         mean_points = pd.DataFrame([])
+        engine_icao_eis = pd.DataFrame([])
 
     ## Experimental data ##
     if experimental_data["Include"] == True:
@@ -320,6 +339,10 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
         if dtCorrs.keys()[0] == "Point":
             dtCorrs = dtCorrs.drop("Point", axis = 1)
     
+    else:
+
+        dtCorrs = pd.DataFrame([])
+    
     ## Surrogate models ##
     if surrogate_models["Include"]:
         
@@ -379,7 +402,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
     ylabel = distribution_plot_settings["Y-axis label"]
 
     # Distribution plots
-    distr_plots = data_plotting(df_all = icao_points, dtCorrs = dtCorrs, exp = exp_data, mean_points = mean_points, dtmodels = df_surrogates_preds)
+    distr_plots = data_plotting(df_all = icao_points, dtCorrs = dtCorrs, exp = exp_data, mean_points = mean_points, engine_icao_eis = engine_icao_eis, dtmodels = df_surrogates_preds)
     
     if save_plots == False:
 

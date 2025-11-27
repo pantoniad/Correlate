@@ -1,0 +1,89 @@
+RESULTS REPORT - Distribution Plots
+======================================================================
+Generated (EET, UTC+2): 2025-11-27 09:40:16
+Author: Antoniadis Panagiotis
+----------------------------------------------------------------------
+
+
+Engine specifications
+                                        Argument/Value
+Include                                           True
+Export LaTeX table                                True
+Rated Thrust (kN)                                  117
+Fan diameter                                      1.55
+Hub2Tip ratio                                      0.3
+Bypass ratio                                       5.1
+Fan Pressure ratio                                 1.6
+Booster Pressure ratio                            1.55
+High Pressure compressor Pressure ratio             11
+Overall Pressure ratio                            27.6
+
+
+Operating conditions
+           Export LaTeX table  Flight altitude (m)  Flight speed (Mach number)  Axial fan speed (Mach number)
+Idle                    False                    0                         0.0                           0.09
+Take-off                False                   11                         0.3                           0.40
+Climb-out               False                  305                         0.3                           0.40
+Approach                False                  914                         0.2                           0.30
+
+
+AeroEngineS derived thermodynamic data
+                         0       1          2          3        4           5
+Export LaTeX table   False   False      False      False    False       False
+Index                 Tbin   Tbout       Pbin  m_dot_air      FAR  m_dot_fuel
+Idle                 797.1  1290.0  2755850.0     10.564   0.0137       0.144
+Take-off            809.95  2250.0  2929690.0     46.897   0.0446        1.25
+Climb-out            805.1  2000.0  2828980.0      45.44  0.03596         1.0
+Approach            787.91  1400.0  2539920.0      31.89  0.01718       0.348
+
+
+Correlation equations considered
+                Include  Export LaTeX table  Becker  Perkavec  Rokke  Lewis  Kyprianidis  Novelo  Lefebvre  GasTurb  General Electric  Aeronox
+Argument/Value     True               False    True     False  False  False        False   False     False    False             False    False
+
+
+Fuel Flow methods
+                              Argument/Value
+Include                                 True
+Export LaTeX table                      True
+Engine model                      CFM56-7B26
+ICAO Emissions Databank range       [74, 75]
+
+
+Surrogate models considered
+                      Include                                                                                           Path to predicted engine EI
+Include                  True                                                                                                                  True
+Polynomial Regression    True  E:\Correlate\model_outputs\Run_2025-10-20\Polynomial Regression\ExecutionTime_21-16-01\Polynomial Regression results
+Gradient Boosting        True          E:\Correlate\model_outputs\Run_2025-10-20\Gradient Boosting\ExecutionTime_20-50-09\Gradient Boosting results
+ANN                      True                                      E:\Correlate\model_outputs\Run_2025-10-20\ANN\ExecutionTime_14-50-47\ANN results
+
+
+Experimental data
+                     Include Turgut - CFM56/7B26
+Include                 True                True
+Export LaTeX table      True                True
+Idle EI (g/kg)          True                 1.8
+Take-off EI (g/kg)      True                24.4
+Climb-out EI (g/kg)     True                14.5
+Approach EI (g/kg)      True                 2.8
+
+
+Distribution plot settings
+                                                    Argument/Value
+Plot type                                               Violinplot
+Pollutant to consider                                          NOx
+Title                              EI over engine operating points
+X-axis label                        Pollutant over operating point
+Y-axis label           Emissions Index Value (g Pollutant/kg Fuel)
+
+
+Model secondary inputs
+          Save generated plots  Save arithmetic results
+Argument                  True                     True
+
+
+Notes:
+Distribution plots generated as part of my thesis.
+
+======================================================================
+End of report.

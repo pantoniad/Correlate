@@ -22,6 +22,7 @@ class data_plotting:
 
     def __init__(self, df_all: pd.DataFrame, 
                  mean_points: pd.DataFrame,
+                 engine_icao_eis: pd.DataFrame,
                  dtCorrs: pd.DataFrame,
                  exp: pd.DataFrame,
                  dtmodels: pd.DataFrame
@@ -33,7 +34,9 @@ class data_plotting:
                         Dataframe, First column are the names 
                         for each data position of the dot plot,
                         Second column are the values for each
-                        data position
+                        data position,
+        - engine_icao_eis: Emission Index values for the specific 
+                        engine considered for the thesis
         - dtCorrs:  Data retrieved from the usage of 
                     correlation equations. Dataframe,
                     X axis contains the names of the 
@@ -49,25 +52,15 @@ class data_plotting:
         # Required
         self.df_all = df_all
         self.mean_points = mean_points
+        self.engine_icao_eis = engine_icao_eis
         self.dtCorrs = dtCorrs
         self.exp = exp
         self.dtmodels = dtmodels
-        
-        # Optional
-        #if dtCorrs.empty == False:
-        #    self.dtCorrs = dtCorrs
-        
-        #if exp.empty == False:
-        #    self.exp = exp
-
-        #if dtmodels.empty == False:
-        #    self.dtmodels = dtmodels
         
     def distribution_plots(self,
                            method: str, 
                            size: list, 
                            title: str, 
-                           #ylimits: list, 
                            xLabel: str, 
                            yLabel: str, 
                            colours: list, 
@@ -112,6 +105,7 @@ class data_plotting:
         # Extract data from self
         df_all = self.df_all
         mean_points = self.mean_points
+        engine_icao_eis = self.engine_icao_eis
         dtCorrs = self.dtCorrs
         exp = self.exp 
         dtmodels = self.dtmodels
@@ -150,7 +144,7 @@ class data_plotting:
                     )
             
             #ax1 = fig.add_subplot(gs[0])
-            ax1 = sns.stripplot(
+            ax = sns.stripplot(
                 data = df_all,
                 size = 5,
                 x = dotPlotXlabel,
@@ -209,7 +203,19 @@ class data_plotting:
             label = "Mean values - ICAO Databank"
         )
 
-        
+        # Specific engine EIs 
+        if engine_icao_eis.empty:
+            pass
+        else:
+            plt.plot(
+                labels,
+                engine_icao_eis.values[0],
+                "-*",
+                color = "orange",
+                markersize = 10,
+                label = "ICAO CFM56-7B26"
+            )
+
         # Correlation equations value plotting
         pointer = 0
         if dtCorrs.empty:
