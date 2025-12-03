@@ -14,7 +14,25 @@ class data_process:
     def __init__(self):
 
         pass
+
+    def relative_error(pred: float, real: float):
+
+        """
+        relative_error: calculates the relative error between the real and the predicted
+        value of a parameter
+
+        Inputs: 
+        - pred: predicted value of the selected parameter,
+        - real: documented value of the selected parameter
+
+        Outputs:
+        - Relative error: (predicted value - real value)/real value * 100, Percentage
         
+        """
+        return 100*(pred - real)/real
+
+
+
     def csv_cleanup(df: pd.DataFrame, drange: pd.DataFrame, clmns: list, reset_index: bool = True, save_to_csv: bool = False, path: Optional[str] = None):
 
         """
