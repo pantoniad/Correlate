@@ -21,7 +21,7 @@ thermodynamic = {
 }
 
 engine_specs = {
-    "Include": False,
+    "Include": True,
     "Export LaTeX table": True,
     "Rated Thrust (kN)": [117],
     "Fan diameter": [1.55],
@@ -35,22 +35,22 @@ engine_specs = {
 
 # Correlation equations and Semi-empirical methods
 correlation_equations = {
-    "Include": False,
-    "Export LaTeX table": False,
+    "Include": True,
+    "Export LaTeX table": True,
     "Becker": False,
-    "Perkavec": False ,
-    "Rokke": False,
-    "Lewis": False,
-    "Kyprianidis": False,
+    "Perkavec": False,
+    "Rokke": True,
+    "Lewis": True,
+    "Kyprianidis": True,
     "Novelo": False,
     "Lefebvre": False,
     "GasTurb": False,
-    "General Electric": False,
+    "General Electric": True,
     "Aeronox": False
 }
 
 fuel_flow_method = {
-    "Include": False,
+    "Include": True,
     "Export LaTeX table": True,
     "Engine model": "CFM56-7B26",
     "ICAO Emissions Databank range": [[74,75]]
@@ -74,12 +74,13 @@ icao_data = {
     "Include": True,
     "File path": r"Databank/ICAO_data.csv",
     "Row range for engine family": [[61, 169]],
-    "Row range for specific engine from the family": [[74, 75]] 
+    "Row range for specific engine from the family": [[74, 75]],
+    "Include specific engine values on plots": False
 }
 
 # Surrogate models
 surrogate_models ={
-    "Include": False,
+    "Include": True,
     "Polynomial Regression": {
         "Include": True,
         "Path to predicted engine EI": r"E:\Correlate\model_outputs\Run_2025-10-20\Polynomial Regression\ExecutionTime_21-16-01\Polynomial Regression results"
@@ -96,7 +97,7 @@ surrogate_models ={
 
 ## Secondary inputs ##
 distribution_plot_settings = {
-    "Plot type": "Boxplot",
+    "Plot type": "Violinplot",
     "Pollutant to consider": "NOx",
     "Title": "EI over engine operating points",
     "X-axis label": "Pollutant over operating point",

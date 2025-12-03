@@ -188,16 +188,19 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
             index = labels
         )
 
-        # Get data for specific engine
-        engineIdle = df.iloc[74:75]["NOx EI Idle (g/kg)"].values[0]
-        engineTO = df.iloc[74:75]["NOx EI T/O (g/kg)"].values[0]
-        engineCO = df.iloc[74:75]["NOx EI C/O (g/kg)"].values[0]
-        engineApp = df.iloc[74:75]["NOx EI App (g/kg)"].values[0]
+        if icao_data["Include specific engine values on plots"]:
+            # Get data for specific engine
+            engineIdle = df.iloc[74:75]["NOx EI Idle (g/kg)"].values[0]
+            engineTO = df.iloc[74:75]["NOx EI T/O (g/kg)"].values[0]
+            engineCO = df.iloc[74:75]["NOx EI C/O (g/kg)"].values[0]
+            engineApp = df.iloc[74:75]["NOx EI App (g/kg)"].values[0]
 
-        engine_icao_eis = pd.DataFrame(
-            data = {"EI": [engineIdle, engineTO, engineCO, engineApp]},
-            index = labels  
-        ).T
+            engine_icao_eis = pd.DataFrame(
+                data = {"EI": [engineIdle, engineTO, engineCO, engineApp]},
+                index = labels  
+            ).T
+        else:
+            engine_icao_eis = pd.DataFrame([])
 
     else:
 
@@ -259,6 +262,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
             if correlation_equations["Rokke"]:
                 rokke = corr.rokke_nox(engine_specs["Overall Pressure ratio"], method = "Index")
                 d["Rokke"] = rokke
+
             if correlation_equations["Lewis"]:
                 lewis = corr.lewis_nox()
                 d["Lewis"] = lewis
@@ -300,7 +304,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
             # Append temporary dataframe to external
             dtCorrs = pd.concat([dtCorrs, dt1], axis = 0)
-    
+
     else: # No correlation equation is used
         data = {"Idle": 0, "T/O": 0, "C/O": 0, "App": 0}
         dtCorrs = pd.DataFrame(data, index = ["Point"]).T
@@ -338,7 +342,16 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
         if dtCorrs.keys()[0] == "Point":
             dtCorrs = dtCorrs.drop("Point", axis = 1)
-    
+
+        # Add colour on each correlation equation
+        colors_list = ["midnightblue", "crimson", "darkslategray", "mediumpurple", "olive",
+                        "sienna", "steelblue", "hotpink", "darkred", "seagreen", "chocolate",
+                        "darkorchid", "teal", "maroon", "dimgray"]
+
+        colors_pd = pd.DataFrame(data = colors_list[0:dtCorrs.shape[1]], 
+                                 index = dtCorrs.keys(), columns = ["Color"]).T
+
+        dtCorrs = pd.concat([dtCorrs, colors_pd], axis = 0)
     else:
 
         dtCorrs = pd.DataFrame([])
@@ -403,12 +416,13 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
     # Distribution plots
     distr_plots = data_plotting(df_all = icao_points, dtCorrs = dtCorrs, exp = exp_data, mean_points = mean_points, engine_icao_eis = engine_icao_eis, dtmodels = df_surrogates_preds)
-    
+
+    # Plot results
     if save_plots == False:
 
         distr_plots.distribution_plots(
             method = distribution_plot_settings["Plot type"],
-            size = [12,9],
+            size = [15,11],
             title = title,
             xLabel = xlabel,
             yLabel = ylabel,
@@ -423,7 +437,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
         distr_plots.distribution_plots(
             method = distribution_plot_settings["Plot type"],
-            size = [12,9],
+            size = [15,11],
             title = title,
             xLabel = xlabel,
             yLabel = ylabel,

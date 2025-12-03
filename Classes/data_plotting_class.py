@@ -200,7 +200,7 @@ class data_plotting:
             markersize = 10,
             color = "black",
             zorder = 10,
-            label = "Mean values - ICAO Databank"
+            label = "ICAO, Mean Values"
         )
 
         # Specific engine EIs 
@@ -213,7 +213,21 @@ class data_plotting:
                 "-*",
                 color = "orange",
                 markersize = 10,
-                label = "ICAO CFM56-7B26"
+                label = "ICAO, CFM56-7B26"
+            )
+
+         # Place the experimental data
+        if exp.empty:
+            pass
+        else:
+            plt.plot(
+                labels, 
+                exp["Turgut - CFM56/7B26"],
+                "-8",
+                label = "Turgut, CFM56/7B26",
+                zorder = 10,
+                color = "cyan",
+                markersize = 10
             )
 
         # Correlation equations value plotting
@@ -223,11 +237,15 @@ class data_plotting:
         else:
             for i in dtCorrs.keys():
                 
+                # Color selection
+
+
                 # Add the data to the plot
                 plt.plot(
                     labels, 
-                    dtCorrs.iloc[:][i],
+                    dtCorrs.iloc[0:4][i],
                     lineStyle[pointer], 
+                    color = dtCorrs.iloc[4][i],
                     label = i,
                     markersize = 10
                 )
@@ -269,37 +287,24 @@ class data_plotting:
                     label = "ANN",
                     zorder = 10,
                     markersize = 10,
-                    color = "deepskyblue"
+                    color = "royalblue"
                 )
-
-        # Place the experimental data
-        if exp.empty:
-            pass
-        else:
-            plt.plot(
-                labels, 
-                exp["Turgut - CFM56/7B26"],
-                "-8",
-                label = "Turgut, CFM56/7B26",
-                zorder = 10,
-                color = "cyan",
-                markersize = 10
-            )
 
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")
-        plt.legend(loc = "best", fontsize = 12)
-        plt.ylabel(yLabel, fontsize = 15)
-        plt.yticks(fontsize = 13)
-        plt.xlabel(xLabel, fontsize = 15)
-        plt.xticks(fontsize = 13)
-        ax.set_title(label = title, fontsize = "xx-large")
+        ax.legend(loc = "best", fontsize = 13,  ncol = 2)#, bbox_to_anchor=(1.22, 1))
+        plt.ylabel(yLabel, fontsize = 24)
+        plt.yticks(fontsize = 22)
+        plt.xlabel(xLabel, fontsize = 24)
+        plt.xticks(fontsize = 22)
+        ax.set_title(label = title)
+        ax.title.set_size(26)
         plt.tight_layout()
 
         # Save plot
         if save_plots_path != "Empty":
 
-            fig.savefig(os.path.join(save_plots_path, f"Distribution plots.png"))
+            fig.savefig(os.path.join(save_plots_path, f"Distribution plots.png"), dpi = 400)
 
         plt.show()
 
