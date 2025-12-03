@@ -4,6 +4,7 @@ import os
 import warnings
 import skill_metrics as sm
 import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch as fancy_arrow
 
 # Import complexity plot data
 operating_points = ["Idle", "Take-off", "Climb-out", "App"]
@@ -199,41 +200,105 @@ for op in operating_points:
         labels_ann = [f"ANN{i}" for i in range(1, len(std_ann))]
 
         
-        fig = plt.figure(figsize=(7, 7))
-        
+        fig, ax = plt.subplots(figsize=(12, 11))
+        fig.subplots_adjust(left=0.18, right=0.95, bottom=0.15, top=0.85)
+
+        plt.rcParams.update({
+            "font.size": 16,          # default text size
+            "axes.titlesize": 28,     # axes titles
+            "axes.labelsize": 26,     # x/y labels
+            "xtick.labelsize": 24,    # tick labels
+            "ytick.labelsize": 24,
+            "legend.fontsize": 15,
+        })
+                
         #  Working models
         sm.taylor_diagram(
-            std_working, # STD   
-            crmsd_working, # CRMSD
-            r_working,   # R2
+            std_working[0], # STD   
+            crmsd_working[0], # CRMSD
+            r_working[0],   # R2
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
-            labelRMS = "CRMSD", markerColors = {"face" : "yellow", "edge": "k"}, colRMS = 'g', 
+            labelRMS = "CRMSD", markerColors = {"face" : "limegreen", "edge": "k"}, colRMS = 'g', 
+            tickRMS = np.round(np.linspace(0, np.round(max(crmsd_working) + 0.5*max(crmsd_working), 3), 6), 2).tolist(),
             markerLabel = ["Reference", "Working Pol.Reg.", "Working GBR", "Working ANN"], markersize = 15, markerSymbol = "*",
-            colsCOR = {"grid": "silver", "title": "b", "tick_labels": "b"}, tickCOR = [0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.95, 0.99, 1]
+            colsCOR = {"grid": "blue", "title": "b", "tick_labels": "b"}, 
+            tickCOR = [0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.95, 0.99, 1],
+            axismax=1.05 * max(std_working) 
         )
 
+        sm.taylor_diagram(
+            std_working[0:2], # STD   
+            crmsd_working[0:2], # CRMSD
+            r_working[0:2],   # R2
+            titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
+            markerColors = {"face" : "limegreen", "edge": "k"},
+            markerLabel = ["Reference", "Working Pol.Reg."], markersize = 15, markerSymbol = "*",
+            overlay = "on"
+        )
+        
+        sm.taylor_diagram(
+            np.array([std_working[0], std_working[2]]), # STD   
+            np.array([crmsd_working[0], crmsd_working[2]]), # CRMSD
+            np.array([r_working[0], r_working[2]]),   # R2
+            titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
+            markerColors = {"face" : "yellow", "edge": "k"},
+            markerLabel = ["Reference", "Working GBR"], markersize = 15, markerSymbol = "*",
+            overlay = "on"
+        )
+       
+        sm.taylor_diagram(
+            np.array([std_working[0], std_working[3]]), # STD   
+            np.array([crmsd_working[0], crmsd_working[3]]), # CRMSD
+            np.array([r_working[0], r_working[3]]) ,   # R2
+            titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
+            markerColors = {"face" : "royalblue", "edge": "k"},
+            markerLabel = ["Reference", "Working ANN"], markersize = 15, markerSymbol = "*",
+            overlay = "on"
+        )
+ 
         # Complexity models
         sm.taylor_diagram(
             std_gbr, # STD   
             crmsd_gbr, # CRMSD
             r_gbr,   # R2
-            showlabelsRMS = "off", titleRMS = "off", tickRMS = [0],
-            markerColors = {"face" : "r", "edge": "k"},
+            markerColors = {"face" : "yellow", "edge": "k"},
             markerLabel = ["Reference", *labels_gbr], markersize = 8, markerSymbol = "s",
-            showlabelsSTD = "off", showlabelsCOR = "off", titleCOR = "off", widthCOR = 0.01
+            overlay = "on"
         )
         
         sm.taylor_diagram(
             std_ann, # STD   
             crmsd_ann, # CRMSD
             r_ann,   # R2
-            showlabelsRMS = "off", titleRMS = "off", tickRMS = [0],
-            markerColors = {"face" : "cyan", "edge": "k"},
+            markerColors = {"face" : "royalblue", "edge": "k"},
             markerLabel = ["Reference", *labels_ann], markersize = 8, markerSymbol = "8",
-            showlabelsSTD = "off", showlabelsCOR = "off", titleCOR = "off", widthCOR = 0.01
+            overlay = "on"
         )
+        
+        # STD arrow
+        plt.arrow(0, -0.02, 0.1, 0, length_includes_head=True, head_width=0.005, head_length=0.005, clip_on = False, color = "k", width = 0.001)
+        plt.arrow(1.05 * max(std_working), -0.02, - 1.05 * max(std_working) + 0.95*1.05 * max(std_working) , 0, length_includes_head=True, 
+                    head_width=0.005, head_length=0.005, clip_on = False, color = "k", width = 0.001)
+        ax.text(0.05, -0.03, "Improving along arrow", ha="center", color="k")
 
-        plt.title(f"Taylor diagram - Model comparison - Operating point: {op}", pad=30)
+        # Correlation arrow
+        start = (0.6, 0.99)
+        end   = (0.99, 0.6)
+
+        arrow = fancy_arrow(
+            posA=start,          # tail
+            posB=end,            # head
+            arrowstyle="-|>",     # style of the arrow head
+            connectionstyle="arc3,rad=-0.15",  # curvature of the line
+            mutation_scale=15,   # size of arrow head
+            linewidth=1.5,
+            transform=ax.transAxes,
+            color="blue"
+        )
+        ax.text(0.35, 0.305, "Improving along arrow", ha="center", color="blue", rotation = -45)
+        ax.add_patch(arrow)
+
+        plt.title(f"Taylor diagram - Model comparison - Operating point: {op}", pad=60)
         plt.tight_layout()
         plt.show()
     
