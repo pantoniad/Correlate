@@ -41,32 +41,79 @@ for i in ops:
     
     features = cfm56[["Pressure Ratio", "Rated Thrust (kN)", f"Fuel Flow {i} (kg/sec)"]]
 
-    # Iterate through features to get p-values    
-    for j in range(0, len(features.keys())):
-
-        # Get x - Sorted
-        x = features.iloc[:,j].values.astype(float)
-        x = x.reshape(-1, 1)
-
-        # Build model
-        lr = LinearRegression().fit(x,y)
-        y_pred = lr.predict(x)
-
-        # Get resulst
-        fit = sm.OLS(y, x).fit()
-        print(f"Ops: {i}, Feature: {features.keys()[j]}, P-value: {fit.pvalues[0]}")
+    plt.rcParams.update({
+            "font.size": 14,          # default text size
+            "axes.titlesize": 35,     # axes titles
+            "axes.labelsize": 27,     # x/y labels
+            "xtick.labelsize": 25,    # tick labels
+            "ytick.labelsize": 25,
+            "legend.fontsize": 10,
+        })
     
-        # Scatter plot
-        plt.figure(figsize = (7, 5))
-        plt.scatter(x,y, label = f"Feature: {features.keys()[j]}")
-        plt.plot(x, y_pred, color = "red")
-        plt.ylabel("Emissions Index (g/kg)")
-        plt.xlabel(features.keys()[j])
-        plt.title(f"EI NOx vs {features.keys()[j]} - {i} conditions")
-        plt.legend()
-        plt.grid(color = "silver", linestyle = ":")
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 11))
+
+    fig.subplots_adjust(bottom=0.15, top=0.85)
+    fig.suptitle(f"EI NOx vs ICAO Features - {i} conditions", y = 0.93, fontsize = 26)
+    fig.supxlabel("Feature value", y = 0.01, fontsize = 29)
+    fig.supylabel("Emissions Index (gNOx/kgFuel)", x = 0.04, fontsize = 29)
+
+    ######### Subplot: pressure ratio ###########
+    x = features.iloc[:,0].values.astype(float)
+    x = x.reshape(-1, 1)
+
+    # Build model
+    lr = LinearRegression().fit(x,y)
+    y_pred = lr.predict(x)
+
+    # Get resulst
+    fit = sm.OLS(y, x).fit()
+    print(f"Ops: {i}, Feature: {features.keys()[0]}, P-value: {np.format_float_scientific(fit.pvalues[0], precision = 2)}")
+
+    # Scatter plot
+    ax1.scatter(x,y, label = f"Feature: {features.keys()[0]}", color = "royalblue")
+    ax1.plot(x, y_pred, color = "red")
+    ax1.set_xlabel("Overall Pressure Ratio")
+    ax1.grid(color = "silver", linestyle = ":")
+
+    ########## Subplot: Rated Thrust ##########
+    x = features.iloc[:,1].values.astype(float)
+    x = x.reshape(-1, 1)
+
+    # Build model
+    lr = LinearRegression().fit(x,y)
+    y_pred = lr.predict(x)
+
+    # Get resulst
+    fit = sm.OLS(y, x).fit()
+    print(f"Ops: {i}, Feature: {features.keys()[1]}, P-value: {np.format_float_scientific(fit.pvalues[0], precision = 2)}")
+
+    # Scatter plot
+    ax2.scatter(x,y, label = f"Feature: {features.keys()[1]}", color = "orange")
+    ax2.plot(x, y_pred, color = "red")
+    ax2.set_xlabel("Rated Thrust (kN)")
+    ax2.grid(color = "silver", linestyle = ":")
+
+    ######## Subplot: Fuel flow #########
+    x = features.iloc[:,2].values.astype(float)
+    x = x.reshape(-1, 1)
+
+    # Build model
+    lr = LinearRegression().fit(x,y)
+    y_pred = lr.predict(x)
+
+    # Get resulst
+    fit = sm.OLS(y, x).fit()
+    print(f"Ops: {i}, Feature: {features.keys()[2]}, P-value: {np.format_float_scientific(fit.pvalues[0], precision = 2)}")
+
+    # Scatter plot
+    ax3.scatter(x,y, label = f"Feature: {features.keys()[2]}", color = "forestgreen")
+    ax3.plot(x, y_pred, color = "red")
+    ax3.set_xlabel("Fuel Flow (kg/s)")
+    ax3.grid(color = "silver", linestyle = ":")
 
     print()
+
+
 
 ## Feature selection using all data combined
 
