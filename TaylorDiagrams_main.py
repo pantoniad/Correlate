@@ -12,12 +12,12 @@ operating_points = ["Idle", "Take-off", "Climb-out", "App"]
 variable_of_interest = {"Gradient Boosting": "estimator",
                         "ANN": "LAYERS"}
 
-complexity_path = {"Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-10-30\Gradient Boosting\ExecutionTime_19-21-35\Gradient Boosting results\Complexity plots results",
-                    "ANN": r"E:\Correlate\model_outputs\Run_2025-10-30\ANN\ExecutionTime_18-47-32\ANN results\Complexity plots results"}
+complexity_path = {"Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-12-31\Gradient Boosting\ExecutionTime_15-17-51\Gradient Boosting results\Complexity plots results",
+                    "ANN": r"E:\Correlate\model_outputs\Run_2025-12-31\ANN\ExecutionTime_15-42-10\ANN results\Complexity plots results"}
 
-surrogates_paths = {"Polynomial Regression": r"E:\Correlate\model_outputs\Run_2025-10-30\Polynomial Regression\ExecutionTime_17-55-57\Polynomial Regression results", 
-                    "Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-10-30\Gradient Boosting\ExecutionTime_19-21-35\Gradient Boosting results", 
-                    "ANN": r"E:\Correlate\model_outputs\Run_2025-10-30\ANN\ExecutionTime_18-47-32\ANN results"}
+surrogates_paths = {"Polynomial Regression": r"E:\Correlate\model_outputs\Run_2025-12-31\Polynomial Regression\ExecutionTime_14-58-35\Polynomial Regression results", 
+                    "Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-12-31\Gradient Boosting\ExecutionTime_15-17-51\Gradient Boosting results", 
+                    "ANN": r"E:\Correlate\model_outputs\Run_2025-12-31\ANN\ExecutionTime_15-42-10\ANN results"}
 
 # Data cleaning
 try:
@@ -204,12 +204,12 @@ for op in operating_points:
         fig.subplots_adjust(left=0.18, right=0.95, bottom=0.15, top=0.85)
 
         plt.rcParams.update({
-            "font.size": 16,          # default text size
-            "axes.titlesize": 28,     # axes titles
-            "axes.labelsize": 26,     # x/y labels
-            "xtick.labelsize": 24,    # tick labels
-            "ytick.labelsize": 24,
-            "legend.fontsize": 15,
+            "font.size": 18,          # default text size
+            "axes.titlesize": 32,     # axes titles
+            "axes.labelsize": 28,     # x/y labels
+            "xtick.labelsize": 26,    # tick labels
+            "ytick.labelsize": 26,
+            "legend.fontsize": 20,
         })
                 
         #  Working models
@@ -221,7 +221,7 @@ for op in operating_points:
             labelRMS = "CRMSD", markerColors = {"face" : "limegreen", "edge": "k"}, colRMS = 'g', 
             tickRMS = np.round(np.linspace(0, np.round(max(crmsd_working) + 0.5*max(crmsd_working), 3), 6), 2).tolist(),
             markerLabel = ["Reference", "Working Pol.Reg.", "Working GBR", "Working ANN"], markersize = 15, markerSymbol = "*",
-            colsCOR = {"grid": "blue", "title": "b", "tick_labels": "b"}, 
+            colsCOR = {"grid": "darkblue", "title": "darkblue", "tick_labels": "darkblue"}, 
             tickCOR = [0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.95, 0.99, 1],
             axismax=1.05 * max(std_working) 
         )
@@ -231,8 +231,8 @@ for op in operating_points:
             crmsd_working[0:2], # CRMSD
             r_working[0:2],   # R2
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
-            markerColors = {"face" : "limegreen", "edge": "k"},
-            markerLabel = ["Reference", "Working Pol.Reg."], markersize = 15, markerSymbol = "*",
+            markerColors = {"face" : "limegreen", "edge": "r"},
+            markerLabel = ["Reference", "Working Pol.Reg."], markersize = 20, markerSymbol = "*",
             overlay = "on"
         )
         
@@ -241,8 +241,8 @@ for op in operating_points:
             np.array([crmsd_working[0], crmsd_working[2]]), # CRMSD
             np.array([r_working[0], r_working[2]]),   # R2
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
-            markerColors = {"face" : "yellow", "edge": "k"},
-            markerLabel = ["Reference", "Working GBR"], markersize = 15, markerSymbol = "*",
+            markerColors = {"face" : "yellow", "edge": "r"},
+            markerLabel = ["Reference", "Working GBR"], markersize = 20, markerSymbol = "*",
             overlay = "on"
         )
        
@@ -251,35 +251,36 @@ for op in operating_points:
             np.array([crmsd_working[0], crmsd_working[3]]), # CRMSD
             np.array([r_working[0], r_working[3]]) ,   # R2
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
-            markerColors = {"face" : "royalblue", "edge": "k"},
-            markerLabel = ["Reference", "Working ANN"], markersize = 15, markerSymbol = "*",
+            markerColors = {"face" : "royalblue", "edge": "r"},
+            markerLabel = ["Reference", "Working ANN"], markersize = 20, markerSymbol = "*",
             overlay = "on"
         )
  
         # Complexity models
         sm.taylor_diagram(
-            std_gbr, # STD   
-            crmsd_gbr, # CRMSD
-            r_gbr,   # R2
+            np.concatenate((std_gbr[0:1], std_gbr[2:4]), axis = 0), # STD   
+            np.concatenate((crmsd_gbr[0:1], crmsd_gbr[2:4]), axis = 0), # CRMSD
+            np.concatenate((r_gbr[0:1], r_gbr[2:4]), axis = 0),   # R2
             markerColors = {"face" : "yellow", "edge": "k"},
-            markerLabel = ["Reference", *labels_gbr], markersize = 8, markerSymbol = "s",
+            markerLabel = ["Reference", *labels_gbr], markersize = 15, markerSymbol = "s",
             overlay = "on"
         )
         
         sm.taylor_diagram(
-            std_ann, # STD   
-            crmsd_ann, # CRMSD
-            r_ann,   # R2
+            np.concatenate((std_ann[0:1], std_ann[2:4]), axis = 0), # STD   
+            np.concatenate((crmsd_ann[0:1], crmsd_ann[2:4]), axis = 0), # CRMSD
+            np.concatenate((r_ann[0:1], r_ann[2:4]), axis = 0),   # R2
             markerColors = {"face" : "royalblue", "edge": "k"},
-            markerLabel = ["Reference", *labels_ann], markersize = 8, markerSymbol = "8",
+            markerLabel = ["Reference", *labels_ann], markersize = 15, markerSymbol = "8",
             overlay = "on"
         )
         
         # STD arrow
-        plt.arrow(0, -0.02, 0.1, 0, length_includes_head=True, head_width=0.005, head_length=0.005, clip_on = False, color = "k", width = 0.001)
-        plt.arrow(1.05 * max(std_working), -0.02, - 1.05 * max(std_working) + 0.95*1.05 * max(std_working) , 0, length_includes_head=True, 
-                    head_width=0.005, head_length=0.005, clip_on = False, color = "k", width = 0.001)
-        ax.text(0.05, -0.03, "Improving along arrow", ha="center", color="k")
+        # forward arrow
+        plt.arrow(0, -0.1*max(std_working), 0.35*max(std_working), 0, length_includes_head=True, head_width=0.015*max(std_working), head_length=0.015*max(std_working), clip_on = False, color = "k", width = 0.003*max(std_working))
+        # backward arrow
+        plt.arrow(1.05*max(std_working), -0.1*max(std_working), - 1.05 * max(std_working) + 0.95*1.05 * max(std_working) , 0, length_includes_head=True, head_width=0.015*max(std_working), head_length=0.015*max(std_working), clip_on = False, color = "k", width = 0.003*max(std_working))
+        ax.text(0.17*max(std_working), -0.08*max(std_working), "Improving along arrow", ha="center", color="k")
 
         # Correlation arrow
         start = (0.6, 0.99)
@@ -293,12 +294,12 @@ for op in operating_points:
             mutation_scale=15,   # size of arrow head
             linewidth=1.5,
             transform=ax.transAxes,
-            color="blue"
+            color="darkblue"
         )
-        ax.text(0.35, 0.305, "Improving along arrow", ha="center", color="blue", rotation = -45)
+        ax.text(0.88*max(std_working), 0.78*max(std_working), "Improving along arrow", ha="center", color="darkblue", rotation = -44)
         ax.add_patch(arrow)
 
-        plt.title(f"Taylor diagram - Model comparison - Operating point: {op}", pad=60)
+        plt.title(f"Taylor diagram - Model comparison \n Operating point: {op}", pad=60)
         plt.tight_layout()
         plt.show()
     
