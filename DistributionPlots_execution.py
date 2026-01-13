@@ -40,12 +40,12 @@ correlation_equations = {
     "Becker": False,
     "Perkavec": False,
     "Rokke": True,
-    "Lewis": True,
+    "Lewis": False,
     "Kyprianidis": True,
     "Novelo": False,
     "Lefebvre": False,
     "GasTurb": False,
-    "General Electric": True,
+    "General Electric": False,
     "Aeronox": False
 }
 
@@ -83,15 +83,15 @@ surrogate_models ={
     "Include": True,
     "Polynomial Regression": {
         "Include": True,
-        "Path to predicted engine EI": r"E:\Correlate\model_outputs\Run_2025-10-20\Polynomial Regression\ExecutionTime_21-16-01\Polynomial Regression results"
+        "Path to predicted engine EI": r"E:\Correlate\model_outputs\Run_2025-12-31\Polynomial Regression\ExecutionTime_14-58-35\Polynomial Regression results"
     },
     "Gradient Boosting": {
         "Include": True,
-        "Path to predicted engine EI": r"E:\Correlate\model_outputs\Run_2025-10-20\Gradient Boosting\ExecutionTime_20-50-09\Gradient Boosting results"
+        "Path to predicted engine EI": r"E:\Correlate\model_outputs\Run_2025-12-31\Gradient Boosting\ExecutionTime_14-58-55\Gradient Boosting results\Engine Related Predictions"
     },
     "ANN": {
         "Include": True,
-        "Path to predicted engine EI": r"E:\Correlate\model_outputs\Run_2025-10-20\ANN\ExecutionTime_14-50-47\ANN results"
+        "Path to predicted engine EI": r"E:\Correlate\model_outputs\Run_2025-12-31\ANN\ExecutionTime_14-59-18\ANN results\Engine Related Predictions"
     }
 }
 
