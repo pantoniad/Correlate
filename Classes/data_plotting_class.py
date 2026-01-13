@@ -224,7 +224,7 @@ class data_plotting:
                 labels, 
                 exp["Turgut - CFM56/7B26"],
                 "-8",
-                label = "Turgut, CFM56/7B26",
+                label = "Turgut, CFM56-7B26",
                 zorder = 10,
                 color = "cyan",
                 markersize = 10
@@ -262,7 +262,7 @@ class data_plotting:
                     labels,
                     dtmodels["Polynomial Regression"],
                     "-.d",
-                    label = "Polynomial (2) Regression",
+                    label = "Pol. (2) Reg.",
                     zorder = 10,
                     markersize = 10,
                     color = "greenyellow"
@@ -290,15 +290,24 @@ class data_plotting:
                     color = "royalblue"
                 )
 
+        # 
+        plt.rcParams.update({
+            "font.size": 18,          # default text size
+            "axes.titlesize": 33,     # axes titles
+            "axes.labelsize": 27,     # x/y labels
+            "xtick.labelsize": 22,    # tick labels
+            "ytick.labelsize": 22,
+            "legend.fontsize": 20,
+        })
+
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")
-        ax.legend(loc = "best", fontsize = 13,  ncol = 2)#, bbox_to_anchor=(1.22, 1))
-        plt.ylabel(yLabel, fontsize = 24)
+        ax.legend(loc = "best",  ncol = 1)#, bbox_to_anchor=(1.22, 1))
+        plt.ylabel(yLabel, fontsize = 27)
         plt.yticks(fontsize = 22)
-        plt.xlabel(xLabel, fontsize = 24)
+        plt.xlabel(xLabel, fontsize = 27)
         plt.xticks(fontsize = 22)
         ax.set_title(label = title)
-        ax.title.set_size(26)
         plt.tight_layout()
 
         # Save plot
@@ -469,26 +478,35 @@ class data_plotting:
 
         Output:
         """
-     
+        plt.rcParams.update({
+            "font.size": 14,          # default text size
+            "axes.titlesize": 29,     # axes titles
+            "axes.labelsize": 25,     # x/y labels
+            "xtick.labelsize": 20,    # tick labels
+            "ytick.labelsize": 20,
+            "legend.fontsize": 20,
+        })
+        
         # Plot the losses
-        fig = plt.figure(figsize=(9,7))
+        fig = plt.figure(figsize=(14,11))
         ax1 = fig.add_subplot(121)
-        ax2 = fig.add_subplot(122, sharex = ax1)
+        ax2 = fig.add_subplot(122)
 
-        ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "royalblue")
-        ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "darkorange")
+        ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "blue")
+        ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "red")
         #ax1.set_xlabel("Number of Epochs")
         ax1.set_ylabel("RMSE (gNOx/kgFuel)")
+        ax1.set_xlabel("Number of Epochs")
         ax1.grid(color = "gray", linestyle = ":")
         ax1.legend()
 
-        ax2.plot(range(epochs), [100*x for x in mape_train], label = "Train MAPE", color = "royalblue")
-        ax2.plot(range(epochs), [100*x for x in mape_valid], label = "Validation MAPE", color = "darkorange")
+        ax2.plot(range(epochs), [100*x for x in mape_train], label = "Train MAPE", color = "blue")
+        ax2.plot(range(epochs), [100*x for x in mape_valid], label = "Validation MAPE", color = "red")
         ax2.set_ylabel("MAPE (%)")
         ax2.set_xlabel("Number of Epochs")
         ax2.grid(color = "gray", linestyle = ":")
         ax2.legend()
-        fig.suptitle(f"Train and Validation error of ANN - CFM56 family - Operating Point: {operating_point}", size = "x-large")
+        fig.suptitle(f"Train and Validation error of ANN - CFM56 family - Operating Point: {operating_point}", fontsize = 33)
         fig.tight_layout()
 
         if plots_save_path == None:
@@ -514,7 +532,7 @@ class data_plotting:
                                ):
         """
         ann_loss_plot_advanced: this method handles the plotting of the gridsearch conducted for the ANN. 
-        It is dumped advanced because it can handle both multiple layers and multiple neurons. Its goal is
+        It is dubbed advanced because it can handle both multiple layers and multiple neurons. Its goal is
         to produce two figures, each containing a train (left) and a test (right) plot. In the first figure,
         the effect of the number of deep layers on the performance of the ANN is observed, whereas in the 
         second figure the effect of the number of neuros for a set number of layers is plotted. 
@@ -547,8 +565,17 @@ class data_plotting:
 
         # Plot 
         variable_values = sorted(data_to_plot_train[variable_of_interest].unique())
+        
+        plt.rcParams.update({
+            "font.size": 14,          # default text size
+            "axes.titlesize": 27,     # axes titles
+            "axes.labelsize": 23,     # x/y labels
+            "xtick.labelsize": 18,    # tick labels
+            "ytick.labelsize": 18,
+            "legend.fontsize": 16,
+        })
 
-        fig, axs = plt.subplots(1, 2, figsize = (10,6))
+        fig, axs = plt.subplots(1, 2, figsize = (14,11))
                 
         for no_variable in variable_values:
             mape_plot_train = data_to_plot_train[data_to_plot_train[variable_of_interest] == no_variable]["Train MAPE"]
@@ -578,7 +605,7 @@ class data_plotting:
             axs[1].set_title(title_test)    
             axs[1].legend()
         
-        fig.suptitle(f"{sup_title} - {operating_point}") 
+        fig.suptitle(f"{sup_title} - {operating_point}", fontsize = 33, y = 0.99) 
         fig.tight_layout()
 
         if plots_save_path == None:
@@ -714,8 +741,17 @@ class data_plotting:
                 # Increase estimator
                 estimator += n_estimators_step
 
-        # Time to plot 
-        fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+        # Time to plot
+        plt.rcParams.update({
+            "font.size": 14,          # default text size
+            "axes.titlesize": 29,     # axes titles
+            "axes.labelsize": 25,     # x/y labels
+            "xtick.labelsize": 20,    # tick labels
+            "ytick.labelsize": 20,
+            "legend.fontsize": 20,
+        })
+
+        fig, axs = plt.subplots(1, 2, figsize=(14, 11))
 
         # Get unique tree depths
         tree_depths = sorted(data_to_plot_train["Tree depth"].unique())
@@ -754,7 +790,7 @@ class data_plotting:
         axs[1].grid(color="silver", linestyle=":")
         axs[1].legend()
 
-        fig.suptitle(f"R² vs Number of Estimators for Various Tree Depths - {op}", fontsize="x-large")
+        fig.suptitle(f"R² vs Number of Estimators for Various Tree Depths - {op}", fontsize = 33)
         fig.tight_layout()
         
         # Save plots and metrics
@@ -883,7 +919,8 @@ class data_plotting:
 
         estimator_values = sorted(data_to_plot_train["No.Estimators"].unique())
 
-        fig, axs = plt.subplots(1, 2, figsize=(10, 6))
+        # Plotting
+        fig, axs = plt.subplots(1, 2, figsize=(14, 11))
 
         # Left subplot: Train R2 vs Tree Depth for each estimator value
         for idx, estimator in enumerate(estimator_values):
@@ -919,7 +956,7 @@ class data_plotting:
         axs[1].grid(color="silver", linestyle=":")
         axs[1].legend()
 
-        fig.suptitle(f"R² vs Tree Depth for Various Estimator Values - {op}", fontsize="x-large")
+        fig.suptitle(f"R² vs Tree Depth for Various Estimator Values - {op}",  fontsize = 33)
         fig.tight_layout()
 
         # Save plots and metrics

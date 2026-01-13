@@ -327,17 +327,26 @@ class models_per_OP:
 
         # Extract model features
         if model_features["Model type"] == "Polynomial Regression":
-            model_type = f"{model_features["Model type"]}: ({model_features["Model features"].degree})"
+            model_type = f"{model_features["Model type"]}"
         elif model_features["Model type"] == "Gradient Boosting":
             model_type = f"{model_features["Model type"]}"
         elif model_features["Model type"] == "Artificial Neural Networks":
             model_type = f"{model_features["Model type"]}"
 
-        # Visualize No.1
-        fig1, ax1 = plt.subplots( figsize = (7, 5))
-        ax1.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2")
-        ax1.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2")
-        ax1.plot()
+        # Learning curves
+        plt.rcParams.update({
+            "font.size": 14,          # default text size
+            "axes.titlesize": 35,     # axes titles
+            "axes.labelsize": 27,     # x/y labels
+            "xtick.labelsize": 25,    # tick labels
+            "ytick.labelsize": 25,
+            "legend.fontsize": 20,
+        })
+
+        fig1, ax1 = plt.subplots( figsize = (12, 11))
+        ax1.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2", markersize = 12)
+        ax1.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2", markersize = 12)
+        ax1.axhline(y=1, color='black', linestyle='--', linewidth = 3, label = "Metric optimal")
 
         ax1.fill_between(train_sizes, mean_train + std_train, mean_train - std_train,
                          where=((mean_train + std_train) >= (mean_train - std_train)),
@@ -348,13 +357,13 @@ class models_per_OP:
                          color = "red", alpha = 0.2)
 
         ax1.set_xlabel("Training set size")
-        ax1.set_ylabel("Score - Coefficient of Determination (R2)")
+        ax1.set_ylabel("R-squared score (R2)")
         ax1.grid(color = "silver", linestyle = ":")
         
         if operating_point != None: 
-            fig1.suptitle(f"Learning curve - {operating_point} conditions - {model_type}")
+            fig1.suptitle(f"Learning curve - {operating_point} conditions - {model_type}", fontsize = 29)
         else:
-            fig1.suptitle(f"Learning curve - {model_type}")
+            fig1.suptitle(f"Learning curve - {model_type}", fontsize = 29)
         
         ax1.legend()
 
