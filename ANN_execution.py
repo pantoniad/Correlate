@@ -54,10 +54,10 @@ model_str = {
 engine_specs = {
     "Pressure Ratio": 27.6,
     "Rated Thrust (kN)": 117,
-    "Fuel flow Idle (kg/s)": 0.144,
-    "Fuel flow Take-off (kg/s)": 1.25,
-    "Fuel flow Climb-out (kg/s)": 1,
-    "Fuel flow Approach (kg/s)": 0.348
+    "Fuel flow Idle (kg/s)": 0.078,
+    "Fuel flow Take-off (kg/s)": 1.241,
+    "Fuel flow Climb-out (kg/s)": 0.828,
+    "Fuel flow Approach (kg/s)": 0.118
 }
 
 # Initialize model
