@@ -1,0 +1,21 @@
+RESULTS REPORT - Polynomial Regression
+======================================================================
+Generated (EET, UTC+2): 2025-12-22 18:06:18
+Author: Antoniadis Panagiotis
+----------------------------------------------------------------------
+
+Model input parameters
+                            Idle    T/O    C/O    App
+Train split                  0.6    0.6    0.6    0.6
+Include development split  False  False  False  False
+Degree of polynomial           2      2      2      2
+
+Model secondary inputs
+       Include Bias  Include Plots  Save results
+Value         False           True          True
+
+Notes:
+Empty
+
+======================================================================
+End of report.

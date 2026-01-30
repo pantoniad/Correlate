@@ -12,12 +12,12 @@ operating_points = ["Idle", "Take-off", "Climb-out", "App"]
 variable_of_interest = {"Gradient Boosting": "estimator",
                         "ANN": "LAYERS"}
 
-complexity_path = {"Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-10-30\Gradient Boosting\ExecutionTime_19-21-35\Gradient Boosting results\Complexity plots results",
-                    "ANN": r"E:\Correlate\model_outputs\Run_2025-10-30\ANN\ExecutionTime_18-47-32\ANN results\Complexity plots results"}
+complexity_path = {"Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-12-31\Gradient Boosting\ExecutionTime_15-17-51\Gradient Boosting results\Complexity plots results",
+                    "ANN": r"E:\Correlate\model_outputs\Run_2025-12-31\ANN\ExecutionTime_15-42-10\ANN results\Complexity plots results"}
 
-surrogates_paths = {"Polynomial Regression": r"E:\Correlate\model_outputs\Run_2025-10-30\Polynomial Regression\ExecutionTime_17-55-57\Polynomial Regression results", 
-                    "Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-10-30\Gradient Boosting\ExecutionTime_19-21-35\Gradient Boosting results", 
-                    "ANN": r"E:\Correlate\model_outputs\Run_2025-10-30\ANN\ExecutionTime_18-47-32\ANN results"}
+surrogates_paths = {"Polynomial Regression": r"E:\Correlate\model_outputs\Run_2025-12-31\Polynomial Regression\ExecutionTime_14-58-35\Polynomial Regression results", 
+                    "Gradient Boosting": r"E:\Correlate\model_outputs\Run_2025-12-31\Gradient Boosting\ExecutionTime_15-17-51\Gradient Boosting results", 
+                    "ANN": r"E:\Correlate\model_outputs\Run_2025-12-31\ANN\ExecutionTime_15-42-10\ANN results"}
 
 # Data cleaning
 try:
@@ -261,9 +261,9 @@ for op in operating_points:
  
         # Complexity models
         sm.taylor_diagram(
-            std_gbr, # STD   
-            crmsd_gbr, # CRMSD
-            r_gbr,   # R2
+            np.concatenate((std_gbr[0:1], std_gbr[2:4]), axis = 0), # STD   
+            np.concatenate((crmsd_gbr[0:1], crmsd_gbr[2:4]), axis = 0), # CRMSD
+            np.concatenate((r_gbr[0:1], r_gbr[2:4]), axis = 0),   # R2
             markerColors = {"face" : "yellow", "edge": "k"},
             #markerLabel = ["Reference", *labels_gbr], 
             markersize = 20, markerSymbol = "s",
@@ -271,9 +271,9 @@ for op in operating_points:
         )
         
         sm.taylor_diagram(
-            std_ann, # STD   
-            crmsd_ann, # CRMSD
-            r_ann,   # R2
+            np.concatenate((std_ann[0:1], std_ann[2:4]), axis = 0), # STD   
+            np.concatenate((crmsd_ann[0:1], crmsd_ann[2:4]), axis = 0), # CRMSD
+            np.concatenate((r_ann[0:1], r_ann[2:4]), axis = 0),   # R2
             markerColors = {"face" : "royalblue", "edge": "k"},
             #markerLabel = ["Reference", *labels_ann], 
             markersize = 20, markerSymbol = "8",
@@ -298,7 +298,7 @@ for op in operating_points:
             mutation_scale=15,   # size of arrow head
             linewidth=1.5,
             transform=ax.transAxes,
-            color="blue"
+            color="darkblue"
         )
         ax.text(0.88*max(std_working), 0.78*max(std_working), "Improving along arrow", ha="center", color="darkblue", rotation = -44)
         ax.add_patch(arrow)

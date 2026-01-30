@@ -4,7 +4,7 @@ from Polynomial_main import polynomial_main
 # Secondary
 # Bias
 include_bias = False
-include_plots = True
+include_plots = False
 save_results = True
 
 # Primary
@@ -35,10 +35,10 @@ primary_inputs = {
 engine_specs = {
     "Pressure Ratio": 27.6,
     "Rated Thrust (kN)": 117,
-    "Fuel flow Idle (kg/s)": 0.144,
-    "Fuel flow Take-off (kg/s)": 1.25,
-    "Fuel flow Climb-out (kg/s)": 1,
-    "Fuel flow Approach (kg/s)": 0.348
+    "Fuel flow Idle (kg/s)": 0.078,
+    "Fuel flow Take-off (kg/s)": 1.241,
+    "Fuel flow Climb-out (kg/s)": 0.89,#0.966,
+    "Fuel flow Approach (kg/s)": 0.118
 }
 
 polynomial_main(model_structure = primary_inputs, engine_specs = engine_specs,

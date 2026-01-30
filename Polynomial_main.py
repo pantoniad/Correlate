@@ -138,8 +138,15 @@ def polynomial_main(model_structure: dict, engine_specs: dict = [], include_bias
  
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results, error_save_path = error_save_path, operating_point = op)
+    print()
     print(f"Polynomial Regression, Operating point: {op} metrics")
     print(metrics.head())
+
+    # Get polynomial coefficients
+    coeffs = np.round(model.coef_,3)
+    intercept = np.round(model.intercept_, 3)
+    print(f"{op} model coefficients: x1: {coeffs[0]}, x2: {coeffs[1]}, x3: {coeffs[2]}, x4: {coeffs[3]}, x5: {coeffs[4]}, x6: {coeffs[5]}, x7: {coeffs[6]}, x8: {coeffs[7]}, x9: {coeffs[8]}")
+    print(f"{op} model intercept: {intercept}")
 
     # Learning curve
     if include_learning_curve == True:
@@ -215,8 +222,15 @@ def polynomial_main(model_structure: dict, engine_specs: dict = [], include_bias
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results,
                                                 error_save_path = error_save_path, operating_point = op)
+    print()
     print(f"Polynomial Regression, Operating point: {op} metrics")
     print(metrics.head())
+
+    # Get polynomial coefficients
+    coeffs = np.round(model.coef_,3)
+    intercept = np.round(model.intercept_, 3)
+    print(f"{op} model coefficients: x1: {coeffs[0]}, x2: {coeffs[1]}, x3: {coeffs[2]}, x4: {coeffs[3]}, x5: {coeffs[4]}, x6: {coeffs[5]}, x7: {coeffs[6]}, x8: {coeffs[7]}, x9: {coeffs[8]}")
+    print(f"{op} model intercept: {intercept}")
 
     # Learning curve
     if include_learning_curve == True:
@@ -291,8 +305,15 @@ def polynomial_main(model_structure: dict, engine_specs: dict = [], include_bias
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results,
                                                 error_save_path = error_save_path, operating_point = op)
+    print()
     print(f"Polynomial Regression, Operating point: {op} metrics")
     print(metrics.head())
+
+    # Get polynomial coefficients
+    coeffs = np.round(model.coef_,3)
+    intercept = np.round(model.intercept_, 3)
+    print(f"{op} model coefficients: x1: {coeffs[0]}, x2: {coeffs[1]}, x3: {coeffs[2]}, x4: {coeffs[3]}, x5: {coeffs[4]}, x6: {coeffs[5]}, x7: {coeffs[6]}, x8: {coeffs[7]}, x9: {coeffs[8]}")
+    print(f"{op} model intercept: {intercept}")
 
     # Learning curve
     if include_learning_curve == True:
@@ -367,8 +388,15 @@ def polynomial_main(model_structure: dict, engine_specs: dict = [], include_bias
     # Get metrics
     metrics = polynomialReg.performance_metrics(train = train_results, test = test_results,
                                                 error_save_path = error_save_path, operating_point = op)
+    print()
     print(f"Polynomial Regression, Operating point: {op} metrics")
     print(metrics.head())
+
+    # Get polynomial coefficients
+    coeffs = np.round(model.coef_,3)
+    intercept = np.round(model.intercept_, 3)
+    print(f"{op} model coefficients: x1: {coeffs[0]}, x2: {coeffs[1]}, x3: {coeffs[2]}, x4: {coeffs[3]}, x5: {coeffs[4]}, x6: {coeffs[5]}, x7: {coeffs[6]}, x8: {coeffs[7]}, x9: {coeffs[8]}")
+    print(f"{op} model intercept: {intercept}")
 
     # Learning curve
     if include_learning_curve == True:

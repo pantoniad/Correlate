@@ -327,7 +327,7 @@ class models_per_OP:
 
         # Extract model features
         if model_features["Model type"] == "Polynomial Regression":
-            model_type = f"{model_features["Model type"]}: ({model_features["Model features"].degree})"
+            model_type = f"{model_features["Model type"]}"
         elif model_features["Model type"] == "Gradient Boosting":
             model_type = f"{model_features["Model type"]}"
         elif model_features["Model type"] == "Artificial Neural Networks":
