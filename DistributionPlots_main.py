@@ -422,7 +422,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
         distr_plots.distribution_plots(
             method = distribution_plot_settings["Plot type"],
-            size = [15,11],
+            size = [17,13],
             title = title,
             xLabel = xlabel,
             yLabel = ylabel,
@@ -437,7 +437,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
         distr_plots.distribution_plots(
             method = distribution_plot_settings["Plot type"],
-            size = [15,11],
+            size = [17,13],
             title = title,
             xLabel = xlabel,
             yLabel = ylabel,

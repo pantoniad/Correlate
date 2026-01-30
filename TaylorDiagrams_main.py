@@ -200,16 +200,16 @@ for op in operating_points:
         labels_ann = [f"ANN{i}" for i in range(1, len(std_ann))]
 
         
-        fig, ax = plt.subplots(figsize=(12, 11))
-        fig.subplots_adjust(left=0.18, right=0.95, bottom=0.15, top=0.85)
+        fig, ax = plt.subplots(figsize=(17, 16))
+        fig.subplots_adjust(bottom=0.2)
 
         plt.rcParams.update({
-            "font.size": 16,          # default text size
-            "axes.titlesize": 28,     # axes titles
-            "axes.labelsize": 26,     # x/y labels
-            "xtick.labelsize": 24,    # tick labels
-            "ytick.labelsize": 24,
-            "legend.fontsize": 15,
+            "font.size": 17,          # default text size
+            "axes.titlesize": 30,     # axes titles
+            "axes.labelsize": 28,     # x/y labels
+            "xtick.labelsize": 26,    # tick labels
+            "ytick.labelsize": 26,
+            "legend.fontsize": 17,
         })
                 
         #  Working models
@@ -220,7 +220,7 @@ for op in operating_points:
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
             labelRMS = "CRMSD", markerColors = {"face" : "limegreen", "edge": "k"}, colRMS = 'g', 
             tickRMS = np.round(np.linspace(0, np.round(max(crmsd_working) + 0.5*max(crmsd_working), 3), 6), 2).tolist(),
-            markerLabel = ["Reference", "Working Pol.Reg.", "Working GBR", "Working ANN"], markersize = 15, markerSymbol = "*",
+            markerLabel = ["Reference", "Working Pol.Reg.", "Working GBR", "Working ANN"], markersize = 22, markerSymbol = "*",
             colsCOR = {"grid": "blue", "title": "b", "tick_labels": "b"}, 
             tickCOR = [0, 0.2, 0.4, 0.6, 0.8, 0.9, 0.95, 0.99, 1],
             axismax=1.05 * max(std_working) 
@@ -231,8 +231,9 @@ for op in operating_points:
             crmsd_working[0:2], # CRMSD
             r_working[0:2],   # R2
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
-            markerColors = {"face" : "limegreen", "edge": "k"},
-            markerLabel = ["Reference", "Working Pol.Reg."], markersize = 15, markerSymbol = "*",
+            markerColors = {"face" : "limegreen", "edge": "r"},
+            #markerLabel = ["Reference", "Working Pol.Reg."], 
+            markersize = 22, markerSymbol = "*",
             overlay = "on"
         )
         
@@ -241,8 +242,9 @@ for op in operating_points:
             np.array([crmsd_working[0], crmsd_working[2]]), # CRMSD
             np.array([r_working[0], r_working[2]]),   # R2
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
-            markerColors = {"face" : "yellow", "edge": "k"},
-            markerLabel = ["Reference", "Working GBR"], markersize = 15, markerSymbol = "*",
+            markerColors = {"face" : "yellow", "edge": "r"},
+            #markerLabel = ["Reference", "Working GBR"], 
+            markersize = 22, markerSymbol = "*",
             overlay = "on"
         )
        
@@ -251,8 +253,9 @@ for op in operating_points:
             np.array([crmsd_working[0], crmsd_working[3]]), # CRMSD
             np.array([r_working[0], r_working[3]]) ,   # R2
             titleOBS = "Validation data", markerOBS = "o", colOBS = "purple", styleOBS = "-",
-            markerColors = {"face" : "royalblue", "edge": "k"},
-            markerLabel = ["Reference", "Working ANN"], markersize = 15, markerSymbol = "*",
+            markerColors = {"face" : "royalblue", "edge": "r"},
+            #markerLabel = ["Reference", "Working ANN"], 
+            markersize = 22, markerSymbol = "*",
             overlay = "on"
         )
  
@@ -262,7 +265,8 @@ for op in operating_points:
             crmsd_gbr, # CRMSD
             r_gbr,   # R2
             markerColors = {"face" : "yellow", "edge": "k"},
-            markerLabel = ["Reference", *labels_gbr], markersize = 8, markerSymbol = "s",
+            #markerLabel = ["Reference", *labels_gbr], 
+            markersize = 20, markerSymbol = "s",
             overlay = "on"
         )
         
@@ -271,15 +275,16 @@ for op in operating_points:
             crmsd_ann, # CRMSD
             r_ann,   # R2
             markerColors = {"face" : "royalblue", "edge": "k"},
-            markerLabel = ["Reference", *labels_ann], markersize = 8, markerSymbol = "8",
+            #markerLabel = ["Reference", *labels_ann], 
+            markersize = 20, markerSymbol = "8",
             overlay = "on"
         )
         
         # STD arrow
-        plt.arrow(0, -0.02, 0.1, 0, length_includes_head=True, head_width=0.005, head_length=0.005, clip_on = False, color = "k", width = 0.001)
-        plt.arrow(1.05 * max(std_working), -0.02, - 1.05 * max(std_working) + 0.95*1.05 * max(std_working) , 0, length_includes_head=True, 
-                    head_width=0.005, head_length=0.005, clip_on = False, color = "k", width = 0.001)
-        ax.text(0.05, -0.03, "Improving along arrow", ha="center", color="k")
+        plt.arrow(0, -0.1*max(std_working), 0.35*max(std_working), 0, length_includes_head=True, head_width=0.015*max(std_working), head_length=0.015*max(std_working), clip_on = False, color = "k", width = 0.003*max(std_working))
+        plt.arrow(11.05*max(std_working), -0.1*max(std_working), - 1.05 * max(std_working) + 0.95*1.05 * max(std_working) , 0, length_includes_head=True, head_width=0.015*max(std_working), head_length=0.015*max(std_working), clip_on = False, color = "k", width = 0.003*max(std_working))
+        ax.text(0.17*max(std_working), -0.08*max(std_working), "Improving along arrow", ha="center", color="k")
+        
 
         # Correlation arrow
         start = (0.6, 0.99)
@@ -295,9 +300,19 @@ for op in operating_points:
             transform=ax.transAxes,
             color="blue"
         )
-        ax.text(0.35, 0.305, "Improving along arrow", ha="center", color="blue", rotation = -45)
+        ax.text(0.88*max(std_working), 0.78*max(std_working), "Improving along arrow", ha="center", color="darkblue", rotation = -44)
         ax.add_patch(arrow)
+        # Add custom legend
+        legend_elements = [
+            plt.Line2D([0], [0], marker='o', color='purple', label='Validation Data', markersize=15, linestyle='', markeredgecolor='purple'),
+            plt.Line2D([0], [0], marker='*', color='limegreen', label='Working Polynomial Regression', markersize=20, linestyle='', markeredgecolor='k'),
+            plt.Line2D([0], [0], marker='*', color='yellow', label='Working Gradient Boosting', markersize=20, linestyle='', markeredgecolor='r'),
+            plt.Line2D([0], [0], marker='*', color='royalblue', label='Working ANN', markersize=20, linestyle='', markeredgecolor='r'),
+            plt.Line2D([0], [0], marker='s', color='yellow', label='GBR Complexity Variants', markersize=15, linestyle='', markeredgecolor='k'),
+            plt.Line2D([0], [0], marker='8', color='royalblue', label='ANN Complexity Variants', markersize=12, linestyle='', markeredgecolor='k'),
+        ]
 
+        plt.legend(handles=legend_elements, loc = "lower center", fontsize=15, frameon=True, facecolor = "snow", bbox_to_anchor = (0.5, -0.28), ncol = 3)
         plt.title(f"Taylor diagram - Model comparison - Operating point: {op}", pad=60)
         plt.tight_layout()
         plt.show()

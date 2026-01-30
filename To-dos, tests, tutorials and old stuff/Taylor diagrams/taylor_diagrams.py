@@ -6,14 +6,15 @@ import pandas as pd
 
 fig = plt.figure(figsize=(7, 7))
 # Minimal call; SkillMetrics handles axes, grids and labels.
-labels = ["Reference", "Polynomial (2) Regression", "Gradient Boosting", "Artificial Neural Network"]
+labels = ["Reference", "Model No.1", "Model No.2", "Model No.3", "Model No.4", "Model No.5"]
 sm.taylor_diagram(
-    np.array([1.2, 0.206, 0.166, 0.207]), # STD   
-    np.array([0, 0.24, 0.235, 0.083]), # CRMSD
-    np.array([1, 0.47, 0.46, 0.379]),   # R2
+    np.array([1.2, 0.7, 0.9, 1.1, 1, 1.4]), # STD   
+    np.array([0, 0.5, 0.8, 0.95, 0.6, 0.99]), # CRMSD
+    np.array([1, 1.044, 0.722, 0.377, 1, 0.271]),   # R2
     markerLabel=["REF"] + labels,    # labels for legend (first entry is REF)
     markerLegend='on',                 # show legend with labels
     markerlabel = labels,
+    markerSize = 15, 
     titleOBS = "Validation Data", markerOBS = "o", colOBS = "r", styleOBS = "-",
     tickRMS = np.round(np.arange(0.2, 2, 0.2),3), colRMS = "b", styleRMS = ":", labelrms = "CRMSD",
     colCOR = "k", styleCOR = "--", widthCOR = 1,

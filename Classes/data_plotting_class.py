@@ -146,7 +146,7 @@ class data_plotting:
             #ax1 = fig.add_subplot(gs[0])
             ax = sns.stripplot(
                 data = df_all,
-                size = 5,
+                size = 7,
                 x = dotPlotXlabel,
                 hue = dotPlotXlabel,
                 y = dotPlotYlabel,
@@ -197,7 +197,7 @@ class data_plotting:
             labels,
             mean_points.values,      
             "--*",
-            markersize = 10,
+            markersize = 12,
             color = "black",
             zorder = 10,
             label = "ICAO, Mean Values"
@@ -212,7 +212,7 @@ class data_plotting:
                 engine_icao_eis.values[0],
                 "-*",
                 color = "orange",
-                markersize = 10,
+                markersize = 12,
                 label = "ICAO, CFM56-7B26"
             )
 
@@ -227,7 +227,7 @@ class data_plotting:
                 label = "Turgut, CFM56/7B26",
                 zorder = 10,
                 color = "cyan",
-                markersize = 10
+                markersize = 12
             )
 
         # Correlation equations value plotting
@@ -247,7 +247,7 @@ class data_plotting:
                     lineStyle[pointer], 
                     color = dtCorrs.iloc[4][i],
                     label = i,
-                    markersize = 10
+                    markersize = 12
                 )
 
                 # Increase the count of the pointer
@@ -262,9 +262,9 @@ class data_plotting:
                     labels,
                     dtmodels["Polynomial Regression"],
                     "-.d",
-                    label = "Polynomial (2) Regression",
+                    label = "Pol. (2) Reg.",
                     zorder = 10,
-                    markersize = 10,
+                    markersize = 12,
                     color = "greenyellow"
                 )
 
@@ -273,9 +273,9 @@ class data_plotting:
                     labels,
                     dtmodels["Gradient Boosting"],
                     "-.d",
-                    label = "Gradient boosting",
+                    label = "Grad. boosting",
                     zorder = 10,
-                    markersize = 10,
+                    markersize = 12,
                     color = "gold"
                 )
 
@@ -286,19 +286,19 @@ class data_plotting:
                     "-.d",
                     label = "ANN",
                     zorder = 10,
-                    markersize = 10,
+                    markersize = 12,
                     color = "royalblue"
                 )
 
         # Additional plot settings, Show plot
         plt.grid(color = "silver", linestyle = ":")
-        ax.legend(loc = "best", fontsize = 13,  ncol = 2)#, bbox_to_anchor=(1.22, 1))
-        plt.ylabel(yLabel, fontsize = 24)
-        plt.yticks(fontsize = 22)
-        plt.xlabel(xLabel, fontsize = 24)
-        plt.xticks(fontsize = 22)
+        ax.legend(fontsize = 22,  ncol = 4, loc = "lower center", bbox_to_anchor = (0.5, -0.27), facecolor = "snow", edgecolor = "k")#, bbox_to_anchor=(1.22, 1))
+        plt.ylabel(yLabel, fontsize = 31)
+        plt.yticks(fontsize = 29)
+        plt.xlabel(xLabel, fontsize = 31)
+        plt.xticks(fontsize = 29)
         ax.set_title(label = title)
-        ax.title.set_size(26)
+        ax.title.set_size(33)
         plt.tight_layout()
 
         # Save plot
@@ -471,24 +471,28 @@ class data_plotting:
         """
      
         # Plot the losses
-        fig = plt.figure(figsize=(9,7))
+        fig = plt.figure(figsize=(11,6))
         ax1 = fig.add_subplot(121)
         ax2 = fig.add_subplot(122, sharex = ax1)
 
-        ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "royalblue")
-        ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "darkorange")
-        #ax1.set_xlabel("Number of Epochs")
-        ax1.set_ylabel("RMSE (gNOx/kgFuel)")
+        ax1.plot(range(epochs), rmse_train, label = "Train RMSE", color = "blue")
+        ax1.plot(range(epochs), rmse_valid, label = "Validation RMSE", color = "red")
+        ax1.set_xlabel("Number of Epochs", fontsize = 15)
+        ax1.set_ylabel("RMSE (gNOx/kgFuel)", fontsize = 15)
+        ax1.tick_params(axis='both', which='major', labelsize = 14, length = 6)
+        ax1.tick_params(axis='both', which='minor', labelsize = 12, length = 4)
         ax1.grid(color = "gray", linestyle = ":")
-        ax1.legend()
+        ax1.legend(fontsize = 15)
 
-        ax2.plot(range(epochs), [100*x for x in mape_train], label = "Train MAPE", color = "royalblue")
-        ax2.plot(range(epochs), [100*x for x in mape_valid], label = "Validation MAPE", color = "darkorange")
-        ax2.set_ylabel("MAPE (%)")
-        ax2.set_xlabel("Number of Epochs")
+        ax2.plot(range(epochs), [100*x for x in mape_train], label = "Train MAPE", color = "blue")
+        ax2.plot(range(epochs), [100*x for x in mape_valid], label = "Validation MAPE", color = "red")
+        ax2.set_ylabel("MAPE (%)", fontsize = 15)
+        ax2.set_xlabel("Number of Epochs", fontsize = 15)
+        ax2.tick_params(axis='both', which='major', labelsize = 14, length = 6)
+        ax2.tick_params(axis='both', which='minor', labelsize = 12, length = 4)
         ax2.grid(color = "gray", linestyle = ":")
-        ax2.legend()
-        fig.suptitle(f"Train and Validation error of ANN - CFM56 family - Operating Point: {operating_point}", size = "x-large")
+        ax2.legend(fontsize = 15)
+        fig.suptitle(f"Train and Validation error of ANN - CFM56 family \n Operating Point: {operating_point}", size = 18)
         fig.tight_layout()
 
         if plots_save_path == None:
@@ -496,12 +500,12 @@ class data_plotting:
         else:
             if operating_point == "T/O":
                 operating_point = "Take-off"
-                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"Learning_curve_ANN_{operating_point}.png"))
             elif operating_point == "C/O":
                 operating_point = "Climb-out"
-                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"Learning_curve_ANN_{operating_point}.png"))
             else:
-                fig.savefig(os.path.join(plots_save_path, f"saved_metrics_{operating_point}.png"))
+                fig.savefig(os.path.join(plots_save_path, f"Learning_curve_ANN_{operating_point}.png"))
 
         plt.show()
     
@@ -548,7 +552,7 @@ class data_plotting:
         # Plot 
         variable_values = sorted(data_to_plot_train[variable_of_interest].unique())
 
-        fig, axs = plt.subplots(1, 2, figsize = (10,6))
+        fig, axs = plt.subplots(1, 2, figsize = (11,6))
                 
         for no_variable in variable_values:
             mape_plot_train = data_to_plot_train[data_to_plot_train[variable_of_interest] == no_variable]["Train MAPE"]
@@ -559,11 +563,13 @@ class data_plotting:
                 label = f"{variable_of_interest} = {no_variable}",
                 linestyle = linestyle
             )
-            axs[0].set_xlabel(x_label_train)
-            axs[0].set_ylabel(y_label_train)
+            axs[0].set_xlabel(x_label_train, fontsize = 16)
+            axs[0].set_ylabel(y_label_train, fontsize = 16)
+            axs[0].tick_params(axis='both', which='major', labelsize = 14, length = 6)
+            axs[0].tick_params(axis='both', which='minor', labelsize = 13, length = 4)     
             axs[0].grid(color="silver", linestyle=":")
-            axs[0].set_title(title_train)    
-            axs[0].legend()
+            axs[0].set_title(title_train, fontsize = 18)    
+            #axs[0].legend(fontsize = 13)
 
             mape_plot_test = data_to_plot_test[data_to_plot_test[variable_of_interest] == no_variable]["Test MAPE"]
             linestyle = "-" if no_variable == given_variable_value else "--"
@@ -572,13 +578,15 @@ class data_plotting:
                         label = f"{variable_of_interest} = {no_variable}",
                         linestyle = linestyle
             )
-            axs[1].set_xlabel(x_label_test)
-            axs[1].set_ylabel(y_label_test)
+            axs[1].set_xlabel(x_label_test, fontsize = 16)
+            axs[1].set_ylabel(y_label_test, fontsize = 16)
+            axs[1].tick_params(axis='both', which='major', labelsize = 14, length = 6)
+            axs[1].tick_params(axis='both', which='minor', labelsize = 13, length = 4)
             axs[1].grid(color="silver", linestyle=":")
-            axs[1].set_title(title_test)    
-            axs[1].legend()
+            axs[1].set_title(title_test, fontsize = 18)    
+            axs[1].legend(fontsize = 15)
         
-        fig.suptitle(f"{sup_title} - {operating_point}") 
+        fig.suptitle(f"{sup_title} - {operating_point}", fontsize = 20) 
         fig.tight_layout()
 
         if plots_save_path == None:
@@ -716,7 +724,7 @@ class data_plotting:
 
         # Time to plot 
         fig, axs = plt.subplots(1, 2, figsize=(10, 6))
-
+        
         # Get unique tree depths
         tree_depths = sorted(data_to_plot_train["Tree depth"].unique())
 
@@ -731,11 +739,13 @@ class data_plotting:
                 linestyle=linestyle
             )
 
-        axs[0].set_xlabel("Number of Estimators")
-        axs[0].set_ylabel("R² Score (Train)")
-        axs[0].set_title("Train R² vs Number of Estimators")
+        axs[0].set_xlabel("Number of Estimators", fontsize = 19)
+        axs[0].set_ylabel("R² Score (Train)", fontsize = 19)
+        axs[0].tick_params(axis='both', which='major', labelsize = 18, length = 6)
+        axs[0].tick_params(axis='both', which='minor', labelsize = 16, length = 4)
+        axs[0].set_title("Train R² vs Number of Estimators", fontsize = 21)
         axs[0].grid(color="silver", linestyle=":")
-        axs[0].legend()
+        axs[0].legend(fontsize = 16)
 
         # Right subplot: Test R2 vs Number of Estimators for each tree depth
         for idx, depth in enumerate(tree_depths):
@@ -748,13 +758,15 @@ class data_plotting:
                 linestyle=linestyle
             )
 
-        axs[1].set_xlabel("Number of Estimators")
-        axs[1].set_ylabel("R² Score (Test)")
-        axs[1].set_title("Test R² vs Number of Estimators")
+        axs[1].set_xlabel("Number of Estimators", fontsize = 19)
+        axs[1].set_ylabel("R² Score (Test)", fontsize = 19)
+        axs[1].tick_params(axis='both', which='major', labelsize = 18, length = 6)
+        axs[1].tick_params(axis='both', which='minor', labelsize = 16, length = 4)
+        axs[1].set_title("Test R² vs Number of Estimators", fontsize = 21)
         axs[1].grid(color="silver", linestyle=":")
-        axs[1].legend()
+        axs[1].legend(fontsize = 16)
 
-        fig.suptitle(f"R² vs Number of Estimators for Various Tree Depths - {op}", fontsize="x-large")
+        fig.suptitle(f"R² vs Number of Estimators for Various Tree Depths - {op}", fontsize=22)
         fig.tight_layout()
         
         # Save plots and metrics
@@ -896,11 +908,13 @@ class data_plotting:
                 linestyle=linestyle
             )
 
-        axs[0].set_xlabel("Tree Depth")
-        axs[0].set_ylabel("R² Score (Train)")
-        axs[0].set_title("Train R² vs Tree Depth")
+        axs[0].set_xlabel("Tree Depth", fontsize = 19)
+        axs[0].set_ylabel("R² Score (Train)", fontsize = 19)
+        axs[0].tick_params(axis='both', which='major', labelsize = 18, length = 6)
+        axs[0].tick_params(axis='both', which='minor', labelsize = 16, length = 4)
+        axs[0].set_title("Train R² vs Tree Depth", fontsize = 21)
         axs[0].grid(color="silver", linestyle=":")
-        axs[0].legend()
+        axs[0].legend(fontsize = 16)
 
         # Right subplot: Test R2 vs Tree Depth for each estimator value
         for idx, estimator in enumerate(estimator_values):
@@ -913,13 +927,15 @@ class data_plotting:
                 linestyle=linestyle
             )
 
-        axs[1].set_xlabel("Tree Depth")
-        axs[1].set_ylabel("R² Score (Test)")
-        axs[1].set_title("Test R² vs Tree Depth")
+        axs[1].set_xlabel("Tree Depth", fontsize = 19)
+        axs[1].set_ylabel("R² Score (Test)", fontsize = 19)
+        axs[1].set_title("Test R² vs Tree Depth", fontsize = 21)
+        axs[1].tick_params(axis='both', which='major', labelsize = 18, length = 6)
+        axs[1].tick_params(axis='both', which='minor', labelsize = 16, length = 4)
         axs[1].grid(color="silver", linestyle=":")
-        axs[1].legend()
+        axs[1].legend(fontsize = 16)
 
-        fig.suptitle(f"R² vs Tree Depth for Various Estimator Values - {op}", fontsize="x-large")
+        fig.suptitle(f"R² vs Tree Depth for Various Estimator Values - {op}", fontsize=22)
         fig.tight_layout()
 
         # Save plots and metrics

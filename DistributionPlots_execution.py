@@ -14,7 +14,7 @@ operating_conditions = {
 thermodynamic = {
     "Export LaTeX table": False,
     "Index": ["Tbin", "Tbout", "Pbin", "m_dot_air", "FAR", "m_dot_fuel"],
-    "Idle": [797.1, 1290, 2755850, 10.564, 0.0137, 0.144],      # 
+    "Idle": [797.1, 1290, 2755850, 10.564, 0.0137, 0.144],       
     "Take-off": [809.95, 2250, 2929690, 46.897, 0.0446, 1.25],
     "Climb-out": [805.1, 2000, 2828980, 45.44, 0.03596, 1],
     "Approach": [787.91, 1400, 2539920, 31.89, 0.01718, 0.348]
@@ -42,7 +42,7 @@ correlation_equations = {
     "Rokke": True,
     "Lewis": True,
     "Kyprianidis": True,
-    "Novelo": False,
+    "Novelo": True,
     "Lefebvre": False,
     "GasTurb": False,
     "General Electric": True,

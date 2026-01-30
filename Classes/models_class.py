@@ -334,10 +334,10 @@ class models_per_OP:
             model_type = f"{model_features["Model type"]}"
 
         # Visualize No.1
-        fig1, ax1 = plt.subplots( figsize = (7, 5))
-        ax1.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2")
-        ax1.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2")
-        ax1.plot()
+        fig1, ax1 = plt.subplots( figsize = (11, 7))
+        ax1.plot(train_sizes, mean_train, "--o", color = "blue", label = "Train R2", markersize = 13)
+        ax1.plot(train_sizes, mean_test, "-o", color = "red", label = "Test R2", markersize = 13)
+        ax1.hlines(y = [1], xmin=10, xmax=max(train_sizes), colors=['k'], linestyles=['--'])
 
         ax1.fill_between(train_sizes, mean_train + std_train, mean_train - std_train,
                          where=((mean_train + std_train) >= (mean_train - std_train)),
@@ -347,16 +347,18 @@ class models_per_OP:
                          where=((mean_test + std_test) >= (mean_test - std_test)),
                          color = "red", alpha = 0.2)
 
-        ax1.set_xlabel("Training set size")
-        ax1.set_ylabel("Score - Coefficient of Determination (R2)")
+        ax1.set_xlabel("Training set size", fontsize = 22)
+        ax1.set_ylabel("Score - Coefficient of Determination (R2)", fontsize = 22)
+        ax1.tick_params(axis='both', which='major', labelsize = 19, length = 6)
+        ax1.tick_params(axis='both', which='minor', labelsize = 16, length = 4)
         ax1.grid(color = "silver", linestyle = ":")
         
         if operating_point != None: 
-            fig1.suptitle(f"Learning curve - {operating_point} conditions - {model_type}")
+            fig1.suptitle(f"Learning curve - {operating_point} conditions \n {model_type}", fontsize = 25)
         else:
-            fig1.suptitle(f"Learning curve - {model_type}")
+            fig1.suptitle(f"Learning curve - {model_type}", fontsize = 22)
         
-        ax1.legend()
+        ax1.legend(fontsize = 19, loc = 4)
 
         if plots_save_path == None:
             pass
@@ -370,6 +372,7 @@ class models_per_OP:
             else:
                 fig1.savefig(os.path.join(plots_save_path, f"Learning_curve_{type(model).__name__}_{operating_point}.png"))
 
+        fig1.tight_layout()
         plt.show()
 
     #def Learning_curve_ann(self, ):
@@ -989,11 +992,11 @@ class models_per_OP:
                 # Complexity plot
                 data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Deep Layers",
                                                     given_variable_value = num_fc_layers, epochs = epochs,
-                                                    sup_title = "MAPE vs Epochs for various No. Deep Layers, 5 neurons/layer",
+                                                    sup_title = "MAPE vs Epochs, various No. Deep Layers, 5 neurons/layer",
                                                     x_label_train = "Number of Epochs", x_label_test = "Number of Epochs",
                                                     y_label_train = "Train MAPE (%)", y_label_test = "Test MAPE (%)",
-                                                    title_train = "Train MAPE vs Number of Deep Layers",
-                                                    title_test = "Test MAPE vs Number of Deep Layers",
+                                                    title_train = "Train MAPE, Number of Deep Layers",
+                                                    title_test = "Test MAPE, Number of Deep Layers",
                                                     operating_point = operating_point, plots_save_path = plots_save_path
                 )
 
@@ -1039,11 +1042,11 @@ class models_per_OP:
                 # Complexity plot
                 data_plotting.ann_loss_plot_advanced(data_to_plot_train, data_to_plot_test, variable_of_interest = "No. Neurons",
                                                     given_variable_value = max(num_nodes_per_layer), epochs = epochs,
-                                                    sup_title = "MAPE vs Epochs for various No. Neurons, 5 Layers",
+                                                    sup_title = "MAPE vs Epochs, various No. Neurons, 5 Layers",
                                                     x_label_train = "Number of Epochs", x_label_test = "Number of Epochs",
                                                     y_label_train = "Train MAPE (%)", y_label_test = "Test MAPE (%)",
-                                                    title_train = "Train MAPE vs Number of Neurons",
-                                                    title_test = "Test MAPE vs Number of Neurons",
+                                                    title_train = "Train MAPE, Number of Neurons",
+                                                    title_test = "Test MAPE, Number of Neurons",
                                                     operating_point = operating_point, plots_save_path = plots_save_path
                 )
 
