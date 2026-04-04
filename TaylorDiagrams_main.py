@@ -312,7 +312,7 @@ for op in operating_points:
             plt.Line2D([0], [0], marker='8', color='royalblue', label='ANN Complexity Variants', markersize=12, linestyle='', markeredgecolor='k'),
         ]
 
-        plt.legend(handles=legend_elements, loc = "lower center", fontsize=15, frameon=True, facecolor = "snow", bbox_to_anchor = (0.5, -0.28), ncol = 3)
+        plt.legend(handles=legend_elements, loc = "lower center", fontsize=15, frameon=True, edgecolor = "k", bbox_to_anchor = (0.5, -0.28), ncol = 3)
         plt.title(f"Taylor diagram - Model comparison - Operating point: {op}", pad=60)
         plt.tight_layout()
         plt.show()

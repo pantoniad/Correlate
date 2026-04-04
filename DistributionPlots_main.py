@@ -181,12 +181,13 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
         meanApp = np.mean(df[f"{pollutant} EI App (g/kg)"].values.astype(float))
         stdApp = np.round(np.std(df[f"{pollutant} EI App (g/kg)"].values.astype(float)),3)
 
-        mean_points = pd.DataFrame(
-            data = {
-            pollutant: [meanIdle, meanTO, meanCO, meanApp]
-            },
-            index = labels
-        )
+        #mean_points = pd.DataFrame(
+        #    data = {
+        #    pollutant: [meanIdle, meanTO, meanCO, meanApp]
+        #    },
+        #    index = labels
+        #)
+        mean_points = pd.DataFrame([])
 
         if icao_data["Include specific engine values on plots"]:
             # Get data for specific engine
@@ -410,7 +411,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
     lineStyle = ["-->", ":1", ":<", ":+", "-8"]
 
     # Unpack settings
-    title = distribution_plot_settings["Pollutant to consider"] + " " + distribution_plot_settings["Title"] + " - " + distribution_plot_settings["Plot type"] + " - " + "CFM56 Family"
+    title = distribution_plot_settings["Pollutant to consider"] + " " + distribution_plot_settings["Title"] + " \n " + distribution_plot_settings["Plot type"] + " - " + "CFM56 Family"
     xlabel = distribution_plot_settings["X-axis label"]
     ylabel = distribution_plot_settings["Y-axis label"]
 
@@ -422,7 +423,7 @@ def DistributionPlots_main(operating_conditions: dict, thermodynamic: dict, engi
 
         distr_plots.distribution_plots(
             method = distribution_plot_settings["Plot type"],
-            size = [17,13],
+            size = [23,21],
             title = title,
             xLabel = xlabel,
             yLabel = ylabel,

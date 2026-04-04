@@ -151,7 +151,8 @@ class data_plotting:
                 hue = dotPlotXlabel,
                 y = dotPlotYlabel,
                 legend = False,
-                palette = paletteDict
+                palette = paletteDict,
+                alpha = 0.85
             )
 
             #ax.set(xticklabels = [])
@@ -163,7 +164,8 @@ class data_plotting:
                 data = df_all,
                 x = dotPlotXlabel,
                 y = dotPlotYlabel,
-                palette = paletteDict
+                palette = paletteDict,
+                alpha = 0.85
             )
 
         # Create boxplot
@@ -172,7 +174,8 @@ class data_plotting:
                 data = df_all,
                 x = dotPlotXlabel,
                 y = dotPlotYlabel,
-                palette = paletteDict
+                palette = paletteDict,
+                alpha = 0.85
             )
 
         # Create violin plot
@@ -181,7 +184,8 @@ class data_plotting:
                 data = df_all,
                 x = dotPlotXlabel,
                 y = dotPlotYlabel,
-                palette = paletteDict
+                palette = paletteDict,
+                alpha = 0.85
             )
 
         else:
@@ -193,15 +197,18 @@ class data_plotting:
                                 + ", ".join(valid_methods))
         
         # Mean value plotting
-        ax.plot(
-            labels,
-            mean_points.values,      
-            "--*",
-            markersize = 12,
-            color = "black",
-            zorder = 10,
-            label = "ICAO, Mean Values"
-        )
+        if mean_points.empty:
+            pass
+        else:
+            ax.plot(
+                labels,
+                mean_points.values,      
+                "--*",
+                markersize = 20,
+                color = "black",
+                zorder = 10,
+                label = "ICAO, Mean Values"
+            )
 
         # Specific engine EIs 
         if engine_icao_eis.empty:
@@ -212,7 +219,7 @@ class data_plotting:
                 engine_icao_eis.values[0],
                 "-*",
                 color = "orange",
-                markersize = 12,
+                markersize = 20,
                 label = "ICAO, CFM56-7B26"
             )
 
@@ -223,11 +230,11 @@ class data_plotting:
             plt.plot(
                 labels, 
                 exp["Turgut - CFM56/7B26"],
-                "-8",
+                "-o",
                 label = "Turgut, CFM56/7B26",
                 zorder = 10,
                 color = "cyan",
-                markersize = 12
+                markersize = 20
             )
 
         # Correlation equations value plotting
@@ -247,7 +254,7 @@ class data_plotting:
                     lineStyle[pointer], 
                     color = dtCorrs.iloc[4][i],
                     label = i,
-                    markersize = 12
+                    markersize = 20
                 )
 
                 # Increase the count of the pointer
@@ -261,50 +268,63 @@ class data_plotting:
                 plt.plot(
                     labels,
                     dtmodels["Polynomial Regression"],
-                    "-.d",
+                    marker = "d",
+                    linestyle = "-.",
+                    color = "indianred",
                     label = "Pol. (2) Reg.",
                     zorder = 10,
-                    markersize = 12,
-                    color = "greenyellow"
+                    markersize = 20,
+                    markeredgecolor = "indianred",
+                    markerfacecolor = "white",
+                    
                 )
 
             if dtmodels.keys()[1] == "Gradient Boosting":    
                 plt.plot(
                     labels,
                     dtmodels["Gradient Boosting"],
-                    "-.d",
+                    marker = "d",
+                    linestyle = "-.",
+                    color = "darkgreen",
                     label = "Grad. boosting",
                     zorder = 10,
-                    markersize = 12,
-                    color = "gold"
+                    markersize = 20,
+                    markeredgecolor = "darkgreen",
+                    markerfacecolor = "white"
                 )
 
             if dtmodels.keys()[2] == "ANN":
                 plt.plot(
                     labels,
                     dtmodels["ANN"],
-                    "-.d",
+                    marker = "d",
+                    linestyle = "-.",
+                    color = "royalblue",
                     label = "ANN",
                     zorder = 10,
-                    markersize = 12,
-                    color = "royalblue"
+                    markersize = 20,
+                    markeredgecolor = "royalblue",
+                    markerfacecolor = "white"
                 )
 
         # Additional plot settings, Show plot
-        plt.grid(color = "silver", linestyle = ":")
-        ax.legend(fontsize = 22,  ncol = 4, loc = "lower center", bbox_to_anchor = (0.5, -0.27), facecolor = "snow", edgecolor = "k")#, bbox_to_anchor=(1.22, 1))
-        plt.ylabel(yLabel, fontsize = 31)
-        plt.yticks(fontsize = 29)
-        plt.xlabel(xLabel, fontsize = 31)
-        plt.xticks(fontsize = 29)
-        ax.set_title(label = title)
-        ax.title.set_size(33)
+        plt.rcParams["font.family"] = "Times New Roman"
+        #plt.rcParams["font.serif"] = ["Times New Roman"]
+
+        plt.grid(color = "grey", linestyle = ":")
+        ax.legend(fontsize = 30,  ncol = 3, loc = "lower center", bbox_to_anchor = (0.45, -0.32), facecolor = "snow", edgecolor = "k")#, bbox_to_anchor=(1.22, 1))
+        plt.ylabel(yLabel, fontsize = 40, fontname = "Times New Roman")
+        plt.yticks(fontsize = 30, style = "italic", fontname = "Times New Roman")
+        plt.xlabel(xLabel, fontsize = 40, fontname = "Times New Roman")
+        plt.xticks(fontsize = 30, style = "italic", fontname = "Times New Roman")
+        ax.set_title(label = title, fontname = "Times New Roman")
+        ax.title.set_size(42)
         plt.tight_layout()
 
         # Save plot
         if save_plots_path != "Empty":
 
-            fig.savefig(os.path.join(save_plots_path, f"Distribution plots.png"), dpi = 400)
+            fig.savefig(os.path.join(save_plots_path, f"Distribution plots.png"), dpi = 500)
 
         plt.show()
 

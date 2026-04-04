@@ -36,13 +36,13 @@ engine_specs = {
 # Correlation equations and Semi-empirical methods
 correlation_equations = {
     "Include": True,
-    "Export LaTeX table": True,
+    "Export LaTeX table": False,
     "Becker": False,
     "Perkavec": False,
     "Rokke": True,
     "Lewis": False,
-    "Kyprianidis": True,
-    "Novelo": True,
+    "Kyprianidis": False,
+    "Novelo": False,
     "Lefebvre": False,
     "GasTurb": False,
     "General Electric": False,
@@ -51,7 +51,7 @@ correlation_equations = {
 
 fuel_flow_method = {
     "Include": True,
-    "Export LaTeX table": True,
+    "Export LaTeX table": False,
     "Engine model": "CFM56-7B26",
     "ICAO Emissions Databank range": [[74,75]]
 }
@@ -101,7 +101,7 @@ distribution_plot_settings = {
     "Pollutant to consider": "NOx",
     "Title": "EI over engine operating points",
     "X-axis label": "Pollutant over operating point",
-    "Y-axis label": "Emissions Index Value (g Pollutant/kg Fuel)"
+    "Y-axis label": "Emissions Index Value (gNOx/kgFuel)"
 }
 
 save_plots = True
